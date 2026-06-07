@@ -29,11 +29,7 @@ Apply these rules strictly when proposing BEV Work blocks:
 | **Friday** | Available after lunch only (start ≥ 12:00pm); capped at **2 hours maximum** total |
 | **IWPT events** | Any event labelled `IWPT` on either calendar is off-limits — do not schedule BEV blocks during these times |
 
-## Step 4 — Create Calendar Blocking Events
-
-After generating the plan, create **"BEV Work"** events on `linhan@allincreatives.com` to block out all proposed BEV Work slots. Set availability to **Busy**.
-
-## Step 5 — Output Summary Table
+## Step 4 — Output Summary Table
 
 Output a table with the following columns:
 
@@ -41,5 +37,11 @@ Output a table with the following columns:
 |-----|---------------------|---------------------|-----------|---------------|-----------|
 
 Include a note on **total hours scheduled vs. the 20-hour target**.
+
+Then ask: **"Shall I go ahead and block these times on your calendar?"** and wait for explicit approval before proceeding.
+
+## Step 5 — Create Calendar Blocking Events (after approval)
+
+Only after the user approves the proposed plan, create **"BEV Work"** events on `linhan@allincreatives.com` to block out all approved BEV Work slots. Set availability to **Busy**.
 
 If calendar data is unavailable or incomplete, note what is missing and proceed with available data.
