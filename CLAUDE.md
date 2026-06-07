@@ -1,0 +1,45 @@
+# BEV Weekly Work Plan — Scheduling Rules
+
+## Overview
+
+Generate a weekly BEV work plan for the coming Monday–Sunday. Target: **20 BEV hours per week**.
+
+## Step 1 — Fetch Calendar Data
+
+Fetch all events for the week ahead (Monday 00:00 to Sunday 23:59, **Asia/Singapore** timezone) from both calendars:
+- `linhan@betterearthventures.com` — primary BEV calendar (committed BEV hours)
+- `mrwulinhan@gmail.com` — personal calendar (blockers, IWPT events)
+
+## Step 2 — Calculate Committed BEV Hours
+
+Sum the duration of all events on `linhan@betterearthventures.com`. Subtract from 20 hours to find the remaining hours to schedule as BEV Work blocks.
+
+> **Wednesday rule:** Wednesday is Work Together day and always counts as **8 hours** of BEV work, regardless of individual event durations on that day.
+
+## Step 3 — Scheduling Rules for BEV Work Blocks
+
+Apply these rules strictly when proposing BEV Work blocks:
+
+| Rule | Detail |
+|------|--------|
+| **Front-load** | Fill Monday first, then Tuesday, before later days |
+| **Tuesday** | Mornings available; afternoons must stay free (no BEV blocks from 12:00pm onwards) |
+| **Wednesday** | Work Together day — counts as 8 hrs BEV; no additional blocks needed |
+| **Thursday** | Must remain completely empty — no BEV blocks |
+| **Friday** | Available after lunch only (start ≥ 12:00pm); capped at **2 hours maximum** total |
+| **IWPT events** | Any event labelled `IWPT` on either calendar is off-limits — do not schedule BEV blocks during these times |
+
+## Step 4 — Create Calendar Blocking Events
+
+After generating the plan, create **"BEV Work"** events on `linhan@allincreatives.com` to block out all proposed BEV Work slots. Set availability to **Busy**.
+
+## Step 5 — Output Summary Table
+
+Output a table with the following columns:
+
+| Day | Committed BEV Events | Proposed BEV Blocks | Day Total | Running Total | Remaining |
+|-----|---------------------|---------------------|-----------|---------------|-----------|
+
+Include a note on **total hours scheduled vs. the 20-hour target**.
+
+If calendar data is unavailable or incomplete, note what is missing and proceed with available data.
