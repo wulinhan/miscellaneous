@@ -27,7 +27,7 @@ Apply these rules strictly when proposing BEV Work blocks:
 | **Wednesday** | Work Together day — counts as 8 hrs BEV; no additional blocks needed |
 | **Thursday** | Must remain completely empty — no BEV blocks |
 | **Friday** | Available after lunch only (start ≥ 12:00pm); capped at **2 hours maximum** total |
-| **IWPT events** | Any event labelled `IWPT` on either calendar is off-limits — do not schedule BEV blocks during these times |
+| **IWPT events** | Any event labelled `IWPT` on either calendar is off-limits — do not schedule BEV blocks during these times, including the **30 minutes before and after** each IWPT event |
 
 ## Step 4 — Output Summary Table
 
