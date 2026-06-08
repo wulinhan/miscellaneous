@@ -42,7 +42,7 @@ Then ask: **"Shall I go ahead and block these times on your calendar?"** and wai
 
 ## Step 5 — Create Calendar Blocking Events (after approval)
 
-Only after the user approves the proposed plan, create **"BEV Work"** events on `linhan@betterearthventures.com` to block out all approved BEV Work slots. Set availability to **Busy**.
+Only after the user approves the proposed plan, create **"BEV Work"** events on `linhan@allincreatives.com` to block out all approved BEV Work slots. Set availability to **Busy**.
 
 ## Step 6 — Draft Team Message
 
