@@ -60,6 +60,8 @@ Hey morning team, here's when I'll be working this week:
 Outside of these hours I'm still reachable, so feel free to drop me a message anytime.
 ---
 
+Do not use em-dashes (—) anywhere in the message. Use commas, "and", or rephrase instead.
+
 Present the draft and ask if the user would like to send or adjust it.
 
 If calendar data is unavailable or incomplete, note what is missing and proceed with available data.
