@@ -42,6 +42,24 @@ Then ask: **"Shall I go ahead and block these times on your calendar?"** and wai
 
 ## Step 5 — Create Calendar Blocking Events (after approval)
 
-Only after the user approves the proposed plan, create **"BEV Work"** events on `linhan@allincreatives.com` to block out all approved BEV Work slots. Set availability to **Busy**.
+Only after the user approves the proposed plan, create **"BEV Work"** events on `linhan@betterearthventures.com` to block out all approved BEV Work slots. Set availability to **Busy**.
+
+## Step 6 — Draft Team Message
+
+After the calendar events are created, draft a short, friendly message the user can send to the BEV team summarising when they'll be working that week. Use natural language (e.g. "morning", "afternoon", "most of the day") rather than exact times. Follow this format:
+
+---
+Hey morning team, here's when I'll be working this week:
+
+• Monday: [summary]
+• Tuesday: [summary]
+• Wednesday: [summary]
+• Thursday: [summary]
+• Friday: [summary]
+
+Outside of these hours I'm still reachable, so feel free to drop me a message anytime.
+---
+
+Present the draft and ask if the user would like to send or adjust it.
 
 If calendar data is unavailable or incomplete, note what is missing and proceed with available data.
