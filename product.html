@@ -156,10 +156,9 @@
                 </div>`;
       }).join('');
 
-      const labels = [
-        cat ? chip(cat, true) : '',
-        ...p.tags.filter(t => t !== cat).map(t => chip(t, false))
-      ].join('');
+      const labels = productCategories(p)
+        .map((c, i) => chip(c, i === 0))
+        .join('');
 
       // Thumbnail row only when there is more than one photo.
       const thumbs = gallery.length > 1 ? `

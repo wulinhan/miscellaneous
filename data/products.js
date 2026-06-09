@@ -156,7 +156,7 @@ const PRODUCTS = [
     id: 'festive-drinks',
     title: 'Festive Party Buckets',
     category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'Bundle', 'New'],
+    tags: ['Bubble Tea', 'Christmas Festive', 'Bundle', 'New'],
     imageCount: 6,
     shortDesc: 'Sharing-size party buckets of our seasonal fruit drinks.',
     longDesc: 'Our limited seasonal showstopper: oversized sharing buckets of layered fruit drinks, dressed up for the festive table with fresh fruit and herbs. Choose your flavours and a colour theme, perfect for parties and gatherings.',
@@ -258,7 +258,7 @@ const PRODUCTS = [
     id: 'mixed-nuts',
     title: 'Premium Mixed Nuts',
     category: 'Snacks',
-    tags: ['Snacks', 'Vegan'],
+    tags: ['Snacks', 'Christmas Festive', 'Vegan'],
     imageCount: 1,
     shortDesc: 'Walnuts, almonds and hazelnuts with sweet dates and raisins.',
     longDesc: 'A wholesome mix of walnuts, almonds and hazelnuts tossed with naturally sweet dates and raisins. No frying, no fuss, just a satisfying snack you can feel good about. Vegan.',
@@ -288,7 +288,7 @@ const PRODUCTS = [
     id: 'chocolate-gift-bag',
     title: 'Chocolate Gift Box',
     category: 'Gift Sets',
-    tags: ['Gift Sets', 'Bundle'],
+    tags: ['Gift Sets', 'Christmas Festive', 'Bundle'],
     imageCount: 3,
     shortDesc: 'An assortment of our chocolates in a ribboned gift box with card.',
     longDesc: 'A premium kraft gift box of our assorted chocolates and truffles, finished with a ribbon and a personalised greeting card. Ready to gift for the holidays, thank-yous or corporate occasions.',
@@ -363,10 +363,32 @@ const DISCOUNT_CODES = {
   'FREESHIP':  { type: 'shipping',value: 0,  label: 'Free delivery unlocked' }
 };
 
-/* Main categories, in display order (used for the solid category chip). */
-const CATEGORIES = ['Bubble Tea', 'Sweets', 'Snacks', 'Gift Sets'];
+/* Categories a product can belong to (a product may have several). Cross tags
+   like Best Seller / New / Vegan / Bundle are internal only and never shown. */
+const CATEGORIES = ['Bubble Tea', 'Sweets', 'Snacks', 'Gift Sets', 'Christmas Festive'];
+
+/* Order categories appear in the filter bar (Christmas Festive featured first). */
+const CATEGORY_BAR_ORDER = ['Christmas Festive', 'Bubble Tea', 'Sweets', 'Snacks', 'Gift Sets'];
+
+/* The product's headline category for chips/breadcrumb: prefer a "real"
+   category over the seasonal Christmas Festive one. */
 function primaryCategory(product) {
-  return CATEGORIES.find(c => product.tags.includes(c));
+  const cats = CATEGORIES.filter(c => product.tags.includes(c));
+  return cats.find(c => c !== 'Christmas Festive') || cats[0];
+}
+
+/* Every category a product belongs to, primary first. */
+function productCategories(product) {
+  const cats = CATEGORIES.filter(c => product.tags.includes(c));
+  const primary = primaryCategory(product);
+  return [primary, ...cats.filter(c => c !== primary)];
+}
+
+/* Categories present across the catalog, in bar order. */
+function filterCategories() {
+  const present = new Set();
+  PRODUCTS.forEach(p => p.tags.forEach(t => present.add(t)));
+  return CATEGORY_BAR_ORDER.filter(c => present.has(c));
 }
 
 /* Helpers shared across pages */

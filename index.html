@@ -50,26 +50,14 @@
     let activeFilter = param('cat'); // null = All
 
     function renderSidebar() {
-      const { categories, cross } = allTags();
-      const mkBtn = (tag, label) => {
-        const active = activeFilter === tag ? 'active' : '';
-        return `<button class="filter-btn ${active}" data-filter="${tag}">
-                  <span>${label}</span><span class="pill">${tagCount(tag)}</span>
-                </button>`;
+      const mkBtn = (val, label) => {
+        const active = (activeFilter === val) || (!activeFilter && val === '') ? 'active' : '';
+        return `<button class="filter-btn ${active}" data-filter="${val}">${label}</button>`;
       };
-      const allActive = !activeFilter ? 'active' : '';
-      document.getElementById('sidebar').innerHTML = `
-        <div class="filter-group">
-          <h3>Shop by category</h3>
-          <button class="filter-btn ${allActive}" data-filter="">
-            <span>All Products</span><span class="pill">${PRODUCTS.length}</span>
-          </button>
-          ${categories.map(t => mkBtn(t, t)).join('')}
-        </div>
-        <div class="filter-group">
-          <h3>Filter by</h3>
-          ${cross.map(t => mkBtn(t, t)).join('')}
-        </div>`;
+      const pills = [mkBtn('', 'All')]
+        .concat(filterCategories().map(c => mkBtn(c, c)))
+        .join('');
+      document.getElementById('sidebar').innerHTML = `<div class="filter-bar">${pills}</div>`;
 
       document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -81,16 +69,17 @@
           render();
         });
       });
+
+      // Keep the active pill in view on the mobile scroll bar.
+      const activeBtn = document.querySelector('.filter-btn.active');
+      const bar = document.querySelector('.filter-bar');
+      if (activeBtn && bar) bar.scrollLeft = activeBtn.offsetLeft - 16;
     }
 
     function productCard(p) {
-      // Show the primary category as a solid chip + up to one cross tag.
+      // Show only the headline category (cross tags stay internal).
       const cat = primaryCategory(p);
-      const extra = p.tags.find(t => t !== cat);
-      const chips = [
-        cat ? `<span class="tag-chip cat">${cat}</span>` : '',
-        extra ? `<span class="tag-chip">${extra}</span>` : ''
-      ].join('');
+      const chips = cat ? `<span class="tag-chip cat">${cat}</span>` : '';
       return `
         <article class="card">
           <a class="card-media" href="product.html?id=${p.id}">
