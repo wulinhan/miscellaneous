@@ -230,26 +230,26 @@
                 <summary><span class="acc-head">${icon('bookmark')}Storage and serving tips</span></summary>
                 <div class="acc-body">${storageText(p)}</div>
               </details>
+              <details>
+                <summary><span class="acc-head">${icon('truck')}Islandwide delivery &amp; pickup options</span></summary>
+                <div class="acc-body">${deliveryFaqHTML()}</div>
+              </details>
+              <details>
+                <summary><span class="acc-head">${icon('info')}About allergens</span></summary>
+                <div class="acc-body">${allergensFaqHTML(p)}</div>
+              </details>
             </div>
-
-            <div class="trust-badges">${trustBadgesHTML()}</div>
           </div>
         </div>
 
-        <!-- Store-wide FAQ -->
-        <section class="faq">
-          <h2 class="faq-title">All your questions answered</h2>
-          <div class="info-accordion">
-            <details>
-              <summary><span class="acc-head">${icon('truck')}Islandwide delivery &amp; pickup options</span></summary>
-              <div class="acc-body">${deliveryFaqHTML()}</div>
-            </details>
-            <details>
-              <summary><span class="acc-head">${icon('info')}About allergens</span></summary>
-              <div class="acc-body">${allergensFaqHTML(p)}</div>
-            </details>
+        <!-- Mobile mini card: appears after scrolling past the gallery -->
+        <div class="pdp-mini" id="pdp-mini">
+          <img src="${gallery[0]}" alt="${p.title}">
+          <div class="pdp-mini-info">
+            <span class="pdp-mini-title">${p.title}</span>
+            <span class="pdp-mini-price" id="mini-price">${money(fromPrice)}</span>
           </div>
-        </section>
+        </div>
 
         <!-- Mobile-only sticky CTA -->
         <div class="pdp-sticky" id="pdp-sticky">
@@ -263,6 +263,18 @@
       wireGallery(gallery);
       wireOptions(p);
       wireAlsoBought(p);
+      wireMiniCard();
+    }
+
+    // Mobile mini card: show once the gallery has scrolled out of view.
+    function wireMiniCard() {
+      const mini = document.getElementById('pdp-mini');
+      const gallery = document.querySelector('.gallery');
+      if (!mini || !gallery || !('IntersectionObserver' in window)) return;
+      const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => mini.classList.toggle('show', !e.isIntersecting));
+      }, { rootMargin: '-72px 0px 0px 0px', threshold: 0 });
+      obs.observe(gallery);
     }
 
     function wireGallery(gallery) {
@@ -312,6 +324,7 @@
       const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
       const updatePrice = () => {
         setText('pdp-price', money(sizePrice(p, selectedSize(p))));
+        setText('mini-price', money(sizePrice(p, selectedSize(p))));
         const total = currentUnitPrice(p) * Math.max(1, +qtyInput.value || 1);
         setText('add-price', money(total));   // may be absent mid-animation
         setText('sticky-price', money(total));
