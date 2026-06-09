@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Product — Boba & Co.</title>
+  <title>Product — Sofnade</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -43,7 +43,7 @@
     }
 
     function renderPDP(p) {
-      const cat = ['Bubble Tea', 'Cookies', 'Snacks'].find(c => p.tags.includes(c));
+      const cat = primaryCategory(p);
       const gallery = productGallery(p, 4);
 
       document.getElementById('crumb').innerHTML =
@@ -211,7 +211,7 @@
     }
 
     function alsoCard(p) {
-      const cat = ['Bubble Tea', 'Cookies', 'Snacks'].find(c => p.tags.includes(c));
+      const cat = primaryCategory(p);
       return `
         <article class="card">
           <a class="card-media" href="product.html?id=${p.id}">

@@ -8,12 +8,13 @@ function renderChrome(active) {
   const header = `
   <header class="site-header">
     <div class="wrap">
-      <a class="brand" href="index.html">Boba&nbsp;<span class="dot">&amp;</span>&nbsp;Co.</a>
+      <a class="brand" href="index.html">SOFNADE<span class="dot">.</span></a>
       <nav class="main-nav">
         <a href="index.html" class="${active === 'shop' ? 'active' : ''}">Shop</a>
         <a href="index.html?cat=Bubble%20Tea">Bubble Tea</a>
-        <a href="index.html?cat=Cookies">Cookies</a>
+        <a href="index.html?cat=Sweets">Sweets</a>
         <a href="index.html?cat=Snacks">Snacks</a>
+        <a href="index.html?cat=Gift%20Sets">Gift Sets</a>
       </nav>
       <div class="header-actions">
         <a class="cart-link" href="checkout.html">
@@ -26,8 +27,8 @@ function renderChrome(active) {
   const footer = `
   <footer class="site-footer">
     <div class="wrap">
-      <div>© ${new Date().getFullYear()} Boba &amp; Co. — Freshly shaken, freshly baked.</div>
-      <div>Bubble tea · Cookies · Snacks · Delivered across Singapore</div>
+      <div>© ${new Date().getFullYear()} Sofnade — Crafted fresh since 2015.</div>
+      <div>Bubble tea · Sweets · Snacks · Gift sets · Delivered across Singapore</div>
     </div>
   </footer>`;
 

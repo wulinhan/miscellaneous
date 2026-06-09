@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Boba & Co. — Bubble Tea, Cookies & Snacks</title>
+  <title>Sofnade — Bubble Tea, Sweets, Snacks & Gift Sets</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -12,8 +12,8 @@
 
   <section class="hero">
     <div class="wrap">
-      <h1>Freshly shaken.<br>Freshly baked.</h1>
-      <p>Hand-crafted bubble tea, gooey cookies and moreish snacks, delivered to your door across Singapore.</p>
+      <h1>Crafted fresh.<br>Since 2015.</h1>
+      <p>Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.</p>
     </div>
   </section>
 
@@ -85,7 +85,7 @@
 
     function productCard(p) {
       // Show the primary category as a solid chip + up to one cross tag.
-      const cat = ['Bubble Tea', 'Cookies', 'Snacks'].find(c => p.tags.includes(c));
+      const cat = primaryCategory(p);
       const extra = p.tags.find(t => t !== cat);
       const chips = [
         cat ? `<span class="tag-chip cat">${cat}</span>` : '',
