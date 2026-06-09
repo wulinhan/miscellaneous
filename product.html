@@ -29,15 +29,6 @@
   <script>
     renderChrome();
 
-    const product = getProduct(param('id'));
-
-    if (!product || !product.tags) {
-      document.getElementById('pdp').innerHTML =
-        `<div class="empty-state"><div class="big">😕</div><p>Product not found. <a href="index.html">Back to shop</a></p></div>`;
-    } else {
-      renderPDP(product);
-    }
-
     function chip(t, cat) {
       return `<span class="tag-chip ${cat ? 'cat' : ''}">${t}</span>`;
     }
@@ -377,6 +368,15 @@
       if (!items.length) return;
       document.getElementById('also-bought-section').style.display = 'block';
       document.getElementById('also-bought').innerHTML = items.map(alsoCard).join('');
+    }
+
+    /* Entry point — runs last, after every function and const is initialized. */
+    const product = getProduct(param('id'));
+    if (!product || !product.tags) {
+      document.getElementById('pdp').innerHTML =
+        `<div class="empty-state"><div class="big">😕</div><p>Product not found. <a href="index.html">Back to shop</a></p></div>`;
+    } else {
+      renderPDP(product);
     }
   </script>
 </body>

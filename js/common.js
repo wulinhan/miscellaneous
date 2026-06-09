@@ -18,7 +18,7 @@ function renderChrome(active) {
       </nav>
       <div class="header-actions">
         <a class="cart-link" href="checkout.html">
-          🛒 Cart <span class="cart-badge" data-cart-count>0</span>
+          Cart <span class="cart-badge" data-cart-count>0</span>
         </a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
