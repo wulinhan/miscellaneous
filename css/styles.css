@@ -109,6 +109,8 @@ img { display: block; max-width: 100%; }
   padding: 32px 0 64px;
 }
 @media (max-width: 860px) { .shop-layout { grid-template-columns: 1fr; } }
+/* Let grid columns shrink so a wide scroll row can't blow out the page width */
+.shop-layout > * { min-width: 0; }
 
 .sidebar { position: sticky; top: 92px; align-self: start; }
 .filter-bar { display: flex; flex-direction: column; gap: 2px; }
@@ -122,12 +124,12 @@ img { display: block; max-width: 100%; }
 /* Mobile: categories become a horizontal scroll bar of pills */
 @media (max-width: 860px) {
   .sidebar {
-    position: sticky; top: 67px; z-index: 20; margin: 0 -20px 6px;
+    position: sticky; top: 67px; z-index: 20; margin: 0 0 8px; max-width: 100%;
     background: rgba(255, 255, 255, 0.96); backdrop-filter: saturate(180%) blur(8px);
     border-bottom: 1px solid var(--line);
   }
   .filter-bar {
-    flex-direction: row; gap: 8px; overflow-x: auto; padding: 12px 20px;
+    flex-direction: row; gap: 8px; overflow-x: auto; padding: 12px 0;
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
   }
   .filter-bar::-webkit-scrollbar { display: none; }
