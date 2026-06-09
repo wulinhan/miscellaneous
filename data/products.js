@@ -4,6 +4,8 @@
    Each product can carry MULTIPLE tags. Tags drive the sidebar filtering.
    - Main categories: "Bubble Tea", "Sweets", "Snacks", "Gift Sets"
    - Cross tags:       "Best Seller", "New", "Vegan", "Bundle"
+   `sizes` is a list of { label, price } — price varies per size. `price`
+   below mirrors the lowest size (the "from" price shown on cards).
    `upsell` lists drink TOPPINGS (keys in ADDONS) shown on the product page.
    `imageCount` is how many photos that product has in its assets folder.
    ========================================================================= */
@@ -20,7 +22,7 @@ const PRODUCTS = [
     longDesc: 'The Sofnade classic since 2015. A robust brew of hand-selected black tea, shaken to order with fresh milk over ice for a smooth, full-bodied cup that is never too sweet. Add tapioca pearls to make it the original bubble tea.',
     price: 4.50,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 4.50 }, { label: 'Large (700ml)', price: 5.30 }],
     upsell: ['pearls', 'grass-jelly', 'egg-pudding', 'cheese-foam', 'oat-milk'],
     alsoBought: ['brown-sugar-pearl-milk-tea', 'snowy-pearl-fresh-milk', 'cookies']
   },
@@ -34,7 +36,7 @@ const PRODUCTS = [
     longDesc: 'Caramelised brown sugar syrup is swirled along the cup and filled with fresh milk and a generous scoop of warm, chewy tapioca pearls. Rich, toffee-sweet and endlessly satisfying.',
     price: 5.50,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 5.50 }, { label: 'Large (700ml)', price: 6.30 }],
     upsell: ['pearls', 'egg-pudding', 'cheese-foam', 'oat-milk'],
     alsoBought: ['signature-milk-tea', 'velvet-chocolate-milk-tea', 'snowy-pearl-fresh-milk']
   },
@@ -48,7 +50,7 @@ const PRODUCTS = [
     longDesc: 'Real cocoa folded into our milk tea base for a velvety, chocolatey cup that drinks like dessert. A favourite with kids and chocolate lovers alike.',
     price: 5.80,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 5.80 }, { label: 'Large (700ml)', price: 6.60 }],
     upsell: ['pearls', 'egg-pudding', 'red-bean', 'oat-milk'],
     alsoBought: ['brown-sugar-pearl-milk-tea', 'signature-milk-tea', 'mini-cakes']
   },
@@ -62,7 +64,7 @@ const PRODUCTS = [
     longDesc: 'For the tea-free crowd: cold fresh milk poured over a snowy scoop of chewy pearls. Clean, creamy and lightly sweet, this one is comfort in a cup.',
     price: 4.90,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 4.90 }, { label: 'Large (700ml)', price: 5.70 }],
     upsell: ['pearls', 'grass-jelly', 'red-bean', 'oat-milk'],
     alsoBought: ['signature-milk-tea', 'brown-sugar-pearl-milk-tea', 'velvet-chocolate-milk-tea']
   },
@@ -76,7 +78,7 @@ const PRODUCTS = [
     longDesc: 'A fragrant fruit tea steeped with ripe peach for a soft, floral sweetness. Light, refreshing and fully plant-based. Lovely with a spoonful of aloe vera or popping boba.',
     price: 5.20,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 5.20 }, { label: 'Large (700ml)', price: 6.00 }],
     upsell: ['aloe-vera', 'popping-boba', 'grass-jelly'],
     alsoBought: ['passion-sunset-tea', 'mango-sunshine', 'strawberry-blush']
   },
@@ -90,7 +92,7 @@ const PRODUCTS = [
     longDesc: 'Tangy passionfruit poured over fruit tea and ice, layered into a tropical sunset of orange and gold. Bright, zesty and thirst-quenching. Naturally vegan.',
     price: 5.20,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 5.20 }, { label: 'Large (700ml)', price: 6.00 }],
     upsell: ['popping-boba', 'aloe-vera', 'grass-jelly'],
     alsoBought: ['mango-sunshine', 'peach-blossom-tea', 'sunny-lemonade']
   },
@@ -104,7 +106,7 @@ const PRODUCTS = [
     longDesc: 'Ripe, sweet mango blended into a golden, sunshine-bright cooler. Thick, juicy and fully plant-based. Top with popping boba for little bursts of flavour.',
     price: 5.80,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 5.80 }, { label: 'Large (700ml)', price: 6.60 }],
     upsell: ['popping-boba', 'aloe-vera', 'pearls'],
     alsoBought: ['passion-sunset-tea', 'strawberry-blush', 'peach-blossom-tea']
   },
@@ -118,7 +120,7 @@ const PRODUCTS = [
     longDesc: 'Real strawberry blended into a blushing-pink cooler that is sweet, fruity and pretty enough to photograph. A crowd-pleaser for all ages.',
     price: 5.80,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 5.80 }, { label: 'Large (700ml)', price: 6.60 }],
     upsell: ['popping-boba', 'aloe-vera'],
     alsoBought: ['mango-sunshine', 'grape-twilight', 'peach-blossom-tea']
   },
@@ -132,7 +134,7 @@ const PRODUCTS = [
     longDesc: 'Deep purple grape poured over ice for a juicy, twilight-hued cooler that balances sweet and tart. Refreshing and naturally vegan.',
     price: 5.50,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 5.50 }, { label: 'Large (700ml)', price: 6.30 }],
     upsell: ['popping-boba', 'aloe-vera'],
     alsoBought: ['strawberry-blush', 'mango-sunshine', 'sunny-lemonade']
   },
@@ -146,7 +148,7 @@ const PRODUCTS = [
     longDesc: 'Freshly squeezed lemons shaken with ice into a crisp, zesty lemonade. The bright, tangy pick-me-up for a Singapore afternoon. Vegan and caffeine-free.',
     price: 4.80,
     unit: 'cup',
-    sizes: ['Regular (500ml)', 'Large (700ml)'],
+    sizes: [{ label: 'Regular (500ml)', price: 4.80 }, { label: 'Large (700ml)', price: 5.60 }],
     upsell: ['aloe-vera', 'popping-boba'],
     alsoBought: ['passion-sunset-tea', 'grape-twilight', 'mango-sunshine']
   },
@@ -160,7 +162,7 @@ const PRODUCTS = [
     longDesc: 'Our limited seasonal showstopper: oversized sharing buckets of layered fruit drinks, dressed up for the festive table with fresh fruit and herbs. Choose your flavours and a colour theme, perfect for parties and gatherings.',
     price: 32.00,
     unit: 'bucket',
-    sizes: ['Party Bucket (1.5L)'],
+    sizes: [{ label: 'Party Bucket (1.5L)', price: 32.00 }],
     upsell: ['popping-boba', 'aloe-vera'],
     alsoBought: ['mango-sunshine', 'strawberry-blush', 'festive-gift-bag']
   },
@@ -176,7 +178,7 @@ const PRODUCTS = [
     longDesc: 'Rustic, buttery cookies loaded with slivered toasted almonds and tart dried cranberries. Crisp at the edge with a tender bite, they are the perfect partner to a cup of milk tea.',
     price: 12.00,
     unit: 'box',
-    sizes: ['Box of 8', 'Box of 16'],
+    sizes: [{ label: 'Box of 8', price: 12.00 }, { label: 'Box of 16', price: 22.00 }],
     upsell: [],
     alsoBought: ['mini-cakes', 'chocolate-truffles', 'signature-milk-tea']
   },
@@ -190,7 +192,7 @@ const PRODUCTS = [
     longDesc: 'A jewel box of bite-sized cakes and tarts, from matcha sponge to fruit tartlets and decorated petit fours. Beautifully finished by hand, they make any spread feel special.',
     price: 18.00,
     unit: 'box',
-    sizes: ['Box of 6', 'Box of 12'],
+    sizes: [{ label: 'Box of 6', price: 18.00 }, { label: 'Box of 12', price: 34.00 }],
     upsell: [],
     alsoBought: ['cookies', 'chocolate-truffles', 'fruit-dessert-cups']
   },
@@ -204,7 +206,7 @@ const PRODUCTS = [
     longDesc: 'Golden, ridged churro bites fried until crunchy and lightly spiced. Snackable by the handful and even better shared. Pairs beautifully with a chocolate drink.',
     price: 8.00,
     unit: 'tub',
-    sizes: ['Regular', 'Sharing'],
+    sizes: [{ label: 'Regular', price: 8.00 }, { label: 'Sharing', price: 14.00 }],
     upsell: [],
     alsoBought: ['fried-fritters', 'velvet-chocolate-milk-tea', 'cookies']
   },
@@ -218,7 +220,7 @@ const PRODUCTS = [
     longDesc: 'Crispy little fritter sticks tossed generously in warm cinnamon sugar. Sweet, crunchy and dangerously moreish, they disappear fast at any gathering.',
     price: 7.00,
     unit: 'tub',
-    sizes: ['Regular', 'Sharing'],
+    sizes: [{ label: 'Regular', price: 7.00 }, { label: 'Sharing', price: 12.00 }],
     upsell: [],
     alsoBought: ['churros', 'cookies', 'mango-sunshine']
   },
@@ -232,7 +234,7 @@ const PRODUCTS = [
     longDesc: 'A curated assortment of hand-finished chocolate bonbons and truffles, each decorated and filled with a different flavour. As good to look at as they are to eat, and a guaranteed gift winner.',
     price: 16.00,
     unit: 'box',
-    sizes: ['Box of 9', 'Box of 16'],
+    sizes: [{ label: 'Box of 9', price: 16.00 }, { label: 'Box of 16', price: 27.00 }],
     upsell: [],
     alsoBought: ['mini-cakes', 'cookies', 'chocolate-gift-bag']
   },
@@ -246,7 +248,7 @@ const PRODUCTS = [
     longDesc: 'Cups of warm, golden sweet-dough bites drizzled with chocolate and matcha and finished with festive touches. A fun, shareable dessert that travels well to the party.',
     price: 7.50,
     unit: 'cup',
-    sizes: ['Single', 'Pack of 4'],
+    sizes: [{ label: 'Single', price: 7.50 }, { label: 'Pack of 4', price: 28.00 }],
     upsell: [],
     alsoBought: ['churros', 'fried-fritters', 'mini-cakes']
   },
@@ -262,7 +264,7 @@ const PRODUCTS = [
     longDesc: 'A wholesome mix of walnuts, almonds and hazelnuts tossed with naturally sweet dates and raisins. No frying, no fuss, just a satisfying snack you can feel good about. Vegan.',
     price: 9.50,
     unit: 'pack',
-    sizes: ['Pouch (150g)', 'Tub (300g)'],
+    sizes: [{ label: 'Pouch (150g)', price: 9.50 }, { label: 'Tub (300g)', price: 17.00 }],
     upsell: [],
     alsoBought: ['trail-mix', 'cookies', 'festive-gift-bag']
   },
@@ -276,7 +278,7 @@ const PRODUCTS = [
     longDesc: 'A go-anywhere blend of nuts, seeds and chewy dried fruit for a quick energy boost on the move. Lightly sweet, nicely crunchy and completely plant-based.',
     price: 8.50,
     unit: 'pack',
-    sizes: ['Pouch (150g)', 'Tub (300g)'],
+    sizes: [{ label: 'Pouch (150g)', price: 8.50 }, { label: 'Tub (300g)', price: 15.00 }],
     upsell: [],
     alsoBought: ['mixed-nuts', 'cookies', 'sunny-lemonade']
   },
@@ -292,7 +294,7 @@ const PRODUCTS = [
     longDesc: 'A premium kraft gift box of our assorted chocolates and truffles, finished with a ribbon and a personalised greeting card. Ready to gift for the holidays, thank-yous or corporate occasions.',
     price: 38.00,
     unit: 'box',
-    sizes: ['Gift Box'],
+    sizes: [{ label: 'Gift Box', price: 38.00 }],
     upsell: [],
     alsoBought: ['chocolate-truffles', 'festive-gift-bag', 'cookies']
   },
@@ -306,7 +308,7 @@ const PRODUCTS = [
     longDesc: 'Our most-loved snacks, the mixed nuts and trail mix, sealed in festive pouches and packed into a reusable printed tote. A thoughtful, ready-to-give gift for the season.',
     price: 32.00,
     unit: 'set',
-    sizes: ['Gift Bag'],
+    sizes: [{ label: 'Gift Bag', price: 32.00 }],
     upsell: [],
     alsoBought: ['mixed-nuts', 'trail-mix', 'chocolate-gift-bag']
   }
@@ -314,14 +316,14 @@ const PRODUCTS = [
 
 /* Drink toppings / add-ons (referenced by `upsell` ids above) */
 const ADDONS = {
-  'pearls':       { id: 'pearls',       title: 'Tapioca Pearls', price: 0.80, emoji: '🟤', color: '#5a3d24' },
-  'grass-jelly':  { id: 'grass-jelly',  title: 'Grass Jelly',    price: 0.80, emoji: '🟩', color: '#2f3a2f' },
-  'egg-pudding':  { id: 'egg-pudding',  title: 'Egg Pudding',    price: 1.00, emoji: '🍮', color: '#e7c66b' },
-  'cheese-foam':  { id: 'cheese-foam',  title: 'Cheese Foam',    price: 1.20, emoji: '🧀', color: '#f2e3b3' },
-  'oat-milk':     { id: 'oat-milk',     title: 'Oat Milk Swap',  price: 0.60, emoji: '🌾', color: '#cbb487' },
-  'red-bean':     { id: 'red-bean',     title: 'Red Bean',       price: 0.80, emoji: '🫘', color: '#7a2e2e' },
-  'aloe-vera':    { id: 'aloe-vera',    title: 'Aloe Vera',      price: 0.80, emoji: '🟢', color: '#9bbf6a' },
-  'popping-boba': { id: 'popping-boba', title: 'Popping Boba',   price: 1.00, emoji: '🔴', color: '#c0492f' }
+  'pearls':       { id: 'pearls',       title: 'Tapioca Pearls', price: 0.80 },
+  'grass-jelly':  { id: 'grass-jelly',  title: 'Grass Jelly',    price: 0.80 },
+  'egg-pudding':  { id: 'egg-pudding',  title: 'Egg Pudding',    price: 1.00 },
+  'cheese-foam':  { id: 'cheese-foam',  title: 'Cheese Foam',    price: 1.20 },
+  'oat-milk':     { id: 'oat-milk',     title: 'Oat Milk Swap',  price: 0.60 },
+  'red-bean':     { id: 'red-bean',     title: 'Red Bean',       price: 0.80 },
+  'aloe-vera':    { id: 'aloe-vera',    title: 'Aloe Vera',      price: 0.80 },
+  'popping-boba': { id: 'popping-boba', title: 'Popping Boba',   price: 1.00 }
 };
 
 /* Discount codes accepted at checkout */
@@ -343,8 +345,22 @@ function getProduct(id) {
   return PRODUCTS.find(p => p.id === id) || (ADDONS[id] ? ADDONS[id] : null);
 }
 
+/* Price of a given size label (falls back to the product's "from" price). */
+function sizePrice(product, label) {
+  if (product && product.sizes) {
+    const s = product.sizes.find(x => x.label === label);
+    if (s) return s.price;
+    if (product.sizes.length) return product.sizes[0].price;
+  }
+  return product ? product.price : 0;
+}
+
+/* True when a product offers a real choice of sizes (more than one). */
+function hasSizeChoice(product) {
+  return !!(product && product.sizes && product.sizes.length > 1);
+}
+
 function allTags() {
-  // Preserve a sensible display order: categories first, then cross tags.
   const categoryOrder = ['Bubble Tea', 'Sweets', 'Snacks', 'Gift Sets'];
   const crossOrder = ['Best Seller', 'New', 'Vegan', 'Bundle'];
   const present = new Set();
