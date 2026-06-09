@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — Boba & Co.</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="header"></div>
+
+  <div class="wrap">
+    <div class="breadcrumb"><a href="index.html">Shop</a> / Checkout</div>
+    <div class="listing-head"><h2>Your cart</h2></div>
+
+    <div class="checkout" id="checkout">
+      <!-- Left: cart items + delivery -->
+      <div>
+        <div id="cart-items"></div>
+
+        <div class="empty-state" id="empty-cart" style="display:none">
+          <div class="big">🛒</div>
+          <p>Your cart is empty.</p>
+          <a class="btn" href="index.html">Start shopping</a>
+        </div>
+
+        <div id="delivery-block" style="display:none">
+          <section style="margin-top:32px">
+            <h3 style="margin:0 0 14px">Delivery date</h3>
+            <p class="card-desc" style="margin-top:0">Earliest delivery is 3 business days from today. Weekends are not available for delivery.</p>
+            <div class="field">
+              <label for="date-select">Choose a date</label>
+              <select id="date-select"></select>
+            </div>
+            <div class="field">
+              <label>Choose a time slot</label>
+              <div class="slots" id="slots">
+                <div class="slot active" data-slot="9am–2pm">Morning<small>9am – 2pm</small></div>
+                <div class="slot" data-slot="2–6pm">Afternoon<small>2pm – 6pm</small></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Right: order summary -->
+      <aside id="summary-block" style="display:none">
+        <div class="summary">
+          <h3>Order summary</h3>
+
+          <!-- Free shipping progress -->
+          <div class="ship-bar">
+            <div class="track"><div class="fill" id="ship-fill"></div></div>
+            <div class="label" id="ship-label"></div>
+          </div>
+
+          <div class="field" style="margin-bottom:14px">
+            <label for="code-input">Discount code</label>
+            <div class="code-row">
+              <input type="text" id="code-input" placeholder="e.g. BOBA10" autocomplete="off">
+              <button class="btn ghost" id="apply-code">Apply</button>
+            </div>
+            <div class="discount-msg" id="discount-msg"></div>
+          </div>
+
+          <div class="summary-row"><span>Subtotal</span><span id="sum-subtotal">$0.00</span></div>
+          <div class="summary-row" id="discount-row" style="display:none">
+            <span class="muted">Discount (<span id="code-label"></span>)</span>
+            <span id="sum-discount" style="color:var(--accent)">−$0.00</span>
+          </div>
+          <div class="summary-row"><span>Delivery</span><span id="sum-shipping">$8.00</span></div>
+          <div class="summary-row total"><span>Total</span><span id="sum-total">$0.00</span></div>
+
+          <label class="tnc">
+            <input type="checkbox" id="tnc-check">
+            <span>I agree to the <a href="#" style="color:var(--accent)">Terms &amp; Conditions</a> and acknowledge the delivery and freshness policy. Orders cannot be changed within 48 hours of the chosen delivery date.</span>
+          </label>
+
+          <button class="btn block" id="place-order" disabled>Place order</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="data/products.js"></script>
+  <script src="js/images.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    renderChrome();
+
+    const SHIPPING_FEE = 8.00;
+    const FREE_SHIP_THRESHOLD = 100.00;
+
+    let appliedCode = null;     // key into DISCOUNT_CODES
+    let selectedSlot = '9am–2pm';
+
+    /* ---------- Delivery date options: 3 business days out, skip weekends ---------- */
+    function isWeekend(d) { const g = d.getDay(); return g === 0 || g === 6; }
+
+    function buildDateOptions() {
+      const out = [];
+      const cursor = new Date();
+      cursor.setHours(0, 0, 0, 0);
+      // Advance 3 business days for the earliest available date.
+      let added = 0;
+      while (added < 3) {
+        cursor.setDate(cursor.getDate() + 1);
+        if (!isWeekend(cursor)) added++;
+      }
+      // Offer the next 14 available (weekday) delivery dates.
+      while (out.length < 14) {
+        if (!isWeekend(cursor)) out.push(new Date(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      return out;
+    }
+
+    function fmtDate(d) {
+      return d.toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    /* ---------- Cart rendering ---------- */
+    function lineMeta(line) {
+      const bits = [];
+      if (line.size) bits.push(line.size);
+      (line.addons || []).forEach(id => { if (ADDONS[id]) bits.push(ADDONS[id].title); });
+      return bits.join(' · ');
+    }
+
+    function renderCart() {
+      const lines = Cart.all();
+      const hasItems = lines.length > 0;
+
+      document.getElementById('empty-cart').style.display = hasItems ? 'none' : 'block';
+      document.getElementById('delivery-block').style.display = hasItems ? 'block' : 'none';
+      document.getElementById('summary-block').style.display = hasItems ? 'block' : 'none';
+
+      const wrap = document.getElementById('cart-items');
+      if (!hasItems) { wrap.innerHTML = ''; return; }
+
+      wrap.innerHTML = lines.map(line => {
+        const p = getProduct(line.productId);
+        if (!p) return '';
+        const unit = Cart.unitPrice(line);
+        const meta = lineMeta(line);
+        return `
+          <div class="cart-item" data-key="${line.key}">
+            <div class="thumb"><img src="${productImage(p, 0)}" alt="${p.title}"></div>
+            <div>
+              <h4>${p.title}</h4>
+              ${meta ? `<div class="meta">${meta}</div>` : ''}
+              <div class="meta">${money(unit)} each</div>
+              <div class="qty" data-qty="${line.key}">
+                <button type="button" data-step="-1">−</button>
+                <input type="number" value="${line.qty}" min="1" data-key="${line.key}">
+                <button type="button" data-step="1">+</button>
+              </div>
+            </div>
+            <div class="line-price">${money(unit * line.qty)}</div>
+            <button class="remove" title="Remove" data-remove="${line.key}">✕</button>
+          </div>`;
+      }).join('');
+
+      // Quantity steppers
+      wrap.querySelectorAll('.qty').forEach(q => {
+        const key = q.dataset.qty;
+        const input = q.querySelector('input');
+        q.querySelectorAll('button').forEach(b => {
+          b.addEventListener('click', () => {
+            Cart.setQty(key, Math.max(1, line_qty(key) + (+b.dataset.step)));
+          });
+        });
+        input.addEventListener('change', () => {
+          Cart.setQty(key, Math.max(1, +input.value || 1));
+        });
+      });
+
+      // Remove buttons
+      wrap.querySelectorAll('[data-remove]').forEach(btn => {
+        btn.addEventListener('click', () => Cart.remove(btn.dataset.remove));
+      });
+    }
+
+    function line_qty(key) {
+      const l = Cart.all().find(x => x.key === key);
+      return l ? l.qty : 1;
+    }
+
+    /* ---------- Summary / totals ---------- */
+    function computeShipping(subtotal) {
+      if (appliedCode === 'FREESHIP') return 0;
+      if (subtotal >= FREE_SHIP_THRESHOLD) return 0;
+      if (subtotal === 0) return 0;
+      return SHIPPING_FEE;
+    }
+
+    function computeDiscount(subtotal) {
+      if (!appliedCode) return 0;
+      const c = DISCOUNT_CODES[appliedCode];
+      if (!c) return 0;
+      if (c.type === 'percent') return subtotal * c.value / 100;
+      if (c.type === 'fixed') return Math.min(subtotal, c.value);
+      return 0; // shipping handled separately
+    }
+
+    function renderSummary() {
+      const subtotal = Cart.subtotal();
+      const discount = computeDiscount(subtotal);
+      const shipping = computeShipping(subtotal);
+      const total = Math.max(0, subtotal - discount) + shipping;
+
+      document.getElementById('sum-subtotal').textContent = money(subtotal);
+      document.getElementById('sum-shipping').textContent = shipping === 0 ? 'FREE' : money(shipping);
+      document.getElementById('sum-total').textContent = money(total);
+
+      const discRow = document.getElementById('discount-row');
+      if (appliedCode && (discount > 0 || appliedCode === 'FREESHIP')) {
+        discRow.style.display = 'flex';
+        document.getElementById('code-label').textContent = appliedCode;
+        document.getElementById('sum-discount').textContent =
+          appliedCode === 'FREESHIP' ? '−' + money(SHIPPING_FEE) + ' ship' : '−' + money(discount);
+      } else {
+        discRow.style.display = 'none';
+      }
+
+      // Free shipping progress bar
+      const pct = Math.min(100, subtotal / FREE_SHIP_THRESHOLD * 100);
+      document.getElementById('ship-fill').style.width = pct + '%';
+      const remain = FREE_SHIP_THRESHOLD - subtotal;
+      document.getElementById('ship-label').innerHTML =
+        (subtotal >= FREE_SHIP_THRESHOLD || appliedCode === 'FREESHIP')
+          ? '🎉 <strong>You have unlocked free shipping!</strong>'
+          : `You are <strong>${money(remain)}</strong> away from free shipping.`;
+
+      updatePlaceOrderState();
+    }
+
+    /* ---------- Discount code ---------- */
+    function applyCode() {
+      const input = document.getElementById('code-input');
+      const msg = document.getElementById('discount-msg');
+      const code = input.value.trim().toUpperCase();
+      if (!code) {
+        appliedCode = null; msg.textContent = ''; msg.className = 'discount-msg';
+        renderSummary(); return;
+      }
+      if (DISCOUNT_CODES[code]) {
+        appliedCode = code;
+        msg.textContent = `✓ ${DISCOUNT_CODES[code].label} applied.`;
+        msg.className = 'discount-msg ok';
+      } else {
+        appliedCode = null;
+        msg.textContent = '✕ That code is not valid. Try BOBA10, SWEET5 or FREESHIP.';
+        msg.className = 'discount-msg err';
+      }
+      renderSummary();
+    }
+
+    /* ---------- Place order gating ---------- */
+    function updatePlaceOrderState() {
+      const ok = Cart.count() > 0
+        && document.getElementById('tnc-check').checked
+        && document.getElementById('date-select').value;
+      document.getElementById('place-order').disabled = !ok;
+    }
+
+    /* ---------- Wire up ---------- */
+    function init() {
+      // Date dropdown
+      const dateSelect = document.getElementById('date-select');
+      dateSelect.innerHTML = buildDateOptions()
+        .map(d => `<option value="${d.toISOString().slice(0,10)}">${fmtDate(d)}</option>`)
+        .join('');
+
+      // Time slots
+      document.querySelectorAll('.slot').forEach(s => {
+        s.addEventListener('click', () => {
+          document.querySelectorAll('.slot').forEach(x => x.classList.remove('active'));
+          s.classList.add('active');
+          selectedSlot = s.dataset.slot;
+        });
+      });
+
+      document.getElementById('apply-code').addEventListener('click', applyCode);
+      document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') applyCode(); });
+      document.getElementById('tnc-check').addEventListener('change', updatePlaceOrderState);
+      dateSelect.addEventListener('change', updatePlaceOrderState);
+
+      document.getElementById('place-order').addEventListener('click', () => {
+        const date = dateSelect.options[dateSelect.selectedIndex].text;
+        Cart.clear();
+        toast('Order placed! 🎉');
+        document.getElementById('checkout').innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="big">✅</div>
+            <h2>Thank you for your order!</h2>
+            <p>We will deliver on <strong>${date}</strong> during the <strong>${selectedSlot}</strong> slot.</p>
+            <a class="btn" href="index.html">Continue shopping</a>
+          </div>`;
+        refreshCartBadges();
+      });
+
+      renderCart();
+      renderSummary();
+    }
+
+    // Re-render whenever the cart changes (qty edits, removals).
+    document.addEventListener('cart:changed', () => { renderCart(); renderSummary(); });
+
+    init();
+  </script>
+</body>
+</html>
