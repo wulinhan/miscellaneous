@@ -42,10 +42,106 @@
       return `<span class="tag-chip ${cat ? 'cat' : ''}">${t}</span>`;
     }
 
+    /* ---------- Inline SVG icons (stroke = currentColor) ---------- */
+    const ICONS = {
+      clock:    '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+      list:     '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1.5 1.5L8 4M4 12l1.5 1.5L8 10M4 18l1.5 1.5L8 16"/>',
+      expand:   '<path d="M9 4H4v5M4 4l6 6M15 20h5v-5M20 20l-6-6"/>',
+      bookmark: '<path d="M7 4h10v16l-5-4-5 4z"/>',
+      truck:    '<path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z"/><circle cx="7" cy="17" r="1.6"/><circle cx="17.5" cy="17" r="1.6"/>',
+      info:     '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/>'
+    };
+    function icon(name) {
+      return `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
+    }
+
+    /* ---------- Per-product copy generators ---------- */
+    function isWeekend(d) { const g = d.getDay(); return g === 0 || g === 6; }
+    function earliestDeliveryDayName() {
+      const d = new Date(); let added = 0;
+      while (added < 3) { d.setDate(d.getDate() + 1); if (!isWeekend(d)) added++; }
+      return d.toLocaleDateString('en-SG', { weekday: 'long' });
+    }
+
+    function whatsIncluded(p) {
+      const size = hasSizeChoice(p) ? 'your chosen size' : (p.sizes[0] ? p.sizes[0].label : '');
+      if (p.id === 'festive-drinks') return 'One sharing party bucket (1.5L) of your chosen festive drink, with serving cups, lids and wide straws for the table.';
+      if (p.id === 'chocolate-gift-bag') return 'An assortment of our hand-finished chocolates and truffles, arranged in a kraft gift box, tied with a ribbon and finished with a personalised greeting card.';
+      if (p.id === 'festive-gift-bag') return 'Sealed pouches of our Premium Mixed Nuts and Trail Mix, packed into a reusable printed festive tote, ready to gift.';
+      if (p.category === 'Bubble Tea') return `One freshly shaken ${p.title} (${size}), served over ice with a sealed dome lid and a wide boba straw. Any toppings you add are prepared fresh in store.`;
+      if (p.category === 'Snacks') return `${p.title} sealed fresh in a resealable ${size.toLowerCase()}, ready to snack on or share.`;
+      return `${size} of our freshly made ${p.title}, arranged and packed in our signature kraft packaging.`;
+    }
+
+    function portionsText(p) {
+      if (p.category === 'Bubble Tea') {
+        if (p.id === 'festive-drinks') return 'The party bucket holds about 1.5L, enough to pour 4 to 6 cups. Built for sharing at gatherings.';
+        return 'Regular is 500ml and Large is 700ml. Each cup serves one, so size up if you are extra thirsty.';
+      }
+      const list = p.sizes.map(s => s.label).join(' or ');
+      if (p.id === 'cookies') return `Available as a ${list}. A box of 8 is perfect for 3 to 4 to share, while a box of 16 suits groups or gifting.`;
+      if (p.id === 'chocolate-truffles') return `Available as a ${list}. The box of 9 is a lovely treat for two; the box of 16 makes a generous gift.`;
+      if (p.category === 'Snacks') return `Available as a ${list}. The pouch is a personal snack size; the tub is built for sharing.`;
+      if (!hasSizeChoice(p)) return `Comes as one ${p.sizes[0].label.toLowerCase()}, ready to gift or enjoy.`;
+      return `Available as a ${list}. Choose the larger size for sharing or gifting.`;
+    }
+
+    function storageText(p) {
+      if (p.category === 'Bubble Tea') return 'Best enjoyed within 2 to 3 hours of pickup or delivery. Keep chilled and give it a gentle shake before sipping; pearls and toppings are at their best fresh.';
+      if (p.id === 'chocolate-truffles' || p.id === 'chocolate-gift-bag') return 'Store in a cool, dry place away from direct sunlight and enjoy within 2 weeks. Avoid the fridge, which can dull the shine and flavour of the chocolate.';
+      if (p.category === 'Snacks' || p.id === 'festive-gift-bag') return 'Reseal the pack after opening and keep in a cool, dry place. Best enjoyed within 4 weeks.';
+      return 'Keeps for up to 5 days in an airtight container at room temperature. A few seconds in a warm oven brings back that just-baked texture.';
+    }
+
+    function trustBadgesHTML() {
+      return [
+        { c: 'tb-teal',   t: 'estd',  b: '2015' },
+        { c: 'tb-purple', t: 'HAND',  b: 'CRAFTED' },
+        { c: 'tb-dark',   t: 'ISO',   b: '22000' },
+        { c: 'tb-green',  t: 'HALAL', b: 'SG' }
+      ].map(x => `<div class="trust-badge ${x.c}"><span>${x.t}</span><span>${x.b}</span></div>`).join('');
+    }
+
+    function deliveryFaqHTML() {
+      return `
+        <p><strong>STORE PICK-UP &mdash; always free.</strong><br>
+        Collect from our shop at your convenience. Choose a date and a morning (9am&ndash;2pm) or
+        afternoon (2&ndash;6pm) slot; your slot helps us prepare your order just in time for maximum freshness.</p>
+        <p><strong>ISLANDWIDE DELIVERY &mdash; $50, free over $100.</strong><br>
+        We deliver across Singapore. Pick your delivery date and a 9am&ndash;2pm or 2&ndash;6pm slot.
+        The earliest available date is 3 business days from your order, and weekends are not available for delivery.</p>
+        <p>Need to change an order? Reach us at least 48 hours before your chosen date and we will do our best to help.</p>`;
+    }
+
+    function allergenBadge(name) {
+      const icons = {
+        Dairy:  '<path d="M8 8V4h8v4l1 3v9H7v-9z"/><path d="M8 8h8"/>',
+        Gluten: '<path d="M12 21V8"/><path d="M12 8l-3-3M12 8l3-3M12 12l-3-2M12 12l3-2M12 16l-3-2M12 16l3-2"/>',
+        Nuts:   '<ellipse cx="9.5" cy="12" rx="3.5" ry="5"/><ellipse cx="14.5" cy="12" rx="3.5" ry="5"/>',
+        Eggs:   '<path d="M12 3c3 0 5.5 5 5.5 9a5.5 5.5 0 0 1-11 0c0-4 2.5-9 5.5-9z"/>',
+        Soy:    '<ellipse cx="10" cy="9" rx="3" ry="4" transform="rotate(-30 10 9)"/><ellipse cx="14" cy="15" rx="3" ry="4" transform="rotate(-30 14 15)"/>'
+      };
+      const ic = icons[name] || '<circle cx="12" cy="12" r="7"/>';
+      return `<div class="allergen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ic}</svg><span>${name}</span></div>`;
+    }
+
+    function allergensFaqHTML(p) {
+      const list = productAllergens(p);
+      const intro = list.length
+        ? 'We want everyone to enjoy our freshly made treats. Please be aware that this product contains the following allergens:'
+        : 'We want everyone to enjoy our freshly made treats. This product is made without the major allergens.';
+      const badges = list.length ? `<div class="allergens">${list.map(allergenBadge).join('')}</div>` : '';
+      return `<p>${intro}</p>${badges}
+        <p>Our kitchen is not allergen-free. We handle dairy, gluten, nuts and other common allergens,
+        so there is a chance of cross-contact. If you are dealing with a severe allergy, please exercise
+        caution and reach out to us for details. Your well-being is our priority.</p>`;
+    }
+
     function renderPDP(p) {
       const cat = primaryCategory(p);
       const gallery = productGallery(p);
       const fromPrice = p.sizes[0].price;
+      const earliestDay = earliestDeliveryDayName();
 
       document.getElementById('crumb').innerHTML =
         `<a href="index.html">Shop</a> / <a href="index.html?cat=${encodeURIComponent(cat)}">${cat}</a> / ${p.title}`;
@@ -125,30 +221,45 @@
 
             <div class="info-accordion">
               <details open>
-                <summary>Delivery options</summary>
+                <summary><span class="acc-head">${icon('clock')}<span class="acc-accent">Order today, get it ${earliestDay}!</span></span></summary>
                 <div class="acc-body">
-                  Self pick-up is free, or islandwide delivery is $50 (free over $100). Choose your
-                  date and a morning (9am–2pm) or afternoon (2–6pm) slot at checkout. Earliest
-                  delivery is 3 business days from order.
+                  Order today and the earliest we can have it ready is <strong>${earliestDay}</strong>,
+                  3 business days out. Pick your exact date and time slot at checkout, or collect it
+                  free from our shop.
                 </div>
               </details>
               <details>
-                <summary>Storage & freshness</summary>
-                <div class="acc-body">
-                  Bubble teas are best enjoyed within a few hours. Cookies and snacks keep for up to
-                  5 days in an airtight container. Nothing here likes the sun, so keep it cool.
-                </div>
+                <summary><span class="acc-head">${icon('list')}What's included?</span></summary>
+                <div class="acc-body">${whatsIncluded(p)}</div>
               </details>
               <details>
-                <summary>Allergens</summary>
-                <div class="acc-body">
-                  Products may contain dairy, soy, gluten, nuts and traces of other allergens.
-                  Vegan-tagged items are made without animal products. Please contact us for full details.
-                </div>
+                <summary><span class="acc-head">${icon('expand')}About portions and sizes</span></summary>
+                <div class="acc-body">${portionsText(p)}</div>
+              </details>
+              <details>
+                <summary><span class="acc-head">${icon('bookmark')}Storage and serving tips</span></summary>
+                <div class="acc-body">${storageText(p)}</div>
               </details>
             </div>
+
+            <div class="trust-badges">${trustBadgesHTML()}</div>
           </div>
         </div>
+
+        <!-- Store-wide FAQ -->
+        <section class="faq">
+          <h2 class="faq-title">All your questions answered</h2>
+          <div class="info-accordion">
+            <details>
+              <summary><span class="acc-head">${icon('truck')}Islandwide delivery &amp; pickup options</span></summary>
+              <div class="acc-body">${deliveryFaqHTML()}</div>
+            </details>
+            <details>
+              <summary><span class="acc-head">${icon('info')}About allergens</span></summary>
+              <div class="acc-body">${allergensFaqHTML(p)}</div>
+            </details>
+          </div>
+        </section>
 
         <!-- Mobile-only sticky CTA -->
         <div class="pdp-sticky" id="pdp-sticky">
