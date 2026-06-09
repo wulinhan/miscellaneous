@@ -290,6 +290,18 @@ img { display: block; max-width: 100%; }
 .option-row label { font-weight: 500; margin: 0; cursor: pointer; }
 .add-row { display: flex; gap: 12px; align-items: center; margin: 24px 0; }
 
+/* Custom option pills (size + toppings) — replaces native select/checkboxes */
+.opt-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt-pill {
+  font: inherit; cursor: pointer; background: #fff; color: var(--ink);
+  border: 1px solid var(--line); border-radius: 999px; padding: 9px 16px; font-size: 14px;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.opt-pill small { color: var(--muted); font-weight: 500; margin-left: 4px; }
+.opt-pill:hover { border-color: var(--accent); }
+.opt-pill.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); font-weight: 600; }
+.opt-pill.active small { color: var(--accent-dark); }
+
 .info-accordion { border-top: 1px solid var(--line); margin-top: 22px; }
 .info-accordion details { border-bottom: 1px solid var(--line); }
 .info-accordion summary {
