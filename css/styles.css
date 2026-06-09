@@ -4,15 +4,15 @@
    ========================================================================= */
 
 :root {
-  --ink: #1f2421;
+  --ink: #1b2330;
   --muted: #6b7280;
-  --line: #e6e3dd;
+  --line: #e6e7ec;
   --bg: #ffffff;
-  --bg-soft: #faf7f2;
-  --accent: #2f5d50;        /* deep tea green */
-  --accent-dark: #244a40;
-  --accent-soft: #eaf1ee;
-  --gold: #c89b6a;
+  --bg-soft: #f7f8fb;
+  --accent: #1f3a8a;        /* Sofnade navy blue */
+  --accent-dark: #16296b;
+  --accent-soft: #e8edf8;
+  --gold: #ffc629;          /* Sofnade golden yellow */
   --danger: #c0492f;
   --radius: 14px;
   --shadow: 0 6px 24px rgba(31, 36, 33, 0.08);
@@ -85,7 +85,7 @@ img { display: block; max-width: 100%; }
 }
 .cart-link:hover { background: var(--accent-dark); }
 .cart-badge {
-  background: var(--gold); color: #1f2421; font-size: 12px; font-weight: 700;
+  background: var(--gold); color: var(--accent); font-size: 12px; font-weight: 700;
   min-width: 20px; height: 20px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center; padding: 0 6px;
 }
@@ -191,7 +191,7 @@ img { display: block; max-width: 100%; }
 .btn:hover { background: var(--accent-dark); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn.ghost { background: var(--accent-soft); color: var(--accent-dark); }
-.btn.ghost:hover { background: #dde9e4; }
+.btn.ghost:hover { background: #d8e2f5; }
 .btn.block { width: 100%; padding: 14px; font-size: 16px; }
 
 /* Add-to-cart click feedback: quick press pop + "Added" success state */
@@ -202,7 +202,7 @@ img { display: block; max-width: 100%; }
   100% { transform: scale(1); }
 }
 .btn.pop { animation: btn-pop 0.32s ease; }
-.btn.added { background: var(--gold); color: #1f2421; }
+.btn.added { background: var(--gold); color: var(--accent); }
 .btn.danger { background: none; color: var(--danger); padding: 4px; }
 
 .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
@@ -266,7 +266,7 @@ img { display: block; max-width: 100%; }
 .pdp-info h1 { font-size: 30px; margin: 4px 0 10px; letter-spacing: -0.02em; }
 .pdp-labels { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .pdp-price { font-size: 26px; font-weight: 800; margin: 6px 0 18px; }
-.pdp-desc { color: #4b5147; margin-bottom: 22px; }
+.pdp-desc { color: #4b5563; margin-bottom: 22px; }
 .field { margin-bottom: 20px; }
 .field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 8px; }
 .field select, .field input[type=text] {
@@ -409,7 +409,7 @@ img { display: block; max-width: 100%; }
 
 /* Free shipping progress bar */
 .ship-bar { margin: 18px 0; }
-.ship-bar .track { height: 8px; background: #e3ddd2; border-radius: 999px; overflow: hidden; }
+.ship-bar .track { height: 8px; background: #e6e7ec; border-radius: 999px; overflow: hidden; }
 .ship-bar .fill { height: 100%; background: var(--gold); border-radius: 999px; transition: width 0.3s ease; }
 .ship-bar .label { font-size: 13px; margin-top: 8px; color: var(--muted); }
 .ship-bar .label strong { color: var(--ink); }
