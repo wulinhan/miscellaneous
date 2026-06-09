@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product — Sofnade</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="header"></div>
+
+  <div class="wrap">
+    <div class="breadcrumb" id="crumb"></div>
+    <div id="pdp"></div>
+
+    <section class="section" id="also-bought-section" style="display:none">
+      <h2>Customers also bought</h2>
+      <div class="grid" id="also-bought"></div>
+    </section>
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="data/products.js"></script>
+  <script src="js/images.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    renderChrome();
+
+    const product = getProduct(param('id'));
+
+    if (!product || !product.tags) {
+      document.getElementById('pdp').innerHTML =
+        `<div class="empty-state"><div class="big">😕</div><p>Product not found. <a href="index.html">Back to shop</a></p></div>`;
+    } else {
+      renderPDP(product);
+    }
+
+    function chip(t, cat) {
+      return `<span class="tag-chip ${cat ? 'cat' : ''}">${t}</span>`;
+    }
+
+    function renderPDP(p) {
+      const cat = primaryCategory(p);
+      const gallery = productGallery(p, 4);
+
+      document.getElementById('crumb').innerHTML =
+        `<a href="index.html">Shop</a> / <a href="index.html?cat=${encodeURIComponent(cat)}">${cat}</a> / ${p.title}`;
+
+      const sizeOpts = (p.sizes || []).map((s, i) =>
+        `<option value="${s}">${s}</option>`).join('');
+
+      const upsells = (p.upsell || []).map(id => {
+        const a = ADDONS[id];
+        if (!a) return '';
+        const label = a.price > 0 ? `${a.title} (+${money(a.price)})` : a.title;
+        return `<div class="option-row">
+                  <input type="checkbox" id="ups-${a.id}" value="${a.id}">
+                  <label for="ups-${a.id}">${a.emoji} ${label}</label>
+                </div>`;
+      }).join('');
+
+      const labels = [
+        cat ? chip(cat, true) : '',
+        ...p.tags.filter(t => t !== cat).map(t => chip(t, false))
+      ].join('');
+
+      document.getElementById('pdp').innerHTML = `
+        <div class="pdp">
+          <!-- Gallery: active image on the left, thumbnail row underneath -->
+          <div class="gallery">
+            <div class="gallery-main">
+              <img id="gallery-main-img" src="${gallery[0]}" alt="${p.title}">
+            </div>
+            <div class="gallery-thumbs" id="gallery-thumbs">
+              ${gallery.map((src, i) =>
+                `<button class="${i === 0 ? 'active' : ''}" data-i="${i}">
+                   <img src="${src}" alt="${p.title} view ${i + 1}">
+                 </button>`).join('')}
+            </div>
+          </div>
+
+          <!-- Details -->
+          <div class="pdp-info">
+            <div class="pdp-labels">${labels}</div>
+            <h1>${p.title}</h1>
+            <div class="pdp-price" id="pdp-price">${money(p.price)} <span class="from" style="font-size:14px;color:var(--muted);font-weight:500">/ ${p.unit}</span></div>
+            <p class="pdp-desc">${p.longDesc}</p>
+
+            ${sizeOpts ? `
+            <div class="field">
+              <label for="size-select">Size / option</label>
+              <select id="size-select">${sizeOpts}</select>
+            </div>` : ''}
+
+            ${upsells ? `
+            <div class="field">
+              <label>Make it yours</label>
+              ${upsells}
+            </div>` : ''}
+
+            <div class="field">
+              <label>Quantity</label>
+              <div class="qty" id="qty">
+                <button type="button" data-step="-1">−</button>
+                <input type="number" id="qty-input" value="1" min="1">
+                <button type="button" data-step="1">+</button>
+              </div>
+            </div>
+
+            <div class="add-row">
+              <button class="btn block" id="add-to-cart">Add to cart · <span id="add-price">${money(p.price)}</span></button>
+            </div>
+
+            <div class="notice">🚚 Free delivery on orders over $100. Order today for delivery from 3 business days out.</div>
+
+            <div class="info-accordion">
+              <details open>
+                <summary>Delivery options</summary>
+                <div class="acc-body">
+                  Standard delivery is $8, or free over $100. Choose your delivery date and a
+                  morning (9am–2pm) or afternoon (2–6pm) slot at checkout. Earliest delivery is
+                  3 business days from order.
+                </div>
+              </details>
+              <details>
+                <summary>Storage & freshness</summary>
+                <div class="acc-body">
+                  Bubble teas are best enjoyed within a few hours. Cookies and snacks keep for up to
+                  5 days in an airtight container. Nothing here likes the sun, so keep it cool.
+                </div>
+              </details>
+              <details>
+                <summary>Allergens</summary>
+                <div class="acc-body">
+                  Products may contain dairy, soy, gluten, nuts and traces of other allergens.
+                  Vegan-tagged items are made without animal products. Please contact us for full details.
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile-only sticky CTA -->
+        <div class="pdp-sticky" id="pdp-sticky">
+          <div class="info">
+            <div class="title">${p.title}</div>
+            <div class="price" id="sticky-price">${money(p.price)}</div>
+          </div>
+          <button class="btn" id="sticky-add">Add to cart</button>
+        </div>`;
+
+      wireGallery(gallery);
+      wireOptions(p);
+      wireAlsoBought(p);
+    }
+
+    function wireGallery(gallery) {
+      const mainImg = document.getElementById('gallery-main-img');
+      document.querySelectorAll('#gallery-thumbs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#gallery-thumbs button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          mainImg.src = gallery[+btn.dataset.i];
+        });
+      });
+    }
+
+    function selectedAddons() {
+      return Array.from(document.querySelectorAll('[id^="ups-"]:checked')).map(c => c.value);
+    }
+
+    function currentUnitPrice(p) {
+      let price = p.price;
+      selectedAddons().forEach(id => { if (ADDONS[id]) price += ADDONS[id].price; });
+      return price;
+    }
+
+    function wireOptions(p) {
+      const qtyInput = document.getElementById('qty-input');
+      const updatePrice = () => {
+        const unit = currentUnitPrice(p);
+        const total = unit * Math.max(1, +qtyInput.value || 1);
+        document.getElementById('add-price').textContent = money(total);
+        const sticky = document.getElementById('sticky-price');
+        if (sticky) sticky.textContent = money(total);
+      };
+
+      const addToCart = () => {
+        const qty = Math.max(1, +qtyInput.value || 1);
+        const size = document.getElementById('size-select') ? document.getElementById('size-select').value : '';
+        Cart.add(p.id, qty, size, selectedAddons());
+        toast(`Added ${qty} × ${p.title} to cart`);
+      };
+
+      document.querySelectorAll('#qty button').forEach(b => {
+        b.addEventListener('click', () => {
+          qtyInput.value = Math.max(1, (+qtyInput.value || 1) + (+b.dataset.step));
+          updatePrice();
+        });
+      });
+      qtyInput.addEventListener('input', updatePrice);
+      document.querySelectorAll('[id^="ups-"]').forEach(c => c.addEventListener('change', updatePrice));
+
+      document.getElementById('add-to-cart').addEventListener('click', addToCart);
+      document.getElementById('sticky-add').addEventListener('click', addToCart);
+
+      updatePrice();
+    }
+
+    function alsoCard(p) {
+      const cat = primaryCategory(p);
+      return `
+        <article class="card">
+          <a class="card-media" href="product.html?id=${p.id}">
+            <div class="card-tags">${cat ? `<span class="tag-chip cat">${cat}</span>` : ''}</div>
+            <img src="${productImage(p, 0)}" alt="${p.title}" loading="lazy">
+          </a>
+          <div class="card-body">
+            <h3><a href="product.html?id=${p.id}">${p.title}</a></h3>
+            <p class="card-desc">${p.shortDesc}</p>
+            <div class="card-foot">
+              <span class="price"><span class="from">from </span>${money(p.price)}</span>
+              <a class="btn ghost" href="product.html?id=${p.id}">View</a>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function wireAlsoBought(p) {
+      const items = (p.alsoBought || [])
+        .map(id => getProduct(id))
+        .filter(x => x && x.tags);
+      if (!items.length) return;
+      document.getElementById('also-bought-section').style.display = 'block';
+      document.getElementById('also-bought').innerHTML = items.map(alsoCard).join('');
+    }
+  </script>
+</body>
+</html>

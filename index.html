@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sofnade — Bubble Tea, Sweets, Snacks & Gift Sets</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="header"></div>
+
+  <section class="hero">
+    <div class="wrap">
+      <h1>Crafted fresh.<br>Since 2015.</h1>
+      <p>Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="shop-layout">
+      <!-- Sidebar category / tag filter -->
+      <aside class="sidebar" id="sidebar"></aside>
+
+      <!-- Product grid -->
+      <main>
+        <div class="listing-head">
+          <h2 id="listing-title">All Products</h2>
+          <span class="count" id="listing-count"></span>
+        </div>
+        <div class="grid" id="grid"></div>
+        <div class="empty-state" id="empty" style="display:none">
+          <div class="big">🔍</div>
+          <p>No products match this filter just yet.</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="data/products.js"></script>
+  <script src="js/images.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    renderChrome('shop');
+
+    // Active filter comes from ?cat= so nav links + sidebar stay in sync.
+    let activeFilter = param('cat'); // null = All
+
+    function renderSidebar() {
+      const { categories, cross } = allTags();
+      const mkBtn = (tag, label) => {
+        const active = activeFilter === tag ? 'active' : '';
+        return `<button class="filter-btn ${active}" data-filter="${tag}">
+                  <span>${label}</span><span class="pill">${tagCount(tag)}</span>
+                </button>`;
+      };
+      const allActive = !activeFilter ? 'active' : '';
+      document.getElementById('sidebar').innerHTML = `
+        <div class="filter-group">
+          <h3>Shop by category</h3>
+          <button class="filter-btn ${allActive}" data-filter="">
+            <span>All Products</span><span class="pill">${PRODUCTS.length}</span>
+          </button>
+          ${categories.map(t => mkBtn(t, t)).join('')}
+        </div>
+        <div class="filter-group">
+          <h3>Filter by</h3>
+          ${cross.map(t => mkBtn(t, t)).join('')}
+        </div>`;
+
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeFilter = btn.dataset.filter || null;
+          const url = new URL(location);
+          if (activeFilter) url.searchParams.set('cat', activeFilter);
+          else url.searchParams.delete('cat');
+          history.replaceState({}, '', url);
+          render();
+        });
+      });
+    }
+
+    function productCard(p) {
+      // Show the primary category as a solid chip + up to one cross tag.
+      const cat = primaryCategory(p);
+      const extra = p.tags.find(t => t !== cat);
+      const chips = [
+        cat ? `<span class="tag-chip cat">${cat}</span>` : '',
+        extra ? `<span class="tag-chip">${extra}</span>` : ''
+      ].join('');
+      return `
+        <article class="card">
+          <a class="card-media" href="product.html?id=${p.id}">
+            <div class="card-tags">${chips}</div>
+            <img src="${productImage(p, 0)}" alt="${p.title}" loading="lazy">
+          </a>
+          <div class="card-body">
+            <h3><a href="product.html?id=${p.id}">${p.title}</a></h3>
+            <p class="card-desc">${p.shortDesc}</p>
+            <div class="card-foot">
+              <span class="price"><span class="from">from </span>${money(p.price)}<span class="from"> / ${p.unit}</span></span>
+              <a class="btn ghost" href="product.html?id=${p.id}">View</a>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function render() {
+      renderSidebar();
+      const list = activeFilter
+        ? PRODUCTS.filter(p => p.tags.includes(activeFilter))
+        : PRODUCTS;
+      document.getElementById('listing-title').textContent = activeFilter || 'All Products';
+      document.getElementById('listing-count').textContent =
+        `${list.length} ${list.length === 1 ? 'item' : 'items'}`;
+      document.getElementById('grid').innerHTML = list.map(productCard).join('');
+      document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+    }
+
+    render();
+  </script>
+</body>
+</html>
