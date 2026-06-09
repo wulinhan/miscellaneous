@@ -25,6 +25,47 @@
           <a class="btn" href="index.html">Start shopping</a>
         </div>
 
+        <div id="details-block" style="display:none">
+          <section style="margin-top:32px">
+            <h3 style="margin:0 0 6px">Your Details</h3>
+            <p class="card-desc" style="margin-top:0">Fields marked <span style="color:var(--danger)">*</span> are required.</p>
+            <div class="details-grid">
+              <div class="field span-2">
+                <label for="d-name">Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="d-name" autocomplete="name" placeholder="Full name">
+              </div>
+              <div class="field span-2">
+                <label for="d-business">Business name</label>
+                <input type="text" id="d-business" autocomplete="organization" placeholder="Optional">
+              </div>
+              <div class="field">
+                <label for="d-phone">Phone number <span style="color:var(--danger)">*</span></label>
+                <input type="tel" id="d-phone" autocomplete="tel" placeholder="e.g. 9123 4567">
+              </div>
+              <div class="field">
+                <label for="d-email">Email address <span style="color:var(--danger)">*</span></label>
+                <input type="email" id="d-email" autocomplete="email" placeholder="you@example.com">
+              </div>
+              <div class="field span-2">
+                <label for="d-addr1">Address line 1 <span class="req-delivery" style="color:var(--danger)">*</span></label>
+                <input type="text" id="d-addr1" autocomplete="address-line1" placeholder="Block / street / building">
+              </div>
+              <div class="field span-2">
+                <label for="d-addr2">Address line 2</label>
+                <input type="text" id="d-addr2" autocomplete="address-line2" placeholder="Unit number, etc. (optional)">
+              </div>
+              <div class="field">
+                <label for="d-postal">Postal code <span class="req-delivery" style="color:var(--danger)">*</span></label>
+                <input type="text" id="d-postal" inputmode="numeric" autocomplete="postal-code" placeholder="6 digits">
+              </div>
+              <div class="field span-2">
+                <label for="d-notes">Delivery notes</label>
+                <input type="text" id="d-notes" placeholder="Gate code, drop-off instructions, etc. (optional)">
+              </div>
+            </div>
+          </section>
+        </div>
+
         <div id="delivery-block" style="display:none">
           <section style="margin-top:32px">
             <h3 style="margin:0 0 14px">Delivery method</h3>
@@ -145,6 +186,7 @@
       const hasItems = lines.length > 0;
 
       document.getElementById('empty-cart').style.display = hasItems ? 'none' : 'block';
+      document.getElementById('details-block').style.display = hasItems ? 'block' : 'none';
       document.getElementById('delivery-block').style.display = hasItems ? 'block' : 'none';
       document.getElementById('summary-block').style.display = hasItems ? 'block' : 'none';
 
@@ -289,11 +331,30 @@
       document.getElementById('schedule-note').textContent = pickup
         ? 'Collection is available from 3 business days from today. Weekends are not available for pick-up.'
         : 'Earliest delivery is 3 business days from today. Weekends are not available for delivery.';
+      // The address is only required for islandwide delivery.
+      document.querySelectorAll('.req-delivery').forEach(el => { el.style.display = pickup ? 'none' : 'inline'; });
+    }
+
+    /* ---------- Your Details validation ---------- */
+    function detail(id) {
+      const el = document.getElementById('d-' + id);
+      return el ? el.value.trim() : '';
+    }
+    function emailValid(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+    function detailsValid() {
+      const needAddr = deliveryMethod === 'delivery';
+      return detail('name') !== ''
+        && detail('phone') !== ''
+        && emailValid(detail('email'))
+        && (!needAddr || detail('addr1') !== '')
+        && (!needAddr || detail('postal') !== '');
     }
 
     /* ---------- Place order gating ---------- */
     function updatePlaceOrderState() {
       const ok = Cart.count() > 0
+        && detailsValid()
         && document.getElementById('tnc-check').checked
         && document.getElementById('date-select').value;
       document.getElementById('place-order').disabled = !ok;
@@ -332,17 +393,23 @@
       document.getElementById('tnc-check').addEventListener('change', updatePlaceOrderState);
       dateSelect.addEventListener('change', updatePlaceOrderState);
 
+      // Re-validate as the customer fills in their details.
+      ['d-name','d-business','d-phone','d-email','d-addr1','d-addr2','d-postal','d-notes']
+        .forEach(id => document.getElementById(id).addEventListener('input', updatePlaceOrderState));
+
       document.getElementById('place-order').addEventListener('click', () => {
         const date = dateSelect.options[dateSelect.selectedIndex].text;
+        const name = detail('name').split(' ')[0];
+        const hi = name ? `Thank you, ${name}!` : 'Thank you for your order!';
         const line = deliveryMethod === 'pickup'
           ? `You can collect your order on <strong>${date}</strong> during the <strong>${selectedSlot}</strong> slot.`
-          : `We will deliver on <strong>${date}</strong> during the <strong>${selectedSlot}</strong> slot.`;
+          : `We will deliver to <strong>${detail('addr1')}${detail('postal') ? ', Singapore ' + detail('postal') : ''}</strong> on <strong>${date}</strong> during the <strong>${selectedSlot}</strong> slot.`;
         Cart.clear();
         toast('Order placed! 🎉');
         document.getElementById('checkout').innerHTML = `
           <div class="empty-state" style="grid-column:1/-1">
             <div class="big">✅</div>
-            <h2>Thank you for your order!</h2>
+            <h2>${hi}</h2>
             <p>${line}</p>
             <a class="btn" href="index.html">Continue shopping</a>
           </div>`;

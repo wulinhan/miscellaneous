@@ -44,13 +44,20 @@
 
     function renderPDP(p) {
       const cat = primaryCategory(p);
-      const gallery = productGallery(p, 4);
+      const gallery = productGallery(p);
+      const fromPrice = p.sizes[0].price;
 
       document.getElementById('crumb').innerHTML =
         `<a href="index.html">Shop</a> / <a href="index.html?cat=${encodeURIComponent(cat)}">${cat}</a> / ${p.title}`;
 
-      const sizeOpts = (p.sizes || []).map((s, i) =>
-        `<option value="${s}">${s}</option>`).join('');
+      // Size selector only when there's a genuine choice of sizes.
+      const sizeField = hasSizeChoice(p) ? `
+            <div class="field">
+              <label for="size-select">Size</label>
+              <select id="size-select">
+                ${p.sizes.map(s => `<option value="${s.label}">${s.label} — ${money(s.price)}</option>`).join('')}
+              </select>
+            </div>` : '';
 
       const upsells = (p.upsell || []).map(id => {
         const a = ADDONS[id];
@@ -58,7 +65,7 @@
         const label = a.price > 0 ? `${a.title} (+${money(a.price)})` : a.title;
         return `<div class="option-row">
                   <input type="checkbox" id="ups-${a.id}" value="${a.id}">
-                  <label for="ups-${a.id}">${a.emoji} ${label}</label>
+                  <label for="ups-${a.id}">${label}</label>
                 </div>`;
       }).join('');
 
@@ -67,37 +74,37 @@
         ...p.tags.filter(t => t !== cat).map(t => chip(t, false))
       ].join('');
 
-      document.getElementById('pdp').innerHTML = `
-        <div class="pdp">
-          <!-- Gallery: active image on the left, thumbnail row underneath -->
-          <div class="gallery">
-            <div class="gallery-main">
-              <img id="gallery-main-img" src="${gallery[0]}" alt="${p.title}">
-            </div>
+      // Thumbnail row only when there is more than one photo.
+      const thumbs = gallery.length > 1 ? `
             <div class="gallery-thumbs" id="gallery-thumbs">
               ${gallery.map((src, i) =>
                 `<button class="${i === 0 ? 'active' : ''}" data-i="${i}">
                    <img src="${src}" alt="${p.title} view ${i + 1}">
                  </button>`).join('')}
+            </div>` : '';
+
+      document.getElementById('pdp').innerHTML = `
+        <div class="pdp">
+          <!-- Gallery: active image on top, square thumbnail row underneath -->
+          <div class="gallery">
+            <div class="gallery-main">
+              <img id="gallery-main-img" src="${gallery[0]}" alt="${p.title}">
             </div>
+            ${thumbs}
           </div>
 
           <!-- Details -->
           <div class="pdp-info">
             <div class="pdp-labels">${labels}</div>
             <h1>${p.title}</h1>
-            <div class="pdp-price" id="pdp-price">${money(p.price)} <span class="from" style="font-size:14px;color:var(--muted);font-weight:500">/ ${p.unit}</span></div>
+            <div class="pdp-price"><span id="pdp-price">${money(fromPrice)}</span> <span class="from" style="font-size:14px;color:var(--muted);font-weight:500">/ ${p.unit}</span></div>
             <p class="pdp-desc">${p.longDesc}</p>
 
-            ${sizeOpts ? `
-            <div class="field">
-              <label for="size-select">Size / option</label>
-              <select id="size-select">${sizeOpts}</select>
-            </div>` : ''}
+            ${sizeField}
 
             ${upsells ? `
             <div class="field">
-              <label>Make it yours</label>
+              <label>Add toppings</label>
               ${upsells}
             </div>` : ''}
 
@@ -111,18 +118,18 @@
             </div>
 
             <div class="add-row">
-              <button class="btn block" id="add-to-cart">Add to cart · <span id="add-price">${money(p.price)}</span></button>
+              <button class="btn block" id="add-to-cart"><span class="btn-label">Add to cart · <span id="add-price">${money(fromPrice)}</span></span></button>
             </div>
 
-            <div class="notice">🚚 Free delivery on orders over $100. Order today for delivery from 3 business days out.</div>
+            <div class="notice">Free islandwide delivery on orders over $100, or choose free self pick-up. Delivery from 3 business days out.</div>
 
             <div class="info-accordion">
               <details open>
                 <summary>Delivery options</summary>
                 <div class="acc-body">
-                  Standard delivery is $8, or free over $100. Choose your delivery date and a
-                  morning (9am–2pm) or afternoon (2–6pm) slot at checkout. Earliest delivery is
-                  3 business days from order.
+                  Self pick-up is free, or islandwide delivery is $50 (free over $100). Choose your
+                  date and a morning (9am–2pm) or afternoon (2–6pm) slot at checkout. Earliest
+                  delivery is 3 business days from order.
                 </div>
               </details>
               <details>
@@ -147,9 +154,9 @@
         <div class="pdp-sticky" id="pdp-sticky">
           <div class="info">
             <div class="title">${p.title}</div>
-            <div class="price" id="sticky-price">${money(p.price)}</div>
+            <div class="price" id="sticky-price">${money(fromPrice)}</div>
           </div>
-          <button class="btn" id="sticky-add">Add to cart</button>
+          <button class="btn" id="sticky-add"><span class="btn-label">Add to cart</span></button>
         </div>`;
 
       wireGallery(gallery);
@@ -172,27 +179,49 @@
       return Array.from(document.querySelectorAll('[id^="ups-"]:checked')).map(c => c.value);
     }
 
+    function selectedSize(p) {
+      const sel = document.getElementById('size-select');
+      return sel ? sel.value : (p.sizes[0] ? p.sizes[0].label : '');
+    }
+
     function currentUnitPrice(p) {
-      let price = p.price;
+      let price = sizePrice(p, selectedSize(p));
       selectedAddons().forEach(id => { if (ADDONS[id]) price += ADDONS[id].price; });
       return price;
     }
 
+    function flashAdded(btn) {
+      // Quick press animation + transient "Added" state on the button.
+      const label = btn.querySelector('.btn-label');
+      const original = label ? label.innerHTML : null;
+      btn.classList.remove('pop');
+      void btn.offsetWidth;               // restart the CSS animation
+      btn.classList.add('pop', 'added');
+      if (label) label.textContent = 'Added ✓';
+      clearTimeout(btn._t);
+      btn._t = setTimeout(() => {
+        btn.classList.remove('added');
+        if (label && original !== null) label.innerHTML = original;
+      }, 1100);
+    }
+
     function wireOptions(p) {
       const qtyInput = document.getElementById('qty-input');
+      const sizeSel = document.getElementById('size-select');
+      const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
       const updatePrice = () => {
-        const unit = currentUnitPrice(p);
-        const total = unit * Math.max(1, +qtyInput.value || 1);
-        document.getElementById('add-price').textContent = money(total);
-        const sticky = document.getElementById('sticky-price');
-        if (sticky) sticky.textContent = money(total);
+        setText('pdp-price', money(sizePrice(p, selectedSize(p))));
+        const total = currentUnitPrice(p) * Math.max(1, +qtyInput.value || 1);
+        setText('add-price', money(total));   // may be absent mid-animation
+        setText('sticky-price', money(total));
       };
 
-      const addToCart = () => {
+      const addToCart = (btn) => {
         const qty = Math.max(1, +qtyInput.value || 1);
-        const size = document.getElementById('size-select') ? document.getElementById('size-select').value : '';
-        Cart.add(p.id, qty, size, selectedAddons());
-        toast(`Added ${qty} × ${p.title} to cart`);
+        Cart.add(p.id, qty, selectedSize(p), selectedAddons());
+        qtyInput.value = 1;               // reset quantity after adding
+        updatePrice();                    // reflect reset before the flash
+        flashAdded(btn);
       };
 
       document.querySelectorAll('#qty button').forEach(b => {
@@ -202,10 +231,11 @@
         });
       });
       qtyInput.addEventListener('input', updatePrice);
+      if (sizeSel) sizeSel.addEventListener('change', updatePrice);
       document.querySelectorAll('[id^="ups-"]').forEach(c => c.addEventListener('change', updatePrice));
 
-      document.getElementById('add-to-cart').addEventListener('click', addToCart);
-      document.getElementById('sticky-add').addEventListener('click', addToCart);
+      document.getElementById('add-to-cart').addEventListener('click', e => addToCart(e.currentTarget));
+      document.getElementById('sticky-add').addEventListener('click', e => addToCart(e.currentTarget));
 
       updatePrice();
     }
@@ -222,7 +252,7 @@
             <h3><a href="product.html?id=${p.id}">${p.title}</a></h3>
             <p class="card-desc">${p.shortDesc}</p>
             <div class="card-foot">
-              <span class="price"><span class="from">from </span>${money(p.price)}</span>
+              <span class="price">${hasSizeChoice(p) ? '<span class="from">from </span>' : ''}${money(p.price)}</span>
               <a class="btn ghost" href="product.html?id=${p.id}">View</a>
             </div>
           </div>

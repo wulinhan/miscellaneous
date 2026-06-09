@@ -101,7 +101,7 @@
             <h3><a href="product.html?id=${p.id}">${p.title}</a></h3>
             <p class="card-desc">${p.shortDesc}</p>
             <div class="card-foot">
-              <span class="price"><span class="from">from </span>${money(p.price)}<span class="from"> / ${p.unit}</span></span>
+              <span class="price">${hasSizeChoice(p) ? '<span class="from">from </span>' : ''}${money(p.price)}<span class="from"> / ${p.unit}</span></span>
               <a class="btn ghost" href="product.html?id=${p.id}">View</a>
             </div>
           </div>

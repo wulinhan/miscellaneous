@@ -33,10 +33,10 @@ const Cart = {
     return _readCart().reduce((n, l) => n + l.qty, 0);
   },
 
-  /* unit price for a line = product price + sum of add-on prices */
+  /* unit price for a line = size price + sum of add-on prices */
   unitPrice(line) {
     const product = getProduct(line.productId);
-    let price = product ? product.price : 0;
+    let price = product ? sizePrice(product, line.size) : 0;
     (line.addons || []).forEach(id => {
       const a = ADDONS[id];
       if (a) price += a.price;
