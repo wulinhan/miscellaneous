@@ -13,6 +13,7 @@
   --accent-dark: #16296b;
   --accent-soft: #e8edf8;
   --gold: #ffc629;          /* Sofnade golden yellow */
+  --gold-dark: #f0b41a;
   --danger: #c0492f;
   --radius: 14px;
   --shadow: 0 6px 24px rgba(31, 36, 33, 0.08);
@@ -185,12 +186,12 @@ img { display: block; max-width: 100%; }
 }
 .btn {
   font: inherit; cursor: pointer; border: none; border-radius: 999px;
-  padding: 9px 16px; font-weight: 600; font-size: 14px;
-  background: var(--accent); color: #fff; transition: background 0.15s ease;
+  padding: 9px 16px; font-weight: 700; font-size: 14px;
+  background: var(--gold); color: var(--accent); transition: background 0.15s ease;
 }
-.btn:hover { background: var(--accent-dark); }
+.btn:hover { background: var(--gold-dark); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn.ghost { background: var(--accent-soft); color: var(--accent-dark); }
+.btn.ghost { background: var(--accent-soft); color: var(--accent-dark); font-weight: 600; }
 .btn.ghost:hover { background: #d8e2f5; }
 .btn.block { width: 100%; padding: 14px; font-size: 16px; }
 
@@ -202,7 +203,7 @@ img { display: block; max-width: 100%; }
   100% { transform: scale(1); }
 }
 .btn.pop { animation: btn-pop 0.32s ease; }
-.btn.added { background: var(--gold); color: var(--accent); }
+.btn.added { background: var(--accent); color: #fff; }
 .btn.danger { background: none; color: var(--danger); padding: 4px; }
 
 .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
