@@ -141,6 +141,15 @@
               </details>
             </div>
           </div>
+        </div>
+
+        <!-- Mobile-only sticky CTA -->
+        <div class="pdp-sticky" id="pdp-sticky">
+          <div class="info">
+            <div class="title">${p.title}</div>
+            <div class="price" id="sticky-price">${money(p.price)}</div>
+          </div>
+          <button class="btn" id="sticky-add">Add to cart</button>
         </div>`;
 
       wireGallery(gallery);
@@ -173,7 +182,17 @@
       const qtyInput = document.getElementById('qty-input');
       const updatePrice = () => {
         const unit = currentUnitPrice(p);
-        document.getElementById('add-price').textContent = money(unit * Math.max(1, +qtyInput.value || 1));
+        const total = unit * Math.max(1, +qtyInput.value || 1);
+        document.getElementById('add-price').textContent = money(total);
+        const sticky = document.getElementById('sticky-price');
+        if (sticky) sticky.textContent = money(total);
+      };
+
+      const addToCart = () => {
+        const qty = Math.max(1, +qtyInput.value || 1);
+        const size = document.getElementById('size-select') ? document.getElementById('size-select').value : '';
+        Cart.add(p.id, qty, size, selectedAddons());
+        toast(`Added ${qty} × ${p.title} to cart`);
       };
 
       document.querySelectorAll('#qty button').forEach(b => {
@@ -185,12 +204,8 @@
       qtyInput.addEventListener('input', updatePrice);
       document.querySelectorAll('[id^="ups-"]').forEach(c => c.addEventListener('change', updatePrice));
 
-      document.getElementById('add-to-cart').addEventListener('click', () => {
-        const qty = Math.max(1, +qtyInput.value || 1);
-        const size = document.getElementById('size-select') ? document.getElementById('size-select').value : '';
-        Cart.add(p.id, qty, size, selectedAddons());
-        toast(`Added ${qty} × ${p.title} to cart`);
-      });
+      document.getElementById('add-to-cart').addEventListener('click', addToCart);
+      document.getElementById('sticky-add').addEventListener('click', addToCart);
 
       updatePrice();
     }
