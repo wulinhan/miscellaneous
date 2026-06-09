@@ -8,8 +8,8 @@ function renderChrome(active) {
   const header = `
   <header class="site-header">
     <div class="wrap">
-      <a class="brand" href="index.html">SOFNADE<span class="dot">.</span></a>
-      <nav class="main-nav">
+      <a class="brand" href="index.html"><img src="assets/logo/Sofnade%20logo.png" alt="Sofnade"></a>
+      <nav class="main-nav" id="main-nav">
         <a href="index.html" class="${active === 'shop' ? 'active' : ''}">Shop</a>
         <a href="index.html?cat=Bubble%20Tea">Bubble Tea</a>
         <a href="index.html?cat=Sweets">Sweets</a>
@@ -20,6 +20,9 @@ function renderChrome(active) {
         <a class="cart-link" href="checkout.html">
           🛒 Cart <span class="cart-badge" data-cart-count>0</span>
         </a>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
       </div>
     </div>
   </header>`;
@@ -36,6 +39,16 @@ function renderChrome(active) {
   const footerMount = document.getElementById('footer');
   if (headerMount) headerMount.outerHTML = header;
   if (footerMount) footerMount.outerHTML = footer;
+
+  // Mobile hamburger: toggle the nav panel.
+  const toggle = document.getElementById('nav-toggle');
+  const nav = document.getElementById('main-nav');
+  if (toggle && nav) {
+    toggle.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
 
   if (!document.querySelector('.toast')) {
     const t = document.createElement('div');

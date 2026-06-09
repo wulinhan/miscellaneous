@@ -49,15 +49,34 @@ img { display: block; max-width: 100%; }
   display: flex; align-items: center; gap: 24px;
   height: 68px;
 }
-.brand {
-  font-weight: 800; font-size: 20px; letter-spacing: -0.02em;
-  display: flex; align-items: center; gap: 8px;
-}
-.brand .dot { color: var(--gold); }
-.main-nav { display: flex; gap: 22px; margin-left: 8px; }
+.brand { display: flex; align-items: center; }
+.brand img { height: 36px; width: auto; display: block; }
+.main-nav { display: flex; gap: 22px; margin-left: 18px; }
 .main-nav a { color: var(--muted); font-weight: 500; font-size: 15px; }
 .main-nav a:hover, .main-nav a.active { color: var(--ink); }
-.header-actions { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+/* Hamburger (hidden on desktop) */
+.nav-toggle {
+  display: none; border: none; background: none; cursor: pointer; padding: 6px;
+  color: var(--ink); border-radius: 8px;
+}
+.nav-toggle:hover { background: var(--bg-soft); }
+.nav-toggle svg { width: 26px; height: 26px; display: block; }
+
+@media (max-width: 768px) {
+  .site-header .wrap { position: relative; }
+  .nav-toggle { display: inline-flex; }
+  .main-nav {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; gap: 0; margin: 0;
+    background: #fff; border-bottom: 1px solid var(--line); box-shadow: var(--shadow);
+    padding: 6px 20px 12px;
+  }
+  .main-nav.open { display: flex; }
+  .main-nav a { padding: 13px 0; font-size: 16px; border-bottom: 1px solid var(--line); }
+  .main-nav a:last-child { border-bottom: none; }
+}
 
 .cart-link {
   position: relative; display: inline-flex; align-items: center; gap: 8px;
@@ -123,6 +142,8 @@ img { display: block; max-width: 100%; }
 }
 @media (max-width: 1024px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px)  { .grid { grid-template-columns: 1fr; } }
+/* Keep "Customers also bought" at two columns on mobile */
+@media (max-width: 560px)  { #also-bought { grid-template-columns: repeat(2, 1fr); gap: 14px; } }
 
 .card {
   background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius);
@@ -273,7 +294,7 @@ img { display: block; max-width: 100%; }
 .allergen { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
 .allergen svg { width: 34px; height: 34px; }
 
-.section { padding: 40px 0; border-top: 1px solid var(--line); }
+.section { padding: 24px 0 40px; }
 .section h2 { font-size: 22px; margin: 0 0 20px; letter-spacing: -0.02em; }
 
 /* Mobile-only sticky add-to-cart bar */
