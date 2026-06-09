@@ -203,8 +203,9 @@ const ADDONS = {
 /* Discount codes accepted at checkout */
 const DISCOUNT_CODES = {
   'BOBA10':    { type: 'percent', value: 10, label: '10% off your order' },
+  'SOFNADE50': { type: 'percent', value: 50, label: '50% off your order' },
   'SWEET5':    { type: 'fixed',   value: 5,  label: '$5 off your order' },
-  'FREESHIP':  { type: 'shipping',value: 0,  label: 'Free shipping unlocked' }
+  'FREESHIP':  { type: 'shipping',value: 0,  label: 'Free delivery unlocked' }
 };
 
 /* Helpers shared across pages */

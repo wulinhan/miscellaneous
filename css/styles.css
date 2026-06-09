@@ -203,6 +203,15 @@ img { display: block; max-width: 100%; }
   width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
   font: inherit; background: #fff;
 }
+/* Custom dropdown chevron so the arrow sits evenly inset from the right edge
+   and stays vertically centred (equidistant top/right/bottom). */
+.field select {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  padding-right: 42px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
 .option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .option-row label { font-weight: 500; margin: 0; cursor: pointer; }
 .add-row { display: flex; gap: 12px; align-items: center; margin: 24px 0; }
@@ -246,21 +255,38 @@ img { display: block; max-width: 100%; }
 .checkout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 40px; padding: 28px 0 64px; align-items: start; }
 @media (max-width: 920px) { .checkout { grid-template-columns: 1fr; } }
 
+/* Row: [square image] [title/meta] [qty] [price] [✕]
+   The image is square and fills the card height with an equal margin on the
+   top, bottom and left (the card's 14px padding). */
 .cart-item {
-  display: grid; grid-template-columns: 88px 1fr auto; gap: 16px;
+  display: flex; align-items: center; gap: 16px;
   border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
-  margin-bottom: 14px; position: relative; background: #fff;
+  margin-bottom: 14px; background: #fff;
 }
-.cart-item .thumb { width: 88px; height: 88px; border-radius: 10px; overflow: hidden; background: var(--bg-soft); }
+.cart-item .thumb {
+  flex: 0 0 auto; width: 88px; height: 88px; aspect-ratio: 1 / 1;
+  border-radius: 10px; overflow: hidden; background: var(--bg-soft);
+}
 .cart-item .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cart-item .info { flex: 1; min-width: 0; }
 .cart-item h4 { margin: 2px 0 4px; font-size: 16px; }
-.cart-item .meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
-.cart-item .line-price { font-weight: 700; align-self: center; white-space: nowrap; }
+.cart-item .meta { color: var(--muted); font-size: 13px; }
+.cart-item .qty { flex: 0 0 auto; }
+.cart-item .line-price { flex: 0 0 auto; font-weight: 700; white-space: nowrap; min-width: 64px; text-align: right; }
 .cart-item .remove {
-  position: absolute; top: 10px; right: 12px; border: none; background: none;
-  cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1;
+  flex: 0 0 auto; border: none; background: none;
+  cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1; padding: 4px;
 }
 .cart-item .remove:hover { color: var(--danger); }
+@media (max-width: 560px) {
+  .cart-item { flex-wrap: wrap; }
+  .cart-item .info { flex: 1 1 calc(100% - 104px); }
+  .cart-item .qty { order: 3; }
+  .cart-item .line-price { order: 4; flex: 1; }
+  .cart-item .remove { order: 5; }
+}
+
+/* Delivery method selector reuses the time-slot pill styling (.slots/.slot) */
 
 .summary {
   position: sticky; top: 92px; border: 1px solid var(--line); border-radius: var(--radius);

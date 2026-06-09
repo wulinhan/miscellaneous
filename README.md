@@ -19,11 +19,13 @@ Just open `index.html` in a browser (or serve the folder) and it runs.
    accordion. Below: a **"Customers also bought"** row of product cards.
 
 3. **`checkout.html` — Cart & checkout**
-   Cart items as cards with a **quantity selector** and a **remove ✕**. Includes:
-   - **Discount code validation** (try `BOBA10`, `SWEET5`, `FREESHIP`)
-   - **Delivery date selector** — only dates **3+ business days out**, weekends excluded
+   Cart items as cards (square image · details · quantity selector · line price · remove ✕).
+   Includes:
+   - **Delivery method** — self pick-up (free) or islandwide delivery ($50, free over $100)
+   - **Discount code validation** (try `BOBA10`, `SWEET5`, `FREESHIP`, `SOFNADE50`)
+   - **Delivery / pick-up date selector** — only dates **3+ business days out**, weekends excluded
    - **Two time slots** — 9am–2pm and 2–6pm
-   - **Free-shipping progress bar** toward the **$100** threshold ($8 flat otherwise)
+   - **Free-delivery progress bar** toward the **$100** threshold (checked against the discounted total)
    - **Terms & conditions** checkbox gating the Place Order button
 
 ## Discount codes
@@ -31,8 +33,12 @@ Just open `index.html` in a browser (or serve the folder) and it runs.
 | Code | Effect |
 |------|--------|
 | `BOBA10` | 10% off the order |
+| `SOFNADE50` | 50% off the order |
 | `SWEET5` | $5 off the order |
-| `FREESHIP` | Free shipping |
+| `FREESHIP` | Free delivery |
+
+The **free-delivery $100 threshold is evaluated against the discounted total**, so a
+large percentage discount can drop an order back below the free-delivery line.
 
 ## Project structure
 
