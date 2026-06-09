@@ -81,16 +81,16 @@ img { display: block; max-width: 100%; }
 
 .cart-link {
   position: relative; display: inline-flex; align-items: center; gap: 8px;
-  font-weight: 600; padding: 9px 16px; border-radius: 999px;
-  background: var(--accent); color: #fff;
+  font-weight: 700; padding: 9px 16px; border-radius: 999px;
+  background: var(--gold); color: var(--accent);
 }
-.cart-link:hover { background: var(--accent-dark); }
+.cart-link:hover { background: var(--gold-dark); }
 .cart-badge {
-  background: var(--gold); color: var(--accent); font-size: 12px; font-weight: 700;
+  background: var(--accent); color: #fff; font-size: 12px; font-weight: 700;
   min-width: 20px; height: 20px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center; padding: 0 6px;
 }
-.cart-badge.is-empty { background: rgba(255,255,255,0.3); color: #fff; }
+.cart-badge.is-empty { background: rgba(31, 58, 138, 0.35); color: #fff; }
 
 /* ---------- Hero ---------- */
 .hero {
@@ -191,8 +191,8 @@ img { display: block; max-width: 100%; }
 }
 .btn:hover { background: var(--gold-dark); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn.ghost { background: var(--accent-soft); color: var(--accent-dark); font-weight: 600; }
-.btn.ghost:hover { background: #d8e2f5; }
+.btn.ghost { background: var(--gold); color: var(--accent); }
+.btn.ghost:hover { background: var(--gold-dark); }
 .btn.block { width: 100%; padding: 14px; font-size: 16px; }
 
 /* Add-to-cart click feedback: quick press pop + "Added" success state */
