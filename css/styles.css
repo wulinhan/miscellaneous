@@ -237,6 +237,41 @@ img { display: block; max-width: 100%; }
 .info-accordion summary::after { content: '+'; font-size: 20px; color: var(--muted); }
 .info-accordion details[open] summary::after { content: '–'; }
 .info-accordion .acc-body { padding: 0 0 16px; color: var(--muted); font-size: 15px; }
+.info-accordion .acc-body p { margin: 0 0 10px; }
+.info-accordion .acc-body p:last-child { margin-bottom: 0; }
+.acc-head { display: flex; align-items: center; gap: 12px; }
+.acc-head .ic { width: 20px; height: 20px; flex: 0 0 auto; color: var(--accent); }
+.acc-accent { color: var(--accent); font-weight: 700; }
+
+/* Trust badges */
+.trust-badges { display: flex; gap: 14px; justify-content: center; margin: 28px 0 4px; flex-wrap: wrap; }
+.trust-badge {
+  width: 66px; height: 66px; border-radius: 50%; color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; line-height: 1.1; letter-spacing: 0.04em; text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.trust-badge.tb-teal { background: #13a3a3; }
+.trust-badge.tb-purple { background: #5a3c86; }
+.trust-badge.tb-dark { background: #22282c; }
+.trust-badge.tb-dark span:last-child { color: #d8b25e; }
+.trust-badge.tb-green { background: #2f6f3e; }
+
+/* "All your questions answered" FAQ */
+.faq { margin-top: 8px; }
+.faq-title {
+  display: flex; align-items: center; gap: 16px; justify-content: center;
+  color: var(--accent); font-size: 22px; margin: 36px 0 18px; letter-spacing: -0.01em;
+}
+.faq-title::before, .faq-title::after {
+  content: ''; flex: 1; max-width: 200px; border-top: 2px dotted var(--gold);
+}
+.faq .acc-head .ic { color: var(--accent); }
+
+/* Allergen badges */
+.allergens { display: flex; gap: 26px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
+.allergen { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
+.allergen svg { width: 34px; height: 34px; }
 
 .section { padding: 40px 0; border-top: 1px solid var(--line); }
 .section h2 { font-size: 22px; margin: 0 0 20px; letter-spacing: -0.02em; }

@@ -326,6 +326,35 @@ const ADDONS = {
   'popping-boba': { id: 'popping-boba', title: 'Popping Boba',   price: 1.00 }
 };
 
+/* Allergens present in each product (drives the "About allergens" panel).
+   Vegan fruit drinks carry none of the major allergens. */
+const ALLERGENS_BY_ID = {
+  'signature-milk-tea': ['Dairy'],
+  'brown-sugar-pearl-milk-tea': ['Dairy'],
+  'velvet-chocolate-milk-tea': ['Dairy', 'Soy'],
+  'snowy-pearl-fresh-milk': ['Dairy'],
+  'peach-blossom-tea': [],
+  'passion-sunset-tea': [],
+  'mango-sunshine': [],
+  'strawberry-blush': [],
+  'grape-twilight': [],
+  'sunny-lemonade': [],
+  'festive-drinks': [],
+  'cookies': ['Gluten', 'Dairy', 'Nuts'],
+  'mini-cakes': ['Gluten', 'Dairy', 'Eggs'],
+  'churros': ['Gluten', 'Dairy'],
+  'fried-fritters': ['Gluten'],
+  'chocolate-truffles': ['Dairy', 'Soy', 'Nuts'],
+  'fruit-dessert-cups': ['Gluten', 'Dairy'],
+  'mixed-nuts': ['Nuts'],
+  'trail-mix': ['Nuts'],
+  'chocolate-gift-bag': ['Dairy', 'Soy', 'Nuts'],
+  'festive-gift-bag': ['Nuts']
+};
+function productAllergens(p) {
+  return ALLERGENS_BY_ID[p.id] || [];
+}
+
 /* Discount codes accepted at checkout */
 const DISCOUNT_CODES = {
   'BOBA10':    { type: 'percent', value: 10, label: '10% off your order' },
