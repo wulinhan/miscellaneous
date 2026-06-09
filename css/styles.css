@@ -270,7 +270,10 @@ img { display: block; max-width: 100%; }
 .pdp-desc { color: #4b5563; margin-bottom: 22px; }
 .field { margin-bottom: 20px; }
 .field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 8px; }
-.field select, .field input[type=text] {
+.field select,
+.field input[type=text],
+.field input[type=tel],
+.field input[type=email] {
   width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
   font: inherit; background: #fff;
 }
