@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Product — Sofnade</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=14">
+  <link rel="stylesheet" href="css/styles.css?v=15">
 </head>
 <body>
   <div id="header"></div>
@@ -22,10 +22,10 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=14"></script>
-  <script src="js/images.js?v=14"></script>
-  <script src="js/cart.js?v=14"></script>
-  <script src="js/common.js?v=14"></script>
+  <script src="data/products.js?v=15"></script>
+  <script src="js/images.js?v=15"></script>
+  <script src="js/cart.js?v=15"></script>
+  <script src="js/common.js?v=15"></script>
   <script>
     renderChrome();
 
@@ -137,23 +137,21 @@
       document.getElementById('crumb').innerHTML =
         `<a href="index.html">Shop</a> / <a href="index.html?cat=${encodeURIComponent(cat)}">${cat}</a> / ${p.title}`;
 
-      // Size selector only when there's a genuine choice of sizes.
+      // Size selector (custom pills) only when there's a genuine choice of sizes.
       const sizeField = hasSizeChoice(p) ? `
             <div class="field">
-              <label for="size-select">Size</label>
-              <select id="size-select">
-                ${p.sizes.map(s => `<option value="${s.label}">${s.label} — ${money(s.price)}</option>`).join('')}
-              </select>
+              <label>Size</label>
+              <div class="opt-pills" id="size-pills">
+                ${p.sizes.map((s, i) => `<button type="button" class="opt-pill ${i === 0 ? 'active' : ''}" data-size="${s.label}">${s.label} <small>${money(s.price)}</small></button>`).join('')}
+              </div>
             </div>` : '';
 
+      // Toppings as multi-select pills.
       const upsells = (p.upsell || []).map(id => {
         const a = ADDONS[id];
         if (!a) return '';
-        const label = a.price > 0 ? `${a.title} (+${money(a.price)})` : a.title;
-        return `<div class="option-row">
-                  <input type="checkbox" id="ups-${a.id}" value="${a.id}">
-                  <label for="ups-${a.id}">${label}</label>
-                </div>`;
+        const suffix = a.price > 0 ? ` <small>+${money(a.price)}</small>` : '';
+        return `<button type="button" class="opt-pill" data-addon="${a.id}">${a.title}${suffix}</button>`;
       }).join('');
 
       const labels = productCategories(p)
@@ -191,7 +189,7 @@
             ${upsells ? `
             <div class="field">
               <label>Add toppings</label>
-              ${upsells}
+              <div class="opt-pills" id="topping-pills">${upsells}</div>
             </div>` : ''}
 
             <div class="field">
@@ -289,12 +287,12 @@
     }
 
     function selectedAddons() {
-      return Array.from(document.querySelectorAll('[id^="ups-"]:checked')).map(c => c.value);
+      return Array.from(document.querySelectorAll('#topping-pills .opt-pill.active')).map(b => b.dataset.addon);
     }
 
     function selectedSize(p) {
-      const sel = document.getElementById('size-select');
-      return sel ? sel.value : (p.sizes[0] ? p.sizes[0].label : '');
+      const active = document.querySelector('#size-pills .opt-pill.active');
+      return active ? active.dataset.size : (p.sizes[0] ? p.sizes[0].label : '');
     }
 
     function currentUnitPrice(p) {
@@ -320,7 +318,6 @@
 
     function wireOptions(p) {
       const qtyInput = document.getElementById('qty-input');
-      const sizeSel = document.getElementById('size-select');
       const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
       const updatePrice = () => {
         setText('pdp-price', money(sizePrice(p, selectedSize(p))));
@@ -345,8 +342,19 @@
         });
       });
       qtyInput.addEventListener('input', updatePrice);
-      if (sizeSel) sizeSel.addEventListener('change', updatePrice);
-      document.querySelectorAll('[id^="ups-"]').forEach(c => c.addEventListener('change', updatePrice));
+
+      // Size pills: single-select
+      document.querySelectorAll('#size-pills .opt-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('#size-pills .opt-pill').forEach(b => b.classList.remove('active'));
+          pill.classList.add('active');
+          updatePrice();
+        });
+      });
+      // Topping pills: multi-select toggle
+      document.querySelectorAll('#topping-pills .opt-pill').forEach(pill => {
+        pill.addEventListener('click', () => { pill.classList.toggle('active'); updatePrice(); });
+      });
 
       document.getElementById('add-to-cart').addEventListener('click', e => addToCart(e.currentTarget));
       document.getElementById('sticky-add').addEventListener('click', e => addToCart(e.currentTarget));
