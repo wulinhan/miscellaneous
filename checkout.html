@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Checkout — Sofnade</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=18">
+  <link rel="stylesheet" href="css/styles.css?v=19">
 </head>
 <body>
   <div id="header"></div>
@@ -137,15 +137,18 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=18"></script>
-  <script src="js/images.js?v=18"></script>
-  <script src="js/cart.js?v=18"></script>
-  <script src="js/common.js?v=18"></script>
+  <script src="data/products.js?v=19"></script>
+  <script src="js/config.js?v=19"></script>
+  <script src="js/store-data.js?v=19"></script>
+  <script src="js/images.js?v=19"></script>
+  <script src="js/cart.js?v=19"></script>
+  <script src="js/common.js?v=19"></script>
   <script>
     renderChrome();
 
-    const SHIPPING_FEE = 50.00;
-    const FREE_SHIP_THRESHOLD = 100.00;
+    // Set from SETTINGS in init() (CMS-overridable; these are fallbacks).
+    let SHIPPING_FEE = 50.00;
+    let FREE_SHIP_THRESHOLD = 100.00;
 
     let appliedCode = null;          // key into DISCOUNT_CODES
     let selectedSlot = '9am–2pm';
@@ -158,9 +161,10 @@
       const out = [];
       const cursor = new Date();
       cursor.setHours(0, 0, 0, 0);
-      // Advance 3 business days for the earliest available date.
+      // Advance the configured number of business days for the earliest date.
       let added = 0;
-      while (added < 3) {
+      const lead = (typeof SETTINGS !== 'undefined' && SETTINGS.leadBusinessDays) || 3;
+      while (added < lead) {
         cursor.setDate(cursor.getDate() + 1);
         if (!isWeekend(cursor)) added++;
       }
@@ -365,13 +369,22 @@
 
     /* ---------- Wire up ---------- */
     function init() {
+      // Apply CMS-overridable settings.
+      SHIPPING_FEE = SETTINGS.deliveryFee;
+      FREE_SHIP_THRESHOLD = SETTINGS.freeDeliveryThreshold;
+      document.querySelector('[data-method="delivery"] small').textContent =
+        `${money(SHIPPING_FEE)}, free over ${money(FREE_SHIP_THRESHOLD)}`;
+
       // Date dropdown
       const dateSelect = document.getElementById('date-select');
       dateSelect.innerHTML = buildDateOptions()
         .map(d => `<option value="${d.toISOString().slice(0,10)}">${fmtDate(d)}</option>`)
         .join('');
 
-      // Time slots (scoped to #slots so the method pills aren't affected)
+      // Time slots, rendered from settings (first one active by default)
+      selectedSlot = SETTINGS.timeSlots[0].value;
+      document.getElementById('slots').innerHTML = SETTINGS.timeSlots.map((s, i) =>
+        `<div class="slot ${i === 0 ? 'active' : ''}" data-slot="${s.value}">${s.label}<small>${s.sub}</small></div>`).join('');
       document.querySelectorAll('#slots .slot').forEach(s => {
         s.addEventListener('click', () => {
           document.querySelectorAll('#slots .slot').forEach(x => x.classList.remove('active'));
@@ -427,7 +440,8 @@
     // Re-render whenever the cart changes (qty edits, removals).
     document.addEventListener('cart:changed', () => { renderCart(); renderSummary(); });
 
-    init();
+    // Load CMS content (if configured), then wire up. Falls back to built-in data.
+    (window.loadStore ? window.loadStore() : Promise.resolve()).then(init);
   </script>
 </body>
 </html>

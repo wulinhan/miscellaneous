@@ -8,15 +8,15 @@
   <meta http-equiv="Expires" content="0">
   <title>Sofnade — Bubble Tea, Sweets, Snacks & Gift Sets</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=18">
+  <link rel="stylesheet" href="css/styles.css?v=19">
 </head>
 <body>
   <div id="header"></div>
 
   <section class="hero">
     <div class="wrap">
-      <h1>Crafted fresh.<br>Since 2015.</h1>
-      <p>Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.</p>
+      <h1 id="hero-title">Crafted fresh.<br>Since 2015.</h1>
+      <p id="hero-subtitle">Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.</p>
     </div>
   </section>
 
@@ -42,10 +42,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=18"></script>
-  <script src="js/images.js?v=18"></script>
-  <script src="js/cart.js?v=18"></script>
-  <script src="js/common.js?v=18"></script>
+  <script src="data/products.js?v=19"></script>
+  <script src="js/config.js?v=19"></script>
+  <script src="js/store-data.js?v=19"></script>
+  <script src="js/images.js?v=19"></script>
+  <script src="js/cart.js?v=19"></script>
+  <script src="js/common.js?v=19"></script>
   <script>
     renderChrome('shop');
 
@@ -112,7 +114,19 @@
       document.getElementById('empty').style.display = list.length ? 'none' : 'block';
     }
 
-    render();
+    function applyHero() {
+      if (typeof SETTINGS === 'undefined') return;
+      const t = document.getElementById('hero-title');
+      const s = document.getElementById('hero-subtitle');
+      if (t && SETTINGS.heroTitle) t.innerHTML = SETTINGS.heroTitle.replace(/\n/g, '<br>');
+      if (s && SETTINGS.heroSubtitle) s.textContent = SETTINGS.heroSubtitle;
+    }
+
+    // Load CMS content (if configured), then render. Falls back to built-in data.
+    (window.loadStore ? window.loadStore() : Promise.resolve()).then(() => {
+      applyHero();
+      render();
+    });
   </script>
 </body>
 </html>

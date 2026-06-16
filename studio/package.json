@@ -1,0 +1,20 @@
+{
+  "name": "sofnade-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sofnade store CMS (Sanity Studio)",
+  "scripts": {
+    "dev": "sanity dev",
+    "start": "sanity start",
+    "build": "sanity build",
+    "deploy": "sanity deploy",
+    "import-seed": "sanity dataset import seed.ndjson production --replace"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sanity": "^3.57.0",
+    "@sanity/vision": "^3.57.0",
+    "styled-components": "^6.1.0"
+  }
+}
