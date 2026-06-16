@@ -10,7 +10,7 @@
    `imageCount` is how many photos that product has in its assets folder.
    ========================================================================= */
 
-const PRODUCTS = [
+let PRODUCTS = [
   /* ----------------------------- BUBBLE TEA ----------------------------- */
   {
     id: 'signature-milk-tea',
@@ -315,7 +315,7 @@ const PRODUCTS = [
 ];
 
 /* Drink toppings / add-ons (referenced by `upsell` ids above) */
-const ADDONS = {
+let ADDONS = {
   'pearls':       { id: 'pearls',       title: 'Tapioca Pearls', price: 0.80 },
   'grass-jelly':  { id: 'grass-jelly',  title: 'Grass Jelly',    price: 0.80 },
   'egg-pudding':  { id: 'egg-pudding',  title: 'Egg Pudding',    price: 1.00 },
@@ -352,11 +352,11 @@ const ALLERGENS_BY_ID = {
   'festive-gift-bag': ['Nuts']
 };
 function productAllergens(p) {
-  return ALLERGENS_BY_ID[p.id] || [];
+  return (p && p.allergens) ? p.allergens : (ALLERGENS_BY_ID[p.id] || []);
 }
 
 /* Discount codes accepted at checkout */
-const DISCOUNT_CODES = {
+let DISCOUNT_CODES = {
   'BOBA10':    { type: 'percent', value: 10, label: '10% off your order' },
   'SOFNADE50': { type: 'percent', value: 50, label: '50% off your order' },
   'SWEET5':    { type: 'fixed',   value: 5,  label: '$5 off your order' },
@@ -365,10 +365,10 @@ const DISCOUNT_CODES = {
 
 /* Categories a product can belong to (a product may have several). Cross tags
    like Best Seller / New / Vegan / Bundle are internal only and never shown. */
-const CATEGORIES = ['Bubble Tea', 'Sweets', 'Snacks', 'Gift Sets', 'Christmas Festive'];
+let CATEGORIES = ['Bubble Tea', 'Sweets', 'Snacks', 'Gift Sets', 'Christmas Festive'];
 
 /* Order categories appear in the filter bar (Christmas Festive featured first). */
-const CATEGORY_BAR_ORDER = ['Christmas Festive', 'Bubble Tea', 'Sweets', 'Snacks', 'Gift Sets'];
+let CATEGORY_BAR_ORDER = ['Christmas Festive', 'Bubble Tea', 'Sweets', 'Snacks', 'Gift Sets'];
 
 /* The product's headline category for chips/breadcrumb: prefer a "real"
    category over the seasonal Christmas Festive one. */
@@ -423,4 +423,39 @@ function allTags() {
 
 function tagCount(tag) {
   return PRODUCTS.filter(p => p.tags.includes(tag)).length;
+}
+
+/* =========================================================================
+   STORE SETTINGS (editable in the CMS; these are the built-in defaults).
+   ========================================================================= */
+let SETTINGS = {
+  brandName: 'Sofnade',
+  heroTitle: 'Crafted fresh.\nSince 2015.',
+  heroSubtitle: 'Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.',
+  deliveryFee: 50.00,
+  freeDeliveryThreshold: 100.00,
+  pickupEnabled: true,
+  leadBusinessDays: 3,
+  timeSlots: [
+    { value: '9am–2pm', label: 'Morning',   sub: '9am – 2pm' },
+    { value: '2–6pm',   label: 'Afternoon', sub: '2pm – 6pm' }
+  ]
+};
+
+/* =========================================================================
+   applyStore(): overwrite the built-in catalog/settings with CMS data.
+   Called by js/store-data.js once content is fetched from Sanity. Anything
+   the CMS does not provide keeps its built-in default, so the site always
+   has a complete, working dataset.
+   ========================================================================= */
+function applyStore(store) {
+  if (!store) return;
+  if (Array.isArray(store.products) && store.products.length) PRODUCTS = store.products;
+  if (store.addons && Object.keys(store.addons).length) ADDONS = store.addons;
+  if (store.discountCodes && Object.keys(store.discountCodes).length) DISCOUNT_CODES = store.discountCodes;
+  if (Array.isArray(store.categories) && store.categories.length) {
+    CATEGORIES = store.categories.slice();
+    CATEGORY_BAR_ORDER = store.categories.slice();
+  }
+  if (store.settings) SETTINGS = Object.assign({}, SETTINGS, store.settings);
 }

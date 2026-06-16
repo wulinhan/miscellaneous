@@ -8,6 +8,10 @@
    ========================================================================= */
 
 function productImage(product, variant = 0) {
+  // 1) CMS-provided image URLs, 2) bundled asset files, 3) SVG placeholder.
+  if (product && Array.isArray(product.images) && product.images.length) {
+    return product.images[Math.min(Math.max(0, variant), product.images.length - 1)];
+  }
   if (product && product.id && product.imageCount) {
     const n = Math.min(Math.max(0, variant), product.imageCount - 1) + 1;
     return `assets/${product.id}/${product.id}-${n}.jpg`;
@@ -16,6 +20,9 @@ function productImage(product, variant = 0) {
 }
 
 function productGallery(product) {
+  if (product && Array.isArray(product.images) && product.images.length) {
+    return product.images.slice();
+  }
   if (product && product.id && product.imageCount) {
     const out = [];
     for (let i = 1; i <= product.imageCount; i++) {
