@@ -59,7 +59,10 @@
       const primary = p.primary || cats[0];
       const tags = primary ? [primary].concat(cats.filter(c => c !== primary)) : cats;
       const sizes = (p.sizes && p.sizes.length) ? p.sizes : [{ label: 'One size', price: 0 }];
-      return {
+      const images = (p.images || []).map(imageUrl).filter(Boolean);
+      // If no CMS photos yet, reuse a bundled photo when the id matches.
+      const builtin = (typeof PRODUCTS !== 'undefined') ? PRODUCTS.find(x => x.id === p.id) : null;
+      const mapped = {
         id: p.id,
         title: p.title,
         unit: p.unit || '',
@@ -70,9 +73,11 @@
         price: sizes[0].price,
         upsell: (p.upsell || []).filter(Boolean),
         alsoBought: (p.alsoBought || []).filter(Boolean),
-        allergens: p.allergens || [],
-        images: (p.images || []).map(imageUrl).filter(Boolean)
+        allergens: p.allergens || []
       };
+      if (images.length) mapped.images = images;
+      else if (builtin && builtin.imageCount) mapped.imageCount = builtin.imageCount;
+      return mapped;
     });
 
     const settings = {};
