@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Checkout — Sofnade</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=23">
+  <link rel="stylesheet" href="css/styles.css?v=24">
 </head>
 <body>
   <div id="header"></div>
@@ -137,12 +137,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=23"></script>
-  <script src="js/config.js?v=23"></script>
-  <script src="js/store-data.js?v=23"></script>
-  <script src="js/images.js?v=23"></script>
-  <script src="js/cart.js?v=23"></script>
-  <script src="js/common.js?v=23"></script>
+  <script src="data/products.js?v=24"></script>
+  <script src="js/config.js?v=24"></script>
+  <script src="js/store-data.js?v=24"></script>
+  <script src="js/images.js?v=24"></script>
+  <script src="js/cart.js?v=24"></script>
+  <script src="js/common.js?v=24"></script>
   <script>
     renderChrome();
 
@@ -184,6 +184,7 @@
     function lineMeta(line) {
       const bits = [];
       if (line.size) bits.push(line.size);
+      if (line.sugar) bits.push('Sugar ' + line.sugar);
       (line.addons || []).forEach(id => { if (ADDONS[id]) bits.push(ADDONS[id].title); });
       return bits.join(' · ');
     }

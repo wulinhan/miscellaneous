@@ -11,163 +11,41 @@
    ========================================================================= */
 
 let PRODUCTS = [
-  /* ----------------------------- BUBBLE TEA ----------------------------- */
-  {
-    id: 'signature-milk-tea',
-    title: 'Signature Milk Tea',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'Best Seller'],
-    imageCount: 1,
-    shortDesc: 'Our house black tea shaken with fresh milk, smooth and full-bodied.',
-    longDesc: 'The Sofnade classic since 2015. A robust brew of hand-selected black tea, shaken to order with fresh milk over ice for a smooth, full-bodied cup that is never too sweet. Add tapioca pearls to make it the original bubble tea.',
-    price: 4.50,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 4.50 }, { label: 'Large (700ml)', price: 5.30 }],
-    upsell: ['pearls', 'grass-jelly', 'egg-pudding', 'cheese-foam', 'oat-milk'],
-    alsoBought: ['brown-sugar-pearl-milk-tea', 'snowy-pearl-fresh-milk', 'cookies']
-  },
-  {
-    id: 'brown-sugar-pearl-milk-tea',
-    title: 'Brown Sugar Pearl Milk Tea',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'Best Seller'],
-    imageCount: 1,
-    shortDesc: 'Caramelised brown sugar, fresh milk and warm chewy pearls.',
-    longDesc: 'Caramelised brown sugar syrup is swirled along the cup and filled with fresh milk and a generous scoop of warm, chewy tapioca pearls. Rich, toffee-sweet and endlessly satisfying.',
-    price: 5.50,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 5.50 }, { label: 'Large (700ml)', price: 6.30 }],
-    upsell: ['pearls', 'egg-pudding', 'cheese-foam', 'oat-milk'],
-    alsoBought: ['signature-milk-tea', 'velvet-chocolate-milk-tea', 'snowy-pearl-fresh-milk']
-  },
-  {
-    id: 'velvet-chocolate-milk-tea',
-    title: 'Velvet Chocolate Milk Tea',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea'],
-    imageCount: 1,
-    shortDesc: 'Smooth cocoa blended with milk tea for a dessert-like sip.',
-    longDesc: 'Real cocoa folded into our milk tea base for a velvety, chocolatey cup that drinks like dessert. A favourite with kids and chocolate lovers alike.',
-    price: 5.80,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 5.80 }, { label: 'Large (700ml)', price: 6.60 }],
-    upsell: ['pearls', 'egg-pudding', 'red-bean', 'oat-milk'],
-    alsoBought: ['brown-sugar-pearl-milk-tea', 'signature-milk-tea', 'mini-cakes']
-  },
-  {
-    id: 'snowy-pearl-fresh-milk',
-    title: 'Snowy Pearl Fresh Milk',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea'],
-    imageCount: 1,
-    shortDesc: 'Pure fresh milk with chewy pearls, no tea, just creamy comfort.',
-    longDesc: 'For the tea-free crowd: cold fresh milk poured over a snowy scoop of chewy pearls. Clean, creamy and lightly sweet, this one is comfort in a cup.',
-    price: 4.90,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 4.90 }, { label: 'Large (700ml)', price: 5.70 }],
-    upsell: ['pearls', 'grass-jelly', 'red-bean', 'oat-milk'],
-    alsoBought: ['signature-milk-tea', 'brown-sugar-pearl-milk-tea', 'velvet-chocolate-milk-tea']
-  },
-  {
-    id: 'peach-blossom-tea',
-    title: 'Peach Blossom Tea',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'Vegan'],
-    imageCount: 1,
-    shortDesc: 'Fragrant fruit tea with juicy peach, floral and refreshing.',
-    longDesc: 'A fragrant fruit tea steeped with ripe peach for a soft, floral sweetness. Light, refreshing and fully plant-based. Lovely with a spoonful of aloe vera or popping boba.',
-    price: 5.20,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 5.20 }, { label: 'Large (700ml)', price: 6.00 }],
-    upsell: ['aloe-vera', 'popping-boba', 'grass-jelly'],
-    alsoBought: ['passion-sunset-tea', 'mango-sunshine', 'strawberry-blush']
-  },
-  {
-    id: 'passion-sunset-tea',
-    title: 'Passion Sunset Tea',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'Vegan', 'New'],
-    imageCount: 1,
-    shortDesc: 'Tangy passionfruit over tea, layered like a tropical sunset.',
-    longDesc: 'Tangy passionfruit poured over fruit tea and ice, layered into a tropical sunset of orange and gold. Bright, zesty and thirst-quenching. Naturally vegan.',
-    price: 5.20,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 5.20 }, { label: 'Large (700ml)', price: 6.00 }],
-    upsell: ['popping-boba', 'aloe-vera', 'grass-jelly'],
-    alsoBought: ['mango-sunshine', 'peach-blossom-tea', 'sunny-lemonade']
-  },
-  {
-    id: 'mango-sunshine',
-    title: 'Mango Sunshine',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'Vegan', 'Best Seller'],
-    imageCount: 1,
-    shortDesc: 'Sweet, sunny ripe mango blended into a golden fruit cooler.',
-    longDesc: 'Ripe, sweet mango blended into a golden, sunshine-bright cooler. Thick, juicy and fully plant-based. Top with popping boba for little bursts of flavour.',
-    price: 5.80,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 5.80 }, { label: 'Large (700ml)', price: 6.60 }],
-    upsell: ['popping-boba', 'aloe-vera', 'pearls'],
-    alsoBought: ['passion-sunset-tea', 'strawberry-blush', 'peach-blossom-tea']
-  },
-  {
-    id: 'strawberry-blush',
-    title: 'Strawberry Blush',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'New'],
-    imageCount: 1,
-    shortDesc: 'Real strawberry, blushing pink and sweetly refreshing.',
-    longDesc: 'Real strawberry blended into a blushing-pink cooler that is sweet, fruity and pretty enough to photograph. A crowd-pleaser for all ages.',
-    price: 5.80,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 5.80 }, { label: 'Large (700ml)', price: 6.60 }],
-    upsell: ['popping-boba', 'aloe-vera'],
-    alsoBought: ['mango-sunshine', 'grape-twilight', 'peach-blossom-tea']
-  },
-  {
-    id: 'grape-twilight',
-    title: 'Grape Twilight',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'Vegan'],
-    imageCount: 1,
-    shortDesc: 'Deep, juicy grape over ice, sweet with a gentle tartness.',
-    longDesc: 'Deep purple grape poured over ice for a juicy, twilight-hued cooler that balances sweet and tart. Refreshing and naturally vegan.',
-    price: 5.50,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 5.50 }, { label: 'Large (700ml)', price: 6.30 }],
-    upsell: ['popping-boba', 'aloe-vera'],
-    alsoBought: ['strawberry-blush', 'mango-sunshine', 'sunny-lemonade']
-  },
-  {
-    id: 'sunny-lemonade',
-    title: 'Sunny Lemonade',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'Vegan'],
-    imageCount: 1,
-    shortDesc: 'Zesty fresh lemonade, crisp and bright for a hot day.',
-    longDesc: 'Freshly squeezed lemons shaken with ice into a crisp, zesty lemonade. The bright, tangy pick-me-up for a Singapore afternoon. Vegan and caffeine-free.',
-    price: 4.80,
-    unit: 'cup',
-    sizes: [{ label: 'Regular (500ml)', price: 4.80 }, { label: 'Large (700ml)', price: 5.60 }],
-    upsell: ['aloe-vera', 'popping-boba'],
-    alsoBought: ['passion-sunset-tea', 'grape-twilight', 'mango-sunshine']
-  },
-  {
-    id: 'festive-drinks',
-    title: 'Festive Party Buckets',
-    category: 'Bubble Tea',
-    tags: ['Bubble Tea', 'Christmas Festive', 'Bundle', 'New'],
-    imageCount: 6,
-    shortDesc: 'Sharing-size party buckets of our seasonal fruit drinks.',
-    longDesc: 'Our limited seasonal showstopper: oversized sharing buckets of layered fruit drinks, dressed up for the festive table with fresh fruit and herbs. Choose your flavours and a colour theme, perfect for parties and gatherings.',
-    price: 32.00,
-    unit: 'bucket',
-    sizes: [{ label: 'Party Bucket (1.5L)', price: 32.00 }],
-    upsell: ['popping-boba', 'aloe-vera'],
-    alsoBought: ['mango-sunshine', 'strawberry-blush', 'festive-gift-bag']
-  },
-
-  /* ------------------------------- SWEETS ------------------------------- */
+  /* ---------- BUBBLE TEA (order.sofnade.com) ---------- */
+  {"id": "lychee-mint-tea", "title": "Lychee Mint Tea", "tags": ["Bubble Tea"], "section": "Fusion Teas", "emoji": "🧋", "color": "#c98a4a", "shortDesc": "A refreshing blend of sweet lychee and cool, fresh mint.", "longDesc": "A refreshing blend of sweet lychee and cool, fresh mint.", "price": 3.6, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.6}, {"label": "Bottle (650ml)", "price": 6.1}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["mango-green-tea", "iced-lemon-tea", "thai-lemon-tea"], "allergens": []},
+  {"id": "mango-green-tea", "title": "Mango Green Tea", "tags": ["Bubble Tea"], "section": "Fusion Teas", "emoji": "🧋", "color": "#c98a4a", "shortDesc": "Tropical mango sweetness with the fragrance of green tea.", "longDesc": "Tropical mango sweetness with the fragrance of green tea.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["lychee-mint-tea", "iced-lemon-tea", "thai-lemon-tea"], "allergens": []},
+  {"id": "iced-lemon-tea", "title": "Iced Lemon Tea", "tags": ["Bubble Tea"], "section": "Fusion Teas", "emoji": "🧋", "color": "#c98a4a", "shortDesc": "A refreshing iced lemon tea for a hot day or any time you need a cool pick-me-up.", "longDesc": "A refreshing iced lemon tea for a hot day or any time you need a cool pick-me-up.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["lychee-mint-tea", "mango-green-tea", "thai-lemon-tea"], "allergens": []},
+  {"id": "thai-lemon-tea", "title": "Thai Lemon Tea", "tags": ["Bubble Tea"], "section": "Fusion Teas", "emoji": "🧋", "color": "#c98a4a", "shortDesc": "Thai-style lemon tea (Cha Manao), a popular and refreshing citrus brew.", "longDesc": "Thai-style lemon tea (Cha Manao), a popular and refreshing citrus brew.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["lychee-mint-tea", "mango-green-tea", "iced-lemon-tea"], "allergens": []},
+  {"id": "peach-green-tea", "title": "Peach Green Tea", "tags": ["Bubble Tea"], "section": "Fusion Teas", "emoji": "🧋", "color": "#c98a4a", "shortDesc": "The sweetness of peach with the fragrance of green tea.", "longDesc": "The sweetness of peach with the fragrance of green tea.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["lychee-mint-tea", "mango-green-tea", "iced-lemon-tea"], "allergens": []},
+  {"id": "strawberry-green-tea", "title": "Strawberry Green Tea", "tags": ["Bubble Tea"], "section": "Fusion Teas", "emoji": "🧋", "color": "#c98a4a", "shortDesc": "Tropical strawberry sweetness with the fragrance of green tea.", "longDesc": "Tropical strawberry sweetness with the fragrance of green tea.", "price": 3.6, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.6}, {"label": "Bottle (650ml)", "price": 6.1}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["lychee-mint-tea", "mango-green-tea", "iced-lemon-tea"], "allergens": []},
+  {"id": "strawberry-iced-tea", "title": "Strawberry Iced Tea", "tags": ["Bubble Tea"], "section": "Classic Iced Teas", "emoji": "🧋", "color": "#b5793a", "shortDesc": "Tropical strawberry sweetness with the fragrance of black tea.", "longDesc": "Tropical strawberry sweetness with the fragrance of black tea.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["mango-iced-tea", "classic-iced-tea", "jasmine-green-iced-tea"], "allergens": []},
+  {"id": "mango-iced-tea", "title": "Mango Iced Tea", "tags": ["Bubble Tea"], "section": "Classic Iced Teas", "emoji": "🧋", "color": "#b5793a", "shortDesc": "Tropical mango sweetness with the fragrance of black tea.", "longDesc": "Tropical mango sweetness with the fragrance of black tea.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["strawberry-iced-tea", "classic-iced-tea", "jasmine-green-iced-tea"], "allergens": []},
+  {"id": "classic-iced-tea", "title": "Classic Iced Tea", "tags": ["Bubble Tea"], "section": "Classic Iced Teas", "emoji": "🧋", "color": "#b5793a", "shortDesc": "A classic tea for a refreshing day.", "longDesc": "A classic tea for a refreshing day.", "price": 2.9, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 2.9}, {"label": "Bottle (650ml)", "price": 5.4}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["strawberry-iced-tea", "mango-iced-tea", "jasmine-green-iced-tea"], "allergens": []},
+  {"id": "jasmine-green-iced-tea", "title": "Jasmine Green Iced Tea", "tags": ["Bubble Tea"], "section": "Classic Iced Teas", "emoji": "🧋", "color": "#b5793a", "shortDesc": "Delicate floral jasmine green tea in every refreshing sip.", "longDesc": "Delicate floral jasmine green tea in every refreshing sip.", "price": 2.9, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 2.9}, {"label": "Bottle (650ml)", "price": 5.4}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["strawberry-iced-tea", "mango-iced-tea", "classic-iced-tea"], "allergens": []},
+  {"id": "oolong-iced-tea", "title": "Oolong Iced Tea", "tags": ["Bubble Tea"], "section": "Classic Iced Teas", "emoji": "🧋", "color": "#b5793a", "shortDesc": "The roasted, nutty taste of our oolong, served iced.", "longDesc": "The roasted, nutty taste of our oolong, served iced.", "price": 2.9, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 2.9}, {"label": "Bottle (650ml)", "price": 5.4}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["strawberry-iced-tea", "mango-iced-tea", "classic-iced-tea"], "allergens": []},
+  {"id": "earl-grey-iced-tea", "title": "Earl Grey Iced Tea", "tags": ["Bubble Tea"], "section": "Classic Iced Teas", "emoji": "🧋", "color": "#b5793a", "shortDesc": "Aromatic, citrusy iced Earl Grey tea.", "longDesc": "Aromatic, citrusy iced Earl Grey tea.", "price": 2.9, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 2.9}, {"label": "Bottle (650ml)", "price": 5.4}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["strawberry-iced-tea", "mango-iced-tea", "classic-iced-tea"], "allergens": []},
+  {"id": "blueberry-soda", "title": "Blueberry Soda", "tags": ["Bubble Tea"], "section": "Sodas", "emoji": "🥤", "color": "#6aa0c4", "shortDesc": "Sweet blueberry with soda.", "longDesc": "Sweet blueberry with soda.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["lychee-soda", "peach-soda", "strawberry-soda"], "allergens": []},
+  {"id": "lychee-soda", "title": "Lychee Soda", "tags": ["Bubble Tea"], "section": "Sodas", "emoji": "🥤", "color": "#6aa0c4", "shortDesc": "Sweet, floral lychee with soda.", "longDesc": "Sweet, floral lychee with soda.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["blueberry-soda", "peach-soda", "strawberry-soda"], "allergens": []},
+  {"id": "peach-soda", "title": "Peach Soda", "tags": ["Bubble Tea"], "section": "Sodas", "emoji": "🥤", "color": "#6aa0c4", "shortDesc": "Delicious peach puree with soda.", "longDesc": "Delicious peach puree with soda.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["blueberry-soda", "lychee-soda", "strawberry-soda"], "allergens": []},
+  {"id": "strawberry-soda", "title": "Strawberry Soda", "tags": ["Bubble Tea"], "section": "Sodas", "emoji": "🥤", "color": "#6aa0c4", "shortDesc": "Sweet strawberry puree with soda.", "longDesc": "Sweet strawberry puree with soda.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["blueberry-soda", "lychee-soda", "peach-soda"], "allergens": []},
+  {"id": "lemon-lime-soda", "title": "Lemon Lime Soda", "tags": ["Bubble Tea"], "section": "Sodas", "emoji": "🥤", "color": "#6aa0c4", "shortDesc": "Zesty lemon and lime puree with soda.", "longDesc": "Zesty lemon and lime puree with soda.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["blueberry-soda", "lychee-soda", "peach-soda"], "allergens": []},
+  {"id": "mango-soda", "title": "Mango Soda", "tags": ["Bubble Tea"], "section": "Sodas", "emoji": "🥤", "color": "#6aa0c4", "shortDesc": "Sweet mango puree with soda.", "longDesc": "Sweet mango puree with soda.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["blueberry-soda", "lychee-soda", "peach-soda"], "allergens": []},
+  {"id": "mint-lemonade", "title": "Mint Lemonade", "tags": ["Bubble Tea"], "section": "Lemonades", "emoji": "🍋", "color": "#e3b94a", "shortDesc": "Ice-cold lemonade bursting with citrus and cool, fresh mint.", "longDesc": "Ice-cold lemonade bursting with citrus and cool, fresh mint.", "price": 4.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 4.1}, {"label": "Bottle (650ml)", "price": 6.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["classic-lemonade", "pink-lemonade", "honey-peach-lemonade"], "allergens": []},
+  {"id": "classic-lemonade", "title": "Classic Lemonade", "tags": ["Bubble Tea"], "section": "Lemonades", "emoji": "🍋", "color": "#e3b94a", "shortDesc": "Icy cold and bursting with 100% freshly squeezed lemons, the perfect thirst quencher.", "longDesc": "Icy cold and bursting with 100% freshly squeezed lemons, the perfect thirst quencher.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["mint-lemonade", "pink-lemonade", "honey-peach-lemonade"], "allergens": []},
+  {"id": "pink-lemonade", "title": "Pink Lemonade", "tags": ["Bubble Tea"], "section": "Lemonades", "emoji": "🍋", "color": "#e3b94a", "shortDesc": "Sweet strawberries meet tangy lemon in a vibrant, ice-cold pink lemonade.", "longDesc": "Sweet strawberries meet tangy lemon in a vibrant, ice-cold pink lemonade.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["mint-lemonade", "classic-lemonade", "honey-peach-lemonade"], "allergens": []},
+  {"id": "honey-peach-lemonade", "title": "Honey Peach Lemonade", "tags": ["Bubble Tea"], "section": "Lemonades", "emoji": "🍋", "color": "#e3b94a", "shortDesc": "Sun-kissed peaches meet tangy lemons in a bright, summery lemonade.", "longDesc": "Sun-kissed peaches meet tangy lemons in a bright, summery lemonade.", "price": 3.1, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.1}, {"label": "Bottle (650ml)", "price": 5.6}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["mint-lemonade", "classic-lemonade", "pink-lemonade"], "allergens": []},
+  {"id": "mango-fresh-milk", "title": "Mango Fresh Milk", "tags": ["Bubble Tea"], "section": "Fresh Milk", "emoji": "🥛", "color": "#cdbba0", "shortDesc": "Chilled fresh milk with mango puree, a tropical dream in every sip. (4 working days advance order.)", "longDesc": "Chilled fresh milk with mango puree, a tropical dream in every sip. (4 working days advance order.)", "price": 4.5, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 4.5}, {"label": "Bottle (650ml)", "price": 7.0}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["strawberry-fresh-milk", "peach-fresh-milk", "brown-sugar-jelly-fresh-milk"], "allergens": ["Dairy"]},
+  {"id": "strawberry-fresh-milk", "title": "Strawberry Fresh Milk", "tags": ["Bubble Tea"], "section": "Fresh Milk", "emoji": "🥛", "color": "#cdbba0", "shortDesc": "Chilled milk swirled with vibrant strawberry puree, sweet, creamy and bursting with summer.", "longDesc": "Chilled milk swirled with vibrant strawberry puree, sweet, creamy and bursting with summer.", "price": 4.5, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 4.5}, {"label": "Bottle (650ml)", "price": 7.0}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["mango-fresh-milk", "peach-fresh-milk", "brown-sugar-jelly-fresh-milk"], "allergens": ["Dairy"]},
+  {"id": "peach-fresh-milk", "title": "Peach Fresh Milk", "tags": ["Bubble Tea"], "section": "Fresh Milk", "emoji": "🥛", "color": "#cdbba0", "shortDesc": "Chilled milk with honey peach puree, a sip of pure summer refreshment.", "longDesc": "Chilled milk with honey peach puree, a sip of pure summer refreshment.", "price": 4.5, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 4.5}, {"label": "Bottle (650ml)", "price": 7.0}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["mango-fresh-milk", "strawberry-fresh-milk", "brown-sugar-jelly-fresh-milk"], "allergens": ["Dairy"]},
+  {"id": "brown-sugar-jelly-fresh-milk", "title": "Brown Sugar Jelly Fresh Milk", "tags": ["Bubble Tea"], "section": "Fresh Milk", "emoji": "🥛", "color": "#cdbba0", "shortDesc": "Chilled milk kissed by roasted brown sugar with a hint of jelly. Sweet, creamy and cool.", "longDesc": "Chilled milk kissed by roasted brown sugar with a hint of jelly. Sweet, creamy and cool.", "price": 4.5, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 4.5}, {"label": "Bottle (650ml)", "price": 7.0}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["mango-fresh-milk", "strawberry-fresh-milk", "peach-fresh-milk"], "allergens": ["Dairy"]},
+  {"id": "signature-classic-milk-tea", "title": "Signature Classic Milk Tea", "tags": ["Bubble Tea"], "section": "Milk Teas", "emoji": "🧋", "color": "#c4a06a", "shortDesc": "A special blend of the best Assam tea leaves from Taiwan. Fragrant and addictive.", "longDesc": "A special blend of the best Assam tea leaves from Taiwan. Fragrant and addictive.", "price": 3.2, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.2}, {"label": "Bottle (650ml)", "price": 5.7}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["jasmine-green-milk-tea", "earl-grey-milk-tea", "caramel-milk-tea"], "allergens": ["Dairy"]},
+  {"id": "jasmine-green-milk-tea", "title": "Jasmine Green Milk Tea", "tags": ["Bubble Tea"], "section": "Milk Teas", "emoji": "🧋", "color": "#c4a06a", "shortDesc": "The perfect blend of floral jasmine notes and creamy goodness.", "longDesc": "The perfect blend of floral jasmine notes and creamy goodness.", "price": 3.2, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.2}, {"label": "Bottle (650ml)", "price": 5.7}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["signature-classic-milk-tea", "earl-grey-milk-tea", "caramel-milk-tea"], "allergens": ["Dairy"]},
+  {"id": "earl-grey-milk-tea", "title": "Earl Grey Milk Tea", "tags": ["Bubble Tea"], "section": "Milk Teas", "emoji": "🧋", "color": "#c4a06a", "shortDesc": "A creamy, dreamy blend of bergamot-infused tea and velvety milk.", "longDesc": "A creamy, dreamy blend of bergamot-infused tea and velvety milk.", "price": 3.7, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.7}, {"label": "Bottle (650ml)", "price": 6.2}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["signature-classic-milk-tea", "jasmine-green-milk-tea", "caramel-milk-tea"], "allergens": ["Dairy"]},
+  {"id": "caramel-milk-tea", "title": "Caramel Milk Tea", "tags": ["Bubble Tea"], "section": "Milk Teas", "emoji": "🧋", "color": "#c4a06a", "shortDesc": "Sweet dreams do come true. Fragrant and creamy.", "longDesc": "Sweet dreams do come true. Fragrant and creamy.", "price": 3.7, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.7}, {"label": "Bottle (650ml)", "price": 6.2}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["signature-classic-milk-tea", "jasmine-green-milk-tea", "earl-grey-milk-tea"], "allergens": ["Dairy"]},
+  {"id": "honey-milk-tea", "title": "Honey Milk Tea", "tags": ["Bubble Tea"], "section": "Milk Teas", "emoji": "🧋", "color": "#c4a06a", "shortDesc": "A decadent, comforting blend of honey and milk tea.", "longDesc": "A decadent, comforting blend of honey and milk tea.", "price": 3.7, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.7}, {"label": "Bottle (650ml)", "price": 6.2}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["signature-classic-milk-tea", "jasmine-green-milk-tea", "earl-grey-milk-tea"], "allergens": ["Dairy"]},
+  {"id": "red-thai-milk-tea", "title": "Red Thai Milk Tea", "tags": ["Bubble Tea"], "section": "Milk Teas", "emoji": "🧋", "color": "#c4a06a", "shortDesc": "A creamy, sweet Thai treat. Best enjoyed at 75% sugar.", "longDesc": "A creamy, sweet Thai treat. Best enjoyed at 75% sugar.", "price": 3.2, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.2}, {"label": "Bottle (650ml)", "price": 5.7}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["signature-classic-milk-tea", "jasmine-green-milk-tea", "earl-grey-milk-tea"], "allergens": ["Dairy"]},
+  {"id": "green-thai-milk-tea", "title": "Green Thai Milk Tea", "tags": ["Bubble Tea"], "section": "Milk Teas", "emoji": "🧋", "color": "#c4a06a", "shortDesc": "A creamy, sweet green Thai treat. Best enjoyed at 75% sugar.", "longDesc": "A creamy, sweet green Thai treat. Best enjoyed at 75% sugar.", "price": 3.2, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.2}, {"label": "Bottle (650ml)", "price": 5.7}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["signature-classic-milk-tea", "jasmine-green-milk-tea", "earl-grey-milk-tea"], "allergens": ["Dairy"]},
+  {"id": "oolong-milk-tea", "title": "Oolong Milk Tea", "tags": ["Bubble Tea"], "section": "Milk Teas", "emoji": "🧋", "color": "#c4a06a", "shortDesc": "The creamy, roasted, nutty taste of our oolong milk tea.", "longDesc": "The creamy, roasted, nutty taste of our oolong milk tea.", "price": 3.7, "unit": "cup", "sizes": [{"label": "Regular cup (500ml)", "price": 3.7}, {"label": "Bottle (650ml)", "price": 6.2}], "upsell": ["pearls", "taro-balls", "aiyu-jelly", "brown-sugar-jelly", "aloe-vera", "grass-jelly", "mango-pops", "strawberry-pops", "passionfruit-pops"], "alsoBought": ["signature-classic-milk-tea", "jasmine-green-milk-tea", "earl-grey-milk-tea"], "allergens": ["Dairy"]},
   {
     id: 'cookies',
     title: 'Almond Cranberry Cookies',
@@ -180,7 +58,7 @@ let PRODUCTS = [
     unit: 'box',
     sizes: [{ label: 'Box of 8', price: 12.00 }, { label: 'Box of 16', price: 22.00 }],
     upsell: [],
-    alsoBought: ['mini-cakes', 'chocolate-truffles', 'signature-milk-tea']
+    alsoBought: ['mini-cakes', 'chocolate-truffles', 'signature-classic-milk-tea']
   },
   {
     id: 'mini-cakes',
@@ -208,7 +86,7 @@ let PRODUCTS = [
     unit: 'tub',
     sizes: [{ label: 'Regular', price: 8.00 }, { label: 'Sharing', price: 14.00 }],
     upsell: [],
-    alsoBought: ['fried-fritters', 'velvet-chocolate-milk-tea', 'cookies']
+    alsoBought: ['fried-fritters', 'caramel-milk-tea', 'cookies']
   },
   {
     id: 'fried-fritters',
@@ -222,7 +100,7 @@ let PRODUCTS = [
     unit: 'tub',
     sizes: [{ label: 'Regular', price: 7.00 }, { label: 'Sharing', price: 12.00 }],
     upsell: [],
-    alsoBought: ['churros', 'cookies', 'mango-sunshine']
+    alsoBought: ['churros', 'cookies', 'mango-iced-tea']
   },
   {
     id: 'chocolate-truffles',
@@ -280,7 +158,7 @@ let PRODUCTS = [
     unit: 'pack',
     sizes: [{ label: 'Pouch (150g)', price: 8.50 }, { label: 'Tub (300g)', price: 15.00 }],
     upsell: [],
-    alsoBought: ['mixed-nuts', 'cookies', 'sunny-lemonade']
+    alsoBought: ['mixed-nuts', 'cookies', 'classic-lemonade']
   },
 
   /* ------------------------------ GIFT SETS ----------------------------- */
@@ -363,29 +241,45 @@ let PRODUCTS = [
 
 /* Drink toppings / add-ons (referenced by `upsell` ids above) */
 let ADDONS = {
-  'pearls':       { id: 'pearls',       title: 'Tapioca Pearls', price: 0.80 },
-  'grass-jelly':  { id: 'grass-jelly',  title: 'Grass Jelly',    price: 0.80 },
-  'egg-pudding':  { id: 'egg-pudding',  title: 'Egg Pudding',    price: 1.00 },
-  'cheese-foam':  { id: 'cheese-foam',  title: 'Cheese Foam',    price: 1.20 },
-  'oat-milk':     { id: 'oat-milk',     title: 'Oat Milk Swap',  price: 0.60 },
-  'red-bean':     { id: 'red-bean',     title: 'Red Bean',       price: 0.80 },
-  'aloe-vera':    { id: 'aloe-vera',    title: 'Aloe Vera',      price: 0.80 },
-  'popping-boba': { id: 'popping-boba', title: 'Popping Boba',   price: 1.00 }
+  'pearls':            { id: 'pearls',            title: 'Pearls',                        price: 0.50 },
+  'taro-balls':        { id: 'taro-balls',        title: 'Signature Mini Chewy Taro Balls', price: 0.80 },
+  'aiyu-jelly':        { id: 'aiyu-jelly',        title: 'Aiyu Jelly (Housemade)',        price: 0.50 },
+  'brown-sugar-jelly': { id: 'brown-sugar-jelly', title: 'Brown Sugar Jelly Balls',       price: 0.70 },
+  'aloe-vera':         { id: 'aloe-vera',         title: 'Aloe Vera',                     price: 0.50 },
+  'grass-jelly':       { id: 'grass-jelly',       title: 'Grass Jelly',                   price: 0.50 },
+  'mango-pops':        { id: 'mango-pops',        title: 'Mango Pops',                    price: 0.60 },
+  'strawberry-pops':   { id: 'strawberry-pops',   title: 'Strawberry Pops',               price: 0.60 },
+  'passionfruit-pops': { id: 'passionfruit-pops', title: 'Passionfruit Pops',             price: 0.60 }
 };
+
+/* Toppings: how many a customer may add to a drink. */
+const MAX_TOPPINGS = 2;
+
+/* Sugar levels offered on every drink (first is the default selection). */
+const SUGAR_LEVELS = [
+  '100% (Normal)', '75% (Slightly Less Sweet)', '50% (Less Sweet)',
+  '25% (Very Less Sweet)', '0% (Kosong)'
+];
+
+/* Sub-sections within a top-level category (drives the sub-navigation). */
+const SUBCATEGORIES = {
+  'Bubble Tea': ['Fusion Teas', 'Classic Iced Teas', 'Sodas', 'Lemonades', 'Fresh Milk', 'Milk Teas']
+};
+function subcategoriesFor(category) { return SUBCATEGORIES[category] || []; }
 
 /* Allergens present in each product (drives the "About allergens" panel).
    Vegan fruit drinks carry none of the major allergens. */
 const ALLERGENS_BY_ID = {
-  'signature-milk-tea': ['Dairy'],
+  'signature-classic-milk-tea': ['Dairy'],
   'brown-sugar-pearl-milk-tea': ['Dairy'],
-  'velvet-chocolate-milk-tea': ['Dairy', 'Soy'],
+  'caramel-milk-tea': ['Dairy', 'Soy'],
   'snowy-pearl-fresh-milk': ['Dairy'],
   'peach-blossom-tea': [],
   'passion-sunset-tea': [],
-  'mango-sunshine': [],
+  'mango-iced-tea': [],
   'strawberry-blush': [],
   'grape-twilight': [],
-  'sunny-lemonade': [],
+  'classic-lemonade': [],
   'festive-drinks': [],
   'cookies': ['Gluten', 'Dairy', 'Nuts'],
   'mini-cakes': ['Gluten', 'Dairy', 'Eggs'],
