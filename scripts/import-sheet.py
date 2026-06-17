@@ -21,7 +21,7 @@ CAT_STYLE = {
     "Hari Raya":         ("🌙", "#4e8f7a"),
 }
 # packaging column index -> (label, placeholder price)
-PKG = {2: ("Petite", 4.90), 3: ("Regular", 12.90), 4: ("Bottle", 9.90), 5: ("Nostalgic Tin", 14.90)}
+PKG = {2: ("Petite Pack", 4.90), 3: ("Regular Pack", 9.90), 4: ("Bottle", 13.90), 5: ("Nostalgic Tin", 16.90)}
 
 # Full category order used by the site (existing + new), for primary-category choice
 CAT_ORDER = ['Bubble Tea', 'Sweets', 'Snacks', 'Gift Sets', 'Christmas Festive'] + NEW_CATS
