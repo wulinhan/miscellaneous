@@ -20,8 +20,8 @@ function _writeCart(lines) {
   document.dispatchEvent(new CustomEvent('cart:changed'));
 }
 
-function _lineKey(productId, size, addons) {
-  return [productId, size || '', (addons || []).slice().sort().join(',')].join('|');
+function _lineKey(productId, size, addons, sugar) {
+  return [productId, size || '', sugar || '', (addons || []).slice().sort().join(',')].join('|');
 }
 
 const Cart = {
@@ -48,14 +48,14 @@ const Cart = {
     return _readCart().reduce((sum, l) => sum + this.unitPrice(l) * l.qty, 0);
   },
 
-  add(productId, qty = 1, size = '', addons = []) {
+  add(productId, qty = 1, size = '', addons = [], sugar = '') {
     const lines = _readCart();
-    const key = _lineKey(productId, size, addons);
+    const key = _lineKey(productId, size, addons, sugar);
     const existing = lines.find(l => l.key === key);
     if (existing) {
       existing.qty += qty;
     } else {
-      lines.push({ key, productId, qty, size, addons: addons.slice() });
+      lines.push({ key, productId, qty, size, addons: addons.slice(), sugar });
     }
     _writeCart(lines);
   },

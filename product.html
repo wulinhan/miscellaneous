@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Product — Sofnade</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=23">
+  <link rel="stylesheet" href="css/styles.css?v=24">
 </head>
 <body>
   <div id="header"></div>
@@ -25,12 +25,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=23"></script>
-  <script src="js/config.js?v=23"></script>
-  <script src="js/store-data.js?v=23"></script>
-  <script src="js/images.js?v=23"></script>
-  <script src="js/cart.js?v=23"></script>
-  <script src="js/common.js?v=23"></script>
+  <script src="data/products.js?v=24"></script>
+  <script src="js/config.js?v=24"></script>
+  <script src="js/store-data.js?v=24"></script>
+  <script src="js/images.js?v=24"></script>
+  <script src="js/cart.js?v=24"></script>
+  <script src="js/common.js?v=24"></script>
   <script>
     renderChrome();
 
@@ -142,12 +142,23 @@
       document.getElementById('crumb').innerHTML =
         `<a href="index.html">Shop</a> / <a href="index.html?cat=${encodeURIComponent(cat)}">${cat}</a> / ${p.title}`;
 
+      const isDrink = p.tags.includes('Bubble Tea');
+
       // Size selector (custom pills) only when there's a genuine choice of sizes.
       const sizeField = hasSizeChoice(p) ? `
             <div class="field">
               <label>Size</label>
               <div class="opt-pills" id="size-pills">
                 ${p.sizes.map((s, i) => `<button type="button" class="opt-pill ${i === 0 ? 'active' : ''}" data-size="${s.label}">${s.label} <small>${money(s.price)}</small></button>`).join('')}
+              </div>
+            </div>` : '';
+
+      // Sugar level (drinks only) — single-select, first option active by default.
+      const sugarField = (isDrink && typeof SUGAR_LEVELS !== 'undefined') ? `
+            <div class="field">
+              <label>Sugar level</label>
+              <div class="opt-pills" id="sugar-pills">
+                ${SUGAR_LEVELS.map((s, i) => `<button type="button" class="opt-pill ${i === 0 ? 'active' : ''}" data-sugar="${s}">${s}</button>`).join('')}
               </div>
             </div>` : '';
 
@@ -191,9 +202,11 @@
 
             ${sizeField}
 
+            ${sugarField}
+
             ${upsells ? `
             <div class="field">
-              <label>Add toppings</label>
+              <label>Add toppings <span class="field-note">choose up to ${typeof MAX_TOPPINGS !== 'undefined' ? MAX_TOPPINGS : 2}</span></label>
               <div class="opt-pills" id="topping-pills">${upsells}</div>
             </div>` : ''}
 
@@ -300,6 +313,11 @@
       return active ? active.dataset.size : (p.sizes[0] ? p.sizes[0].label : '');
     }
 
+    function selectedSugar() {
+      const active = document.querySelector('#sugar-pills .opt-pill.active');
+      return active ? active.dataset.sugar : '';
+    }
+
     function currentUnitPrice(p) {
       let price = sizePrice(p, selectedSize(p));
       selectedAddons().forEach(id => { if (ADDONS[id]) price += ADDONS[id].price; });
@@ -334,7 +352,7 @@
 
       const addToCart = (btn) => {
         const qty = Math.max(1, +qtyInput.value || 1);
-        Cart.add(p.id, qty, selectedSize(p), selectedAddons());
+        Cart.add(p.id, qty, selectedSize(p), selectedAddons(), selectedSugar());
         qtyInput.value = 1;               // reset quantity after adding
         updatePrice();                    // reflect reset before the flash
         flashAdded(btn);
@@ -348,17 +366,31 @@
       });
       qtyInput.addEventListener('input', updatePrice);
 
-      // Size pills: single-select
-      document.querySelectorAll('#size-pills .opt-pill').forEach(pill => {
-        pill.addEventListener('click', () => {
-          document.querySelectorAll('#size-pills .opt-pill').forEach(b => b.classList.remove('active'));
-          pill.classList.add('active');
-          updatePrice();
+      // Size + sugar pills: single-select within their group
+      ['#size-pills', '#sugar-pills'].forEach(group => {
+        document.querySelectorAll(`${group} .opt-pill`).forEach(pill => {
+          pill.addEventListener('click', () => {
+            document.querySelectorAll(`${group} .opt-pill`).forEach(b => b.classList.remove('active'));
+            pill.classList.add('active');
+            updatePrice();
+          });
         });
       });
-      // Topping pills: multi-select toggle
-      document.querySelectorAll('#topping-pills .opt-pill').forEach(pill => {
-        pill.addEventListener('click', () => { pill.classList.toggle('active'); updatePrice(); });
+      // Topping pills: multi-select toggle, capped at MAX_TOPPINGS
+      const maxTop = (typeof MAX_TOPPINGS !== 'undefined') ? MAX_TOPPINGS : 2;
+      const toppingPills = Array.from(document.querySelectorAll('#topping-pills .opt-pill'));
+      const refreshToppingState = () => {
+        const atMax = document.querySelectorAll('#topping-pills .opt-pill.active').length >= maxTop;
+        toppingPills.forEach(b => { b.classList.toggle('disabled', atMax && !b.classList.contains('active')); });
+      };
+      toppingPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          if (!pill.classList.contains('active') &&
+              document.querySelectorAll('#topping-pills .opt-pill.active').length >= maxTop) return;
+          pill.classList.toggle('active');
+          refreshToppingState();
+          updatePrice();
+        });
       });
 
       document.getElementById('add-to-cart').addEventListener('click', e => addToCart(e.currentTarget));
