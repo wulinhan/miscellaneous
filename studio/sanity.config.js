@@ -7,7 +7,7 @@ import { schemaTypes } from './schemas';
 export default defineConfig({
   name: 'sofnade',
   title: 'Sofnade Store',
-  projectId: process.env.SANITY_STUDIO_PROJECT_ID || '',
+  projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'mkxfjwwf',
   dataset: 'production',
   plugins: [structureTool(), visionTool()],
   schema: { types: schemaTypes }
