@@ -5,7 +5,7 @@
    empty, the site uses the bundled data and works exactly as before.
    ========================================================================= */
 window.SANITY_CONFIG = {
-  projectId: '',          // e.g. 'a1b2c3d4'  <-- paste yours here
+  projectId: 'mkxfjwwf',
   dataset: 'production',
   apiVersion: '2023-10-01'
 };
