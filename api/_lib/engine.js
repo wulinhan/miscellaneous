@@ -1,58 +1,84 @@
-// Server-side order engine. Reuses the EXACT same catalog, settings and
-// discount codes as the storefront (data/products.js), so the total computed
-// here always matches what the customer saw. This is the authoritative money.
+// Server-side order engine. Prices from the SAME content the customer sees:
+// Sanity CMS when reachable, otherwise the bundled data/products.js. Both are
+// merged so checkout totals can never drift from the storefront.
 
-const store = require('../../data/products.js');
-const PRODUCTS = store.PRODUCTS || [];
-const ADDONS = store.ADDONS || {};
-const SETTINGS = store.SETTINGS || {};
-const DISCOUNT_CODES = store.DISCOUNT_CODES || {};
+const builtin = require('../../data/products.js'); // { PRODUCTS, ADDONS, SETTINGS, DISCOUNT_CODES }
+const sanity = require('./sanity.js');
 
 const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-function getProduct(id) {
-  return PRODUCTS.find((p) => p.id === id) || null;
-}
+// ---- Store loading (Sanity with built-in fallback, cached) ----------------
 
-function sizePrice(product, sizeLabel) {
-  if (product.sizes && product.sizes.length) {
-    const s = product.sizes.find((x) => x.label === sizeLabel);
-    if (s) return s.price;
-    return product.sizes[0].price;
+let _cache = null;
+let _cacheAt = 0;
+const TTL_MS = 60000;
+
+async function getStore() {
+  const now = Date.now();
+  if (_cache && now - _cacheAt < TTL_MS) return _cache;
+
+  let store = {
+    PRODUCTS: builtin.PRODUCTS || [],
+    ADDONS: builtin.ADDONS || {},
+    SETTINGS: builtin.SETTINGS || {},
+    DISCOUNT_CODES: builtin.DISCOUNT_CODES || {},
+  };
+
+  try {
+    const s = await sanity.fetchStore();
+    if (s && Array.isArray(s.products) && s.products.length) {
+      store = {
+        PRODUCTS: s.products,
+        ADDONS: Object.keys(s.addons || {}).length ? s.addons : store.ADDONS,
+        // Keep built-in surcharge / fresh / specific-time config; let the CMS
+        // override the basic editable fields (fees, threshold, lead time).
+        SETTINGS: Object.assign({}, store.SETTINGS, s.settings || {}),
+        DISCOUNT_CODES: Object.keys(s.discountCodes || {}).length ? s.discountCodes : store.DISCOUNT_CODES,
+      };
+    }
+  } catch (e) {
+    // Sanity not configured / private / empty / unreachable: use built-in.
   }
-  return product.price || 0;
+
+  _cache = store;
+  _cacheAt = now;
+  return store;
 }
 
-function unitPrice(line, product) {
-  let p = sizePrice(product, line.size);
-  for (const id of line.addOns || line.addons || []) {
-    if (ADDONS[id]) p += ADDONS[id].price;
-  }
-  return round2(p);
-}
+// ---- Pricing (pure; mirrors checkout.html) --------------------------------
 
-function isFresh(product) {
-  if (!product) return false;
-  if (product.fresh === true) return true;
-  const fresh = SETTINGS.freshCategories || ['Bubble Tea'];
-  return (product.tags || []).some((t) => fresh.includes(t));
-}
+function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, specificTimeOn = false }) {
+  const { PRODUCTS, ADDONS, SETTINGS, DISCOUNT_CODES } = store;
 
-function orderIsFresh(lines) {
-  return lines.some((l) => isFresh(getProduct(l.productId)));
-}
+  const getProduct = (id) => PRODUCTS.find((p) => p.id === id) || null;
 
-function surchargeFor(postal) {
-  const prefixes = SETTINGS.surchargePrefixes || [];
-  const p = (postal || '').slice(0, 2);
-  return p.length === 2 && prefixes.includes(p) ? (SETTINGS.surchargeFee || 0) : 0;
-}
+  const sizePrice = (product, label) => {
+    if (product.sizes && product.sizes.length) {
+      const s = product.sizes.find((x) => x.label === label);
+      return s ? s.price : product.sizes[0].price;
+    }
+    return product.price || 0;
+  };
 
-/**
- * Recompute the order total from the cart. Mirrors checkout.html's
- * computeStandardShip / computeSurcharge / computeSpecificTime / computeDiscount.
- */
-function priceOrder({ lines, fulfilment = 'delivery', postal, code, specificTimeOn = false }) {
+  const unitPrice = (line, product) => {
+    let p = sizePrice(product, line.size);
+    for (const id of line.addOns || line.addons || []) if (ADDONS[id]) p += ADDONS[id].price;
+    return round2(p);
+  };
+
+  const isFresh = (product) => {
+    if (!product) return false;
+    if (product.fresh === true) return true;
+    const fresh = SETTINGS.freshCategories || ['Bubble Tea'];
+    return (product.tags || []).some((t) => fresh.includes(t));
+  };
+
+  const surchargeFor = (pc) => {
+    const prefixes = SETTINGS.surchargePrefixes || [];
+    const p = (pc || '').slice(0, 2);
+    return p.length === 2 && prefixes.includes(p) ? (SETTINGS.surchargeFee || 0) : 0;
+  };
+
   const items = [];
   for (const l of lines) {
     const product = getProduct(l.productId);
@@ -69,7 +95,6 @@ function priceOrder({ lines, fulfilment = 'delivery', postal, code, specificTime
   }
   const subtotal = round2(items.reduce((s, i) => s + i.lineTotal, 0));
 
-  // Discount
   const appliedCode = code ? String(code).trim().toUpperCase() : null;
   const c = appliedCode ? DISCOUNT_CODES[appliedCode] : null;
   let discount = 0;
@@ -79,9 +104,8 @@ function priceOrder({ lines, fulfilment = 'delivery', postal, code, specificTime
   }
   const discountedSubtotal = round2(Math.max(0, subtotal - discount));
 
-  // Delivery, surcharge, specific-time
-  const fresh = orderIsFresh(lines);
-  let standardShip = 0;
+  const fresh = lines.some((l) => isFresh(getProduct(l.productId)));
+  let deliveryFee = 0;
   let surcharge = 0;
   let specificTime = 0;
   let freeDeliveryApplied = false;
@@ -90,15 +114,13 @@ function priceOrder({ lines, fulfilment = 'delivery', postal, code, specificTime
     const threshold = SETTINGS.freeDeliveryThreshold ?? 150;
     const fee = SETTINGS.deliveryFee ?? 30;
     freeDeliveryApplied = subtotal >= threshold || appliedCode === 'FREESHIP';
-    standardShip = subtotal === 0 || freeDeliveryApplied ? 0 : fee;
-
+    deliveryFee = subtotal === 0 || freeDeliveryApplied ? 0 : fee;
     surcharge = surchargeFor(postal);
-
     const addon = SETTINGS.specificTimeAddon || { fee: 30 };
     if (specificTimeOn && !fresh) specificTime = addon.fee;
   }
 
-  const total = round2(discountedSubtotal + standardShip + surcharge + specificTime);
+  const total = round2(discountedSubtotal + deliveryFee + surcharge + specificTime);
 
   return {
     items,
@@ -106,7 +128,7 @@ function priceOrder({ lines, fulfilment = 'delivery', postal, code, specificTime
     discountCode: c ? appliedCode : null,
     discount,
     discountedSubtotal,
-    deliveryFee: standardShip,
+    deliveryFee,
     surcharge,
     specificTimeFee: specificTime,
     total,
@@ -118,4 +140,4 @@ function priceOrder({ lines, fulfilment = 'delivery', postal, code, specificTime
   };
 }
 
-module.exports = { priceOrder, orderIsFresh, getProduct, isFresh, SETTINGS };
+module.exports = { getStore, priceOrder };

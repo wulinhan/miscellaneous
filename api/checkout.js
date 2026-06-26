@@ -2,7 +2,7 @@
 // create a Razorpay order, and return what the browser needs to pay. The
 // amount is never taken from the client.
 const crypto = require('crypto');
-const { priceOrder } = require('./_lib/engine');
+const { getStore, priceOrder } = require('./_lib/engine');
 const rp = require('./_lib/razorpay');
 
 module.exports = async (req, res) => {
@@ -22,7 +22,8 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Delivery requires a postal code' });
     }
 
-    const quote = priceOrder({ lines, fulfilment, postal, code, specificTimeOn });
+    const store = await getStore();
+    const quote = priceOrder(store, { lines, fulfilment, postal, code, specificTimeOn });
     const orderId =
       'SOF-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase();
 
