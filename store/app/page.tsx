@@ -1,27 +1,42 @@
-// Placeholder home page. The storefront UI (listing, product, checkout) will
-// be ported here from the static mock. The delivery/fee engine and the API
-// routes (/api/quote, /api/checkout, /api/razorpay-webhook) are already wired.
-
+import Link from 'next/link';
 import { getCatalog } from '@/lib/catalog';
 import { orderNowMessage } from '@/lib/schedule';
 
 export default async function Home() {
   const products = await getCatalog();
+  const message = orderNowMessage(new Date());
+
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 720, margin: '40px auto', padding: '0 20px' }}>
-      <h1>Sofnade store (scaffold)</h1>
-      <p>{orderNowMessage(new Date())}</p>
-      <h2>Sample catalog</h2>
-      <ul>
-        {products.map((p) => (
-          <li key={p.id}>
-            {p.title} — {p.kind} — from ${Math.min(...p.sizes.map((s) => s.price)).toFixed(2)}
-          </li>
-        ))}
-      </ul>
-      <p style={{ color: '#666' }}>
-        API: POST /api/quote, POST /api/checkout, POST /api/razorpay-webhook
-      </p>
+    <main className="wrap" style={{ paddingTop: 24, paddingBottom: 48 }}>
+      <section
+        style={{
+          background: 'var(--navy)',
+          color: '#fff',
+          borderRadius: 16,
+          padding: '28px 24px',
+          marginBottom: 24,
+        }}
+      >
+        <h1 style={{ margin: '0 0 8px' }}>Order Sofnade</h1>
+        <p style={{ margin: 0, color: '#fecd08', fontWeight: 600 }}>{message}</p>
+      </section>
+
+      <div className="grid">
+        {products.map((p) => {
+          const from = Math.min(...p.sizes.map((s) => s.price));
+          return (
+            <Link key={p.id} href={`/product/${p.id}`} className="card">
+              <div className="thumb">{p.emoji ?? '🛍️'}</div>
+              <div className="body">
+                {p.category && <span className="cat">{p.category}</span>}
+                <span className="title">{p.title}</span>
+                {p.shortDesc && <span className="note">{p.shortDesc}</span>}
+                <span className="price">from ${from.toFixed(2)}</span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </main>
   );
 }

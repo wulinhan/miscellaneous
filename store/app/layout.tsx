@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react';
+import './globals.css';
+import { CartProvider } from '@/lib/cart';
+import Header from '@/components/Header';
 
 export const metadata = {
   title: 'Sofnade',
@@ -8,7 +11,12 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <CartProvider>
+          <Header />
+          {children}
+        </CartProvider>
+      </body>
     </html>
   );
 }

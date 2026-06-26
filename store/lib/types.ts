@@ -12,6 +12,10 @@ export interface CatalogProduct {
   title: string;
   kind: ProductKind; // 'fresh' = freshly prepared, 'shelf' = shelf-stable
   sizes: CatalogSize[];
+  category?: string; // display grouping, e.g. "Bubble Tea", "Housebake Cookies"
+  shortDesc?: string;
+  emoji?: string; // placeholder visual until real images
+  addOnIds?: string[]; // applicable add-ons (drink toppings)
 }
 
 export interface AddOn {

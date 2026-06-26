@@ -26,8 +26,9 @@ export async function sanityQuery<T>(groq: string, params: Record<string, unknow
     headers: process.env.SANITY_READ_TOKEN
       ? { Authorization: `Bearer ${process.env.SANITY_READ_TOKEN}` }
       : {},
+    // Next.js extends RequestInit with `next` for ISR caching.
     next: { revalidate: 60 },
-  });
+  } as RequestInit & { next: { revalidate: number } });
   if (!res.ok) throw new Error(`Sanity ${res.status}: ${await res.text()}`);
   const body = (await res.json()) as { result: T };
   return body.result;
