@@ -434,3 +434,10 @@ function applyStore(store) {
   }
   if (store.settings) SETTINGS = Object.assign({}, SETTINGS, store.settings);
 }
+
+/* Node / Vercel serverless interop. Ignored in the browser (no `module`),
+   so the storefront is unaffected; the API functions require() this file to
+   recompute totals from the exact same catalog, settings and codes. */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { PRODUCTS, ADDONS, SETTINGS, DISCOUNT_CODES, CATEGORIES };
+}

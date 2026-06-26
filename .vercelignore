@@ -1,0 +1,8 @@
+# The Vercel project deploys the static storefront (root) + /api functions.
+# Everything below is not part of that deployment.
+store/
+studio/
+scripts/
+node_modules/
+.claude/
+*.md
