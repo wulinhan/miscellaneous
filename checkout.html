@@ -536,7 +536,20 @@
             name: 'Sofnade',
             description: json.orderId,
             prefill: { name: detail('name'), email: detail('email'), contact: detail('phone') },
-            handler: showConfirmation,
+            handler: async (resp) => {
+              // Verify the payment signature server-side before showing success.
+              try {
+                const v = await fetch('/api/verify-payment', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(resp)
+                });
+                const vj = await v.json().catch(() => ({}));
+                if (v.ok && vj.ok) showConfirmation();
+                else { toast('Payment could not be verified. If you were charged, please contact us.'); resetPlaceBtn(); }
+              } catch (e) {
+                toast('Payment verification failed. Please contact us.'); resetPlaceBtn();
+              }
+            },
             modal: { ondismiss: resetPlaceBtn }
           });
           rz.open();
