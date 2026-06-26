@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Checkout — Sofnade</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=24">
+  <link rel="stylesheet" href="css/styles.css?v=25">
 </head>
 <body>
   <div id="header"></div>
@@ -75,23 +75,20 @@
             <div class="field">
               <div class="slots" id="methods">
                 <div class="slot" data-method="pickup">Self pick-up<small>Free</small></div>
-                <div class="slot active" data-method="delivery">Islandwide delivery<small>$50, free over $100</small></div>
+                <div class="slot active" data-method="delivery">Islandwide delivery<small>$30, free over $150</small></div>
               </div>
             </div>
 
             <h3 style="margin:24px 0 14px" id="schedule-heading">Delivery date</h3>
-            <p class="card-desc" style="margin-top:0" id="schedule-note">Earliest delivery is 3 business days from today. Weekends are not available for delivery.</p>
+            <p class="card-desc" style="margin-top:0" id="schedule-note"></p>
             <div class="field">
               <label for="date-select">Choose a date</label>
               <select id="date-select"></select>
             </div>
-            <div class="field">
-              <label>Choose a time slot</label>
-              <div class="slots" id="slots">
-                <div class="slot active" data-slot="9am–2pm">Morning<small>9am – 2pm</small></div>
-                <div class="slot" data-slot="2–6pm">Afternoon<small>2pm – 6pm</small></div>
-              </div>
-            </div>
+
+            <!-- Timed area: 30-min slot for fresh food, or window note + optional
+                 specific-time add-on for shelf-stable-only orders. Filled by JS. -->
+            <div id="timed"></div>
           </section>
         </div>
       </div>
@@ -122,6 +119,12 @@
             <span id="sum-discount" style="color:var(--accent)">−$0.00</span>
           </div>
           <div class="summary-row"><span id="shipping-label">Islandwide delivery</span><span id="sum-shipping">$0.00</span></div>
+          <div class="summary-row" id="surcharge-row" style="display:none">
+            <span>Transport surcharge</span><span id="sum-surcharge">$0.00</span>
+          </div>
+          <div class="summary-row" id="specifictime-row" style="display:none">
+            <span>Specific time delivery</span><span id="sum-specifictime">$0.00</span>
+          </div>
           <div class="summary-row total"><span>Total</span><span id="sum-total">$0.00</span></div>
 
           <label class="tnc">
@@ -137,48 +140,33 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=24"></script>
-  <script src="js/config.js?v=24"></script>
-  <script src="js/store-data.js?v=24"></script>
-  <script src="js/images.js?v=24"></script>
-  <script src="js/cart.js?v=24"></script>
-  <script src="js/common.js?v=24"></script>
+  <script src="data/products.js?v=25"></script>
+  <script src="js/config.js?v=25"></script>
+  <script src="js/store-data.js?v=25"></script>
+  <script src="js/images.js?v=25"></script>
+  <script src="js/cart.js?v=25"></script>
+  <script src="js/common.js?v=25"></script>
   <script>
     renderChrome();
 
     // Set from SETTINGS in init() (CMS-overridable; these are fallbacks).
-    let SHIPPING_FEE = 50.00;
-    let FREE_SHIP_THRESHOLD = 100.00;
+    let SHIPPING_FEE = 30.00;
+    let FREE_SHIP_THRESHOLD = 150.00;
 
-    let appliedCode = null;          // key into DISCOUNT_CODES
-    let selectedSlot = '9am–2pm';
-    let deliveryMethod = 'delivery'; // 'delivery' (islandwide) | 'pickup'
+    let appliedCode = null;            // key into DISCOUNT_CODES
+    let deliveryMethod = 'delivery';   // 'delivery' (islandwide) | 'pickup'
+    let selectedSlot = null;           // fresh food: a 30-min slot value
+    let specificTimeOn = false;        // shelf-stable only: "Specific Time Delivery" add-on
+    let specificTime = null;           // chosen preferred time when the add-on is on
 
-    /* ---------- Delivery date options: 3 business days out, skip weekends ---------- */
-    function isWeekend(d) { const g = d.getDay(); return g === 0 || g === 6; }
-
-    function buildDateOptions() {
-      const out = [];
-      const cursor = new Date();
-      cursor.setHours(0, 0, 0, 0);
-      // Advance the configured number of business days for the earliest date.
-      let added = 0;
-      const lead = (typeof SETTINGS !== 'undefined' && SETTINGS.leadBusinessDays) || 3;
-      while (added < lead) {
-        cursor.setDate(cursor.getDate() + 1);
-        if (!isWeekend(cursor)) added++;
-      }
-      // Offer the next 14 available (weekday) delivery dates.
-      while (out.length < 14) {
-        if (!isWeekend(cursor)) out.push(new Date(cursor));
-        cursor.setDate(cursor.getDate() + 1);
-      }
-      return out;
+    /* True when the cart holds any freshly made item (drives slot vs date-only). */
+    function orderIsFresh() {
+      return Cart.all().some(l => isFreshProduct(getProduct(l.productId)));
     }
 
-    function fmtDate(d) {
-      return d.toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    }
+    /* ---------- Delivery date options (4pm cut-off + 3rd business day) ---------- */
+    function buildDateOptions() { return Schedule.dates(14); }
+    function fmtDate(d) { return Schedule.formatDate(d); }
 
     /* ---------- Cart rendering ---------- */
     function lineMeta(line) {
@@ -249,15 +237,82 @@
       return l ? l.qty : 1;
     }
 
+    /* ---------- Timed area: fresh slot vs shelf-stable add-on ---------- */
+    function renderTimed() {
+      const wrap = document.getElementById('timed');
+      if (!wrap) return;
+      const fresh = orderIsFresh();
+      const win = SETTINGS.shelfWindowLabel || '9:00 AM – 5:00 PM';
+      const addon = SETTINGS.specificTimeAddon || { enabled: true, fee: 30.00, label: 'Specific Time Delivery' };
+
+      if (fresh) {
+        // Fresh / mixed order: a 30-minute slot is required.
+        const slots = Schedule.freshSlots();
+        if (!selectedSlot || !slots.some(s => s.value === selectedSlot)) selectedSlot = slots[0].value;
+        specificTimeOn = false; specificTime = null;
+        wrap.innerHTML = `
+          <div class="field">
+            <label for="slot-select">Choose a 30-minute time slot</label>
+            <select id="slot-select">
+              ${slots.map(s => `<option value="${s.value}" ${s.value === selectedSlot ? 'selected' : ''}>${s.label}</option>`).join('')}
+            </select>
+          </div>`;
+        document.getElementById('slot-select').addEventListener('change', e => {
+          selectedSlot = e.target.value; updatePlaceOrderState();
+        });
+      } else {
+        // Shelf-stable only: a date is enough; offer the paid specific-time add-on (delivery only).
+        selectedSlot = null;
+        const showAddon = addon.enabled && deliveryMethod === 'delivery';
+        const times = Schedule.specificTimes();
+        wrap.innerHTML = `
+          <p class="card-desc" style="margin-top:0">Delivered any time within our standard window (${win}); no time slot needed.</p>
+          ${showAddon ? `
+          <label class="tnc" style="margin-top:6px">
+            <input type="checkbox" id="specific-time-check">
+            <span>Add <strong>${addon.label} (+${money(addon.fee)})</strong> and choose a preferred delivery time.</span>
+          </label>
+          <div class="field" id="specific-time-field" style="display:none;margin-top:10px">
+            <label for="specific-time-select">Preferred time</label>
+            <select id="specific-time-select">
+              ${times.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+            </select>
+          </div>` : ''}`;
+        if (showAddon) {
+          const chk = document.getElementById('specific-time-check');
+          const fld = document.getElementById('specific-time-field');
+          const sel = document.getElementById('specific-time-select');
+          specificTimeOn = false; specificTime = times[0] ? times[0].value : null;
+          chk.addEventListener('change', () => {
+            specificTimeOn = chk.checked;
+            fld.style.display = chk.checked ? 'block' : 'none';
+            specificTime = chk.checked ? sel.value : null;
+            renderSummary();
+          });
+          sel.addEventListener('change', () => { specificTime = sel.value; });
+        }
+      }
+      updatePlaceOrderState();
+    }
+
     /* ---------- Summary / totals ----------
-       The free-delivery rule is checked against the DISCOUNTED price, so a
-       50% code (SOFNADE50) can push an order back below the $100 threshold. */
-    function computeShipping(discountedTotal) {
+       The free-delivery threshold is measured on the PRE-discount subtotal.
+       Standard fee, transport surcharge and the specific-time add-on are
+       separate lines; the surcharge applies even when delivery is free. */
+    function computeStandardShip(subtotal) {
       if (deliveryMethod === 'pickup') return 0;     // self pick-up is always free
       if (appliedCode === 'FREESHIP') return 0;
-      if (discountedTotal === 0) return 0;
-      if (discountedTotal >= FREE_SHIP_THRESHOLD) return 0;
+      if (subtotal === 0) return 0;
+      if (subtotal >= FREE_SHIP_THRESHOLD) return 0;
       return SHIPPING_FEE;
+    }
+    function computeSurcharge() {
+      if (deliveryMethod === 'pickup') return 0;
+      return Schedule.surchargeFor(detail('postal'));
+    }
+    function computeSpecificTime() {
+      const addon = SETTINGS.specificTimeAddon || { fee: 30.00 };
+      return (specificTimeOn && deliveryMethod === 'delivery' && !orderIsFresh()) ? addon.fee : 0;
     }
 
     function computeDiscount(subtotal) {
@@ -273,13 +328,24 @@
       const subtotal = Cart.subtotal();
       const discount = computeDiscount(subtotal);
       const discountedTotal = Math.max(0, subtotal - discount);
-      const shipping = computeShipping(discountedTotal);
-      const total = discountedTotal + shipping;
+      const standardShip = computeStandardShip(subtotal);
+      const surcharge = computeSurcharge();
+      const specific = computeSpecificTime();
+      const total = discountedTotal + standardShip + surcharge + specific;
 
       document.getElementById('sum-subtotal').textContent = money(subtotal);
-      document.getElementById('sum-shipping').textContent = shipping === 0 ? 'FREE' : money(shipping);
+      document.getElementById('sum-shipping').textContent = standardShip === 0 ? 'FREE' : money(standardShip);
       document.getElementById('shipping-label').textContent =
         deliveryMethod === 'pickup' ? 'Self pick-up' : 'Islandwide delivery';
+
+      const surRow = document.getElementById('surcharge-row');
+      surRow.style.display = surcharge > 0 ? 'flex' : 'none';
+      document.getElementById('sum-surcharge').textContent = money(surcharge);
+
+      const stRow = document.getElementById('specifictime-row');
+      stRow.style.display = specific > 0 ? 'flex' : 'none';
+      document.getElementById('sum-specifictime').textContent = money(specific);
+
       document.getElementById('sum-total').textContent = money(total);
 
       const discRow = document.getElementById('discount-row');
@@ -293,17 +359,17 @@
       }
 
       // Free-delivery progress bar (hidden for self pick-up). Tracks the
-      // discounted total against the $100 free-delivery threshold.
+      // PRE-discount subtotal against the free-delivery threshold.
       const shipBar = document.querySelector('.ship-bar');
       if (deliveryMethod === 'pickup') {
         shipBar.style.display = 'none';
       } else {
         shipBar.style.display = 'block';
-        const pct = Math.min(100, discountedTotal / FREE_SHIP_THRESHOLD * 100);
+        const pct = Math.min(100, subtotal / FREE_SHIP_THRESHOLD * 100);
         document.getElementById('ship-fill').style.width = pct + '%';
-        const remain = FREE_SHIP_THRESHOLD - discountedTotal;
+        const remain = FREE_SHIP_THRESHOLD - subtotal;
         document.getElementById('ship-label').innerHTML =
-          (shipping === 0)
+          (standardShip === 0)
             ? '🎉 <strong>You have unlocked free islandwide delivery!</strong>'
             : `You are <strong>${money(remain)}</strong> away from free delivery.`;
       }
@@ -336,9 +402,9 @@
     function updateScheduleLabels() {
       const pickup = deliveryMethod === 'pickup';
       document.getElementById('schedule-heading').textContent = pickup ? 'Pick-up date' : 'Delivery date';
-      document.getElementById('schedule-note').textContent = pickup
-        ? 'Collection is available from 3 business days from today. Weekends are not available for pick-up.'
-        : 'Earliest delivery is 3 business days from today. Weekends are not available for delivery.';
+      const word = pickup ? 'collection' : 'delivery';
+      document.getElementById('schedule-note').textContent =
+        `Order before ${Schedule.cutoffLabel()} for the earliest dates. The earliest ${word} is the 3rd business day; weekends and Singapore public holidays are not available.`;
       // The address is only required for islandwide delivery.
       document.querySelectorAll('.req-delivery').forEach(el => { el.style.display = pickup ? 'none' : 'inline'; });
     }
@@ -361,10 +427,13 @@
 
     /* ---------- Place order gating ---------- */
     function updatePlaceOrderState() {
+      const dateEl = document.getElementById('date-select');
+      const slotOk = !orderIsFresh() || !!selectedSlot;   // fresh orders must pick a slot
       const ok = Cart.count() > 0
         && detailsValid()
         && document.getElementById('tnc-check').checked
-        && document.getElementById('date-select').value;
+        && dateEl && dateEl.value
+        && slotOk;
       document.getElementById('place-order').disabled = !ok;
     }
 
@@ -379,20 +448,8 @@
       // Date dropdown
       const dateSelect = document.getElementById('date-select');
       dateSelect.innerHTML = buildDateOptions()
-        .map(d => `<option value="${d.toISOString().slice(0,10)}">${fmtDate(d)}</option>`)
+        .map(d => `<option value="${Schedule.ymd(d)}">${fmtDate(d)}</option>`)
         .join('');
-
-      // Time slots, rendered from settings (first one active by default)
-      selectedSlot = SETTINGS.timeSlots[0].value;
-      document.getElementById('slots').innerHTML = SETTINGS.timeSlots.map((s, i) =>
-        `<div class="slot ${i === 0 ? 'active' : ''}" data-slot="${s.value}">${s.label}<small>${s.sub}</small></div>`).join('');
-      document.querySelectorAll('#slots .slot').forEach(s => {
-        s.addEventListener('click', () => {
-          document.querySelectorAll('#slots .slot').forEach(x => x.classList.remove('active'));
-          s.classList.add('active');
-          selectedSlot = s.dataset.slot;
-        });
-      });
 
       // Delivery method (self pick-up vs islandwide delivery)
       document.querySelectorAll('#methods .slot').forEach(s => {
@@ -401,6 +458,7 @@
           s.classList.add('active');
           deliveryMethod = s.dataset.method;
           updateScheduleLabels();
+          renderTimed();
           renderSummary();
         });
       });
@@ -410,17 +468,27 @@
       document.getElementById('tnc-check').addEventListener('change', updatePlaceOrderState);
       dateSelect.addEventListener('change', updatePlaceOrderState);
 
-      // Re-validate as the customer fills in their details.
+      // Re-validate (and re-price the surcharge from the postal code) as details change.
       ['d-name','d-business','d-phone','d-email','d-addr1','d-addr2','d-postal','d-notes']
-        .forEach(id => document.getElementById(id).addEventListener('input', updatePlaceOrderState));
+        .forEach(id => document.getElementById(id).addEventListener('input', () => { updatePlaceOrderState(); renderSummary(); }));
 
       document.getElementById('place-order').addEventListener('click', () => {
         const date = dateSelect.options[dateSelect.selectedIndex].text;
         const name = detail('name').split(' ')[0];
         const hi = name ? `Thank you, ${name}!` : 'Thank you for your order!';
+        let when;
+        if (orderIsFresh()) {
+          const slot = Schedule.freshSlots().find(s => s.value === selectedSlot);
+          when = `during the <strong>${slot ? slot.label : selectedSlot}</strong> slot`;
+        } else if (specificTimeOn && specificTime) {
+          const t = Schedule.specificTimes().find(x => x.value === specificTime);
+          when = `at your preferred time of <strong>${t ? t.label : specificTime}</strong>`;
+        } else {
+          when = `within our <strong>${SETTINGS.shelfWindowLabel || '9:00 AM – 5:00 PM'}</strong> window`;
+        }
         const line = deliveryMethod === 'pickup'
-          ? `You can collect your order on <strong>${date}</strong> during the <strong>${selectedSlot}</strong> slot.`
-          : `We will deliver to <strong>${detail('addr1')}${detail('postal') ? ', Singapore ' + detail('postal') : ''}</strong> on <strong>${date}</strong> during the <strong>${selectedSlot}</strong> slot.`;
+          ? `You can collect your order on <strong>${date}</strong> ${when}.`
+          : `We will deliver to <strong>${detail('addr1')}${detail('postal') ? ', Singapore ' + detail('postal') : ''}</strong> on <strong>${date}</strong> ${when}.`;
         Cart.clear();
         toast('Order placed! 🎉');
         document.getElementById('checkout').innerHTML = `
@@ -435,11 +503,13 @@
 
       updateScheduleLabels();
       renderCart();
+      renderTimed();
       renderSummary();
     }
 
-    // Re-render whenever the cart changes (qty edits, removals).
-    document.addEventListener('cart:changed', () => { renderCart(); renderSummary(); });
+    // Re-render whenever the cart changes (qty edits, removals) — the order may
+    // flip between fresh and shelf-stable, which changes the timed area.
+    document.addEventListener('cart:changed', () => { renderCart(); renderTimed(); renderSummary(); });
 
     // Load CMS content (if configured), then wire up. Falls back to built-in data.
     (window.loadStore ? window.loadStore() : Promise.resolve()).then(init);

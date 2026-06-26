@@ -373,15 +373,49 @@ let SETTINGS = {
   brandName: 'Sofnade',
   heroTitle: 'Crafted fresh.\nSince 2015.',
   heroSubtitle: 'Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.',
-  deliveryFee: 50.00,
-  freeDeliveryThreshold: 100.00,
+
+  /* ---- Delivery fees ---- */
+  deliveryFee: 30.00,             // flat islandwide fee below the free threshold
+  freeDeliveryThreshold: 150.00,  // free delivery at/above this order value
+  freeDeliveryBeforeDiscount: true, // threshold is measured on the pre-discount subtotal
   pickupEnabled: true,
-  leadBusinessDays: 3,
+
+  /* ---- Lead time & cut-off ---- */
+  cutoffHour: 16,                 // 4:00 PM (Asia/Singapore) order cut-off
+  leadBusinessDays: 3,            // earliest delivery is the 3rd business day
+  publicHolidays: [],             // 'YYYY-MM-DD' SG public holidays (skipped like weekends)
+
+  /* ---- Fresh vs shelf-stable ----
+     Fresh food needs a 30-minute time slot. Shelf-stable needs a date only,
+     with an optional paid "specific time" add-on. A product counts as fresh
+     if it carries p.fresh === true or belongs to one of these categories. */
+  freshCategories: ['Bubble Tea'],
+  freshSlot: { startHour: 9, endHour: 17, intervalMins: 30 }, // 9:00 AM – 5:00 PM, 30-min slots
+  shelfWindowLabel: '9:00 AM – 5:00 PM',
+  specificTimeAddon: { enabled: true, fee: 30.00, label: 'Specific Time Delivery' },
+
+  /* ---- Transport surcharge (restricted areas) ----
+     Applies in addition to any standard fee (even free delivery) when the
+     delivery postal code's first two digits are listed. */
+  surchargeFee: 15.00,
+  surchargePrefixes: ['01','03','04','05','06','07','08','09','10','17','18','19','22','23','49','63'],
+
+  /* Legacy two-slot config, kept for backward compatibility. */
   timeSlots: [
     { value: '9am–2pm', label: 'Morning',   sub: '9am – 2pm' },
     { value: '2–6pm',   label: 'Afternoon', sub: '2pm – 6pm' }
   ]
 };
+
+/* Fresh food (needs a timed slot) vs shelf-stable (date only). A product is
+   fresh when flagged p.fresh, or when it belongs to a fresh category. */
+function isFreshProduct(product) {
+  if (!product) return false;
+  if (product.fresh === true) return true;
+  if (product.fresh === false) return false;
+  const fresh = (typeof SETTINGS !== 'undefined' && SETTINGS.freshCategories) || ['Bubble Tea'];
+  return (product.tags || []).some(t => fresh.includes(t));
+}
 
 /* =========================================================================
    applyStore(): overwrite the built-in catalog/settings with CMS data.
