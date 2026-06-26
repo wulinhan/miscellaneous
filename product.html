@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Product — Sofnade</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=24">
+  <link rel="stylesheet" href="css/styles.css?v=25">
 </head>
 <body>
   <div id="header"></div>
@@ -25,12 +25,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=24"></script>
-  <script src="js/config.js?v=24"></script>
-  <script src="js/store-data.js?v=24"></script>
-  <script src="js/images.js?v=24"></script>
-  <script src="js/cart.js?v=24"></script>
-  <script src="js/common.js?v=24"></script>
+  <script src="data/products.js?v=25"></script>
+  <script src="js/config.js?v=25"></script>
+  <script src="js/store-data.js?v=25"></script>
+  <script src="js/images.js?v=25"></script>
+  <script src="js/cart.js?v=25"></script>
+  <script src="js/common.js?v=25"></script>
   <script>
     renderChrome();
 
@@ -52,12 +52,6 @@
     }
 
     /* ---------- Per-product copy generators ---------- */
-    function isWeekend(d) { const g = d.getDay(); return g === 0 || g === 6; }
-    function earliestDeliveryDayName() {
-      const d = new Date(); let added = 0;
-      while (added < 3) { d.setDate(d.getDate() + 1); if (!isWeekend(d)) added++; }
-      return d.toLocaleDateString('en-SG', { weekday: 'long' });
-    }
 
     function whatsIncluded(p) {
       const size = hasSizeChoice(p) ? 'your chosen size' : (p.sizes[0] ? p.sizes[0].label : '');
@@ -98,14 +92,25 @@
       ].map(x => `<div class="trust-badge ${x.c}"><span>${x.t}</span><span>${x.b}</span></div>`).join('');
     }
 
-    function deliveryFaqHTML() {
+    function deliveryFaqHTML(p) {
+      const fresh = isFreshProduct(p);
+      const window = (typeof SETTINGS !== 'undefined' && SETTINGS.shelfWindowLabel) || '9:00 AM – 5:00 PM';
+      const addon = (typeof SETTINGS !== 'undefined' && SETTINGS.specificTimeAddon) || { fee: 30 };
+      const sched = fresh
+        ? `<p><strong>FRESH FOOD &mdash; choose a 30-minute slot.</strong><br>
+            Freshly made items are delivered in a 30-minute window you pick at checkout (${window}),
+            so everything arrives at its best.</p>`
+        : `<p><strong>SHELF-STABLE &mdash; pick a date.</strong><br>
+            Delivered any time within our standard window (${window}); no time slot needed. Want a
+            specific time? Add <strong>Specific Time Delivery (+${money(addon.fee)})</strong> at checkout.</p>`;
       return `
         <p><strong>STORE PICK-UP &mdash; always free.</strong><br>
-        Collect from our shop at your convenience. Choose a date and a morning (9am&ndash;2pm) or
-        afternoon (2&ndash;6pm) slot; your slot helps us prepare your order just in time for maximum freshness.</p>
-        <p><strong>ISLANDWIDE DELIVERY &mdash; $50, free over $100.</strong><br>
-        We deliver across Singapore. Pick your delivery date and a 9am&ndash;2pm or 2&ndash;6pm slot.
-        The earliest available date is 3 business days from your order, and weekends are not available for delivery.</p>
+        Collect from our shop on your chosen date.</p>
+        <p><strong>ISLANDWIDE DELIVERY &mdash; ${money(SETTINGS.deliveryFee)}, free over ${money(SETTINGS.freeDeliveryThreshold)}.</strong><br>
+        We deliver across Singapore. The earliest date is the 3rd business day from your order; weekends
+        and Singapore public holidays are not counted. A ${money(SETTINGS.surchargeFee)} transport surcharge
+        applies to a few restricted postal areas.</p>
+        ${sched}
         <p>Need to change an order? Reach us at least 48 hours before your chosen date and we will do our best to help.</p>`;
     }
 
@@ -137,7 +142,9 @@
       const cat = primaryCategory(p);
       const gallery = productGallery(p);
       const fromPrice = p.sizes[0].price;
-      const earliestDay = earliestDeliveryDayName();
+      const earliestStr = Schedule.formatDate(Schedule.earliest());
+      const orderByMsg = Schedule.orderByMessage();
+      const freshItem = isFreshProduct(p);
 
       document.getElementById('crumb').innerHTML =
         `<a href="index.html">Shop</a> / <a href="index.html?cat=${encodeURIComponent(cat)}">${cat}</a> / ${p.title}`;
@@ -223,15 +230,16 @@
               <button class="btn block" id="add-to-cart"><span class="btn-label">Add to cart · <span id="add-price">${money(fromPrice)}</span></span></button>
             </div>
 
-            <div class="notice">Free islandwide delivery on orders over $100, or choose free self pick-up. Delivery from 3 business days out.</div>
+            <div class="notice">Free islandwide delivery on orders over ${money(SETTINGS.freeDeliveryThreshold)}, or choose free self pick-up. Earliest delivery is the 3rd business day.</div>
 
             <div class="info-accordion">
               <details open>
-                <summary><span class="acc-head">${icon('clock')}<span class="acc-accent">Order today, get it ${earliestDay}!</span></span></summary>
+                <summary><span class="acc-head">${icon('clock')}<span class="acc-accent">Order now, get it by ${earliestStr}</span></span></summary>
                 <div class="acc-body">
-                  Order today and the earliest we can have it ready is <strong>${earliestDay}</strong>,
-                  3 business days out. Pick your exact date and time slot at checkout, or collect it
-                  free from our shop.
+                  ${orderByMsg} The earliest delivery is the 3rd business day; weekends and Singapore
+                  public holidays are not counted. ${freshItem
+                    ? 'As a freshly made item, you will pick your exact date and a 30-minute time slot at checkout.'
+                    : 'Pick your delivery date at checkout (delivered within our standard ' + ((typeof SETTINGS !== 'undefined' && SETTINGS.shelfWindowLabel) || '9:00 AM – 5:00 PM') + ' window), or collect it free from our shop.'}
                 </div>
               </details>
               <details>
@@ -248,7 +256,7 @@
               </details>
               <details>
                 <summary><span class="acc-head">${icon('truck')}Islandwide delivery &amp; pickup options</span></summary>
-                <div class="acc-body">${deliveryFaqHTML()}</div>
+                <div class="acc-body">${deliveryFaqHTML(p)}</div>
               </details>
               <details>
                 <summary><span class="acc-head">${icon('info')}About allergens</span></summary>
