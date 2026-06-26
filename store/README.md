@@ -22,13 +22,26 @@ Scaffolded and validated:
 - API routes: `POST /api/quote`, `POST /api/checkout`, `POST /api/razorpay-webhook`.
 - `test/logic.test.ts` — the worked date examples and all fee scenarios.
 
+CMS (Sanity) is wired into the storefront data layer:
+
+- `lib/catalog.ts` reads products + toppings from Sanity (GROQ over the read-only
+  HTTP API, no SDK), maps them to the storefront shape, derives `fresh`/`shelf`
+  from the product's category, and shows the uploaded photo when present.
+- `lib/coupons.ts` resolves discount codes from Sanity, including the
+  `shipping` (free-delivery) type now honoured by the pricing engine.
+- `lib/settings.ts` reads the `siteSettings` document (hero copy, delivery fee,
+  free-delivery threshold, time slots); the home hero and the delivery
+  fee/threshold used in pricing come from it.
+- All three fall back to their built-in samples when Sanity is unset
+  (`SANITY_PROJECT_ID` / `SANITY_DATASET`) or unreachable, so the shop never goes
+  blank. Set `SANITY_READ_TOKEN` only if the dataset is private.
+
 Stubbed (wire up with env/services):
 
-- `lib/sanity.ts` (catalog currently uses an in-memory sample in `lib/catalog.ts`)
 - `lib/razorpay.ts`, `lib/db.ts` (Supabase), `lib/notion.ts`
 
-To do next: port the storefront UI (listing, product, checkout) from the static
-mock; finish the webhook's order load + Notion mirror + Resend receipt.
+To do next: finish the webhook's order load + Notion mirror + Resend receipt;
+move the SG public-holiday list into Sanity so the owner can edit it.
 
 ## Run
 

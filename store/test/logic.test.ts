@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { earliestDeliveryDate, freshSlots, resolveOrderType, prettyDate } from '../lib/schedule';
 import { quote } from '../lib/pricing';
+import { mapProduct } from '../lib/catalog';
+import { resolveDiscount } from '../lib/coupons';
 import type { CatalogProduct } from '../lib/types';
 
 const HOLIDAYS = new Set<string>(); // none, for deterministic weekday tests
@@ -114,6 +116,77 @@ describe('pricing', () => {
     expect(q.deliveryFee).toBe(0);
     expect(q.surcharge).toBe(0);
     expect(q.total).toBe(49);
+  });
+
+  it('free-delivery (shipping) code zeroes delivery but not the subtotal; surcharge still applies', () => {
+    const q = quote({
+      lines: lines(5), // 49, well below the 150 threshold
+      catalogById: byId,
+      fulfilment: 'delivery',
+      postal: '498765', // surcharge prefix
+      discount: { code: 'FREESHIP', type: 'shipping', value: 0 },
+      orderType: 'shelf',
+    });
+    expect(q.discount).toBe(0); // no money off the subtotal
+    expect(q.freeDeliveryApplied).toBe(true);
+    expect(q.deliveryFee).toBe(0);
+    expect(q.surcharge).toBe(15);
+    expect(q.total).toBe(64); // 49 + 15 surcharge
+  });
+
+  it('CMS config can override the delivery fee and free-delivery threshold', () => {
+    const q = quote({
+      lines: lines(5), // 49
+      catalogById: byId,
+      fulfilment: 'delivery',
+      postal: '530000',
+      orderType: 'shelf',
+      config: { standardDeliveryFee: 12, freeDeliveryThreshold: 40 },
+    });
+    // 49 >= 40 threshold -> free delivery, fee override never charged.
+    expect(q.freeDeliveryApplied).toBe(true);
+    expect(q.deliveryFee).toBe(0);
+    expect(q.total).toBe(49);
+  });
+});
+
+describe('catalog mapping (Sanity -> CatalogProduct)', () => {
+  const raw = {
+    id: 'lychee-mint-tea',
+    title: 'Lychee Mint Tea',
+    shortDesc: 'Sweet lychee and fresh mint.',
+    category: 'Bubble Tea',
+    categories: ['Bubble Tea'],
+    imageRef: 'image-abc123-800x800-jpg',
+    sizes: [{ label: 'Regular cup (500ml)', price: 3.6 }],
+    addOnIds: ['pearls', null, 'grass-jelly'],
+  };
+
+  it('derives fresh kind from a fresh category and keeps non-null add-ons', () => {
+    const p = mapProduct(raw);
+    expect(p.kind).toBe('fresh');
+    expect(p.addOnIds).toEqual(['pearls', 'grass-jelly']);
+    expect(p.emoji).toBe('🧋');
+    // No SANITY env in tests -> no CDN URL can be built.
+    expect(p.image).toBeUndefined();
+  });
+
+  it('non-fresh categories map to shelf and drop empty add-on lists', () => {
+    const p = mapProduct({ ...raw, category: 'Housebake Cookies', categories: ['Housebake Cookies'], addOnIds: [] });
+    expect(p.kind).toBe('shelf');
+    expect(p.addOnIds).toBeUndefined();
+  });
+});
+
+describe('discount resolution (fallback, no Sanity)', () => {
+  it('resolves the built-in code case-insensitively', async () => {
+    const d = await resolveDiscount('sofnade50');
+    expect(d).toEqual({ code: 'SOFNADE50', type: 'percent', value: 50 });
+  });
+  it('returns null for blank or unknown codes', async () => {
+    expect(await resolveDiscount('')).toBeNull();
+    expect(await resolveDiscount(null)).toBeNull();
+    expect(await resolveDiscount('NOPE')).toBeNull();
   });
 });
 

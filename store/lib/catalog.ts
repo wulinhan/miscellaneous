@@ -7,7 +7,9 @@
 //   fresh  = Bubble Tea (cups), snack platters, briyani, bento, buffet
 //   shelf  = snack packets, cookie packets, bottled drinks
 
-import type { AddOn, CatalogProduct } from './types';
+import type { AddOn, CatalogProduct, ProductKind } from './types';
+import { imageUrl, isSanityConfigured, sanityQuery } from './sanity';
+import { SCHEDULE_CONFIG } from './schedule';
 
 const DRINK_ADDONS = ['pearls', 'taro-balls', 'aiyu-jelly', 'brown-sugar-jelly', 'grass-jelly'];
 
@@ -98,9 +100,81 @@ const SAMPLE_ADDONS: AddOn[] = [
 export const MAX_TOPPINGS = 2;
 export const SUGAR_LEVELS = ['100% sugar', '75% sugar', '50% sugar', '25% sugar', '0% sugar'];
 
+// A pleasant fallback glyph per category for products without an uploaded photo.
+const CATEGORY_EMOJI: Record<string, string> = {
+  'Bubble Tea': '🧋',
+  'Housebake Cookies': '🍪',
+  Sweets: '🧁',
+  Snacks: '🍿',
+  'Retro Snacks': '🍬',
+  'Gift Sets': '🎁',
+  'Christmas Festive': '🎄',
+  Deepavali: '🪔',
+  'Hari Raya': '🌙',
+};
+
+// ---- Sanity mapping --------------------------------------------------------
+
+interface RawProduct {
+  id: string | null;
+  title: string;
+  shortDesc: string | null;
+  category: string | null;
+  categories: (string | null)[] | null;
+  imageRef: string | null;
+  sizes: { label: string; price: number }[] | null;
+  addOnIds: (string | null)[] | null;
+}
+
+const PRODUCTS_GROQ = `*[_type == "product" && defined(slug.current) && count(sizes) > 0] | order(order asc, title asc){
+  "id": slug.current,
+  title,
+  shortDesc,
+  "category": primaryCategory->title,
+  "categories": categories[]->title,
+  "imageRef": images[0].asset._ref,
+  sizes[]{label, price},
+  "addOnIds": toppings[]->slug.current
+}`;
+
+const TOPPINGS_GROQ = `*[_type == "topping" && defined(slug.current)] | order(price asc, title asc){
+  "id": slug.current,
+  title,
+  price
+}`;
+
+/** Map a raw Sanity product to the storefront's CatalogProduct shape. Exported
+ *  for unit testing the kind-derivation and fallbacks. */
+export function mapProduct(raw: RawProduct): CatalogProduct {
+  const category = raw.category ?? raw.categories?.find(Boolean) ?? undefined;
+  const kind: ProductKind =
+    category && SCHEDULE_CONFIG.freshCategories.includes(category) ? 'fresh' : 'shelf';
+  const addOnIds = (raw.addOnIds ?? []).filter((x): x is string => Boolean(x));
+  return {
+    id: raw.id as string,
+    title: raw.title,
+    kind,
+    sizes: (raw.sizes ?? []).map((s) => ({ label: s.label, price: s.price })),
+    category: category ?? undefined,
+    shortDesc: raw.shortDesc ?? undefined,
+    emoji: category ? CATEGORY_EMOJI[category] : undefined,
+    image: imageUrl(raw.imageRef, { width: 800 }),
+    addOnIds: addOnIds.length ? addOnIds : undefined,
+  };
+}
+
 export async function getCatalog(): Promise<CatalogProduct[]> {
-  // TODO: replace with Sanity fetch (see sanity.ts) when configured.
-  return SAMPLE_PRODUCTS;
+  if (!isSanityConfigured()) return SAMPLE_PRODUCTS;
+  try {
+    const raw = await sanityQuery<RawProduct[]>(PRODUCTS_GROQ);
+    const mapped = (raw ?? []).filter((p) => p.id).map(mapProduct);
+    // If the dataset is empty (e.g. seed not yet imported), keep the storefront
+    // populated with the built-in sample rather than showing a blank shop.
+    return mapped.length ? mapped : SAMPLE_PRODUCTS;
+  } catch (err) {
+    console.error('[catalog] Sanity products fetch failed, using fallback:', (err as Error).message);
+    return SAMPLE_PRODUCTS;
+  }
 }
 
 export async function getProduct(id: string): Promise<CatalogProduct | undefined> {
@@ -113,7 +187,19 @@ export async function getCatalogById(): Promise<Record<string, CatalogProduct>> 
 }
 
 export async function getAddOns(): Promise<AddOn[]> {
-  return SAMPLE_ADDONS;
+  if (!isSanityConfigured()) return SAMPLE_ADDONS;
+  try {
+    const raw = await sanityQuery<{ id: string | null; title: string; price: number | null }[]>(
+      TOPPINGS_GROQ,
+    );
+    const mapped = (raw ?? [])
+      .filter((t) => t.id)
+      .map((t) => ({ id: t.id as string, title: t.title, price: t.price ?? 0 }));
+    return mapped.length ? mapped : SAMPLE_ADDONS;
+  } catch (err) {
+    console.error('[catalog] Sanity toppings fetch failed, using fallback:', (err as Error).message);
+    return SAMPLE_ADDONS;
+  }
 }
 
 export async function getAddOnsById(): Promise<Record<string, AddOn>> {

@@ -37,6 +37,8 @@ export interface QuoteInput {
   discount?: Discount | null;
   orderType: OrderType;
   specificTimeSelected?: boolean;
+  // Optional CMS-driven overrides; default to PRICING_CONFIG when omitted.
+  config?: { freeDeliveryThreshold?: number; standardDeliveryFee?: number };
 }
 
 export interface QuoteLine {
@@ -97,15 +99,17 @@ export function quote(input: QuoteInput): Quote {
 
   const subtotal = round2(lines.reduce((s, l) => s + l.lineTotal, 0));
 
-  // Discount
+  // Discount. 'shipping' (free delivery) takes nothing off the subtotal — it is
+  // applied to the delivery fee below.
   let discount = 0;
   let discountCode: string | null = null;
   if (input.discount) {
     discountCode = input.discount.code;
-    discount =
-      input.discount.type === 'percent'
-        ? round2((subtotal * input.discount.value) / 100)
-        : round2(Math.min(input.discount.value, subtotal));
+    if (input.discount.type === 'percent') {
+      discount = round2((subtotal * input.discount.value) / 100);
+    } else if (input.discount.type === 'amount') {
+      discount = round2(Math.min(input.discount.value, subtotal));
+    }
   }
   const discountedSubtotal = round2(subtotal - discount);
 
@@ -117,9 +121,12 @@ export function quote(input: QuoteInput): Quote {
   let surchargeApplied = false;
 
   if (input.fulfilment === 'delivery') {
+    const threshold = input.config?.freeDeliveryThreshold ?? PRICING_CONFIG.freeDeliveryThreshold;
+    const standardFee = input.config?.standardDeliveryFee ?? PRICING_CONFIG.standardDeliveryFee;
     // Free-delivery threshold is measured on the subtotal BEFORE discount.
-    freeDeliveryApplied = subtotal >= PRICING_CONFIG.freeDeliveryThreshold;
-    deliveryFee = freeDeliveryApplied ? 0 : PRICING_CONFIG.standardDeliveryFee;
+    // A 'shipping' discount code also unlocks free delivery regardless of total.
+    freeDeliveryApplied = subtotal >= threshold || input.discount?.type === 'shipping';
+    deliveryFee = freeDeliveryApplied ? 0 : standardFee;
 
     // Transport surcharge ALWAYS applies to listed areas, even on free delivery.
     const prefix = (input.postal ?? '').slice(0, 2);

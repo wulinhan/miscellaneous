@@ -14,7 +14,8 @@ export interface CatalogProduct {
   sizes: CatalogSize[];
   category?: string; // display grouping, e.g. "Bubble Tea", "Housebake Cookies"
   shortDesc?: string;
-  emoji?: string; // placeholder visual until real images
+  emoji?: string; // placeholder visual when there is no photo
+  image?: string; // CMS photo URL (first product image), when available
   addOnIds?: string[]; // applicable add-ons (drink toppings)
 }
 
@@ -48,6 +49,8 @@ export type OrderType = 'fresh' | 'shelf';
 
 export interface Discount {
   code: string;
-  type: 'percent' | 'amount';
-  value: number; // percent (0-100) or SGD amount
+  // 'percent' = % off subtotal, 'amount' = $ off subtotal,
+  // 'shipping' = free islandwide delivery (no money off the subtotal).
+  type: 'percent' | 'amount' | 'shipping';
+  value: number; // percent (0-100) or SGD amount; ignored for 'shipping'
 }

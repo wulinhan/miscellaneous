@@ -6,6 +6,7 @@
 import { getAddOnsById, getCatalogById } from '@/lib/catalog';
 import { quote } from '@/lib/pricing';
 import { resolveDiscount } from '@/lib/coupons';
+import { getSettings } from '@/lib/settings';
 import { resolveOrderType, earliestDeliveryDate } from '@/lib/schedule';
 import {
   createOrder,
@@ -47,7 +48,12 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Delivery requires a postal code' }, { status: 400 });
   }
 
-  const [catalogById, addOnsById] = await Promise.all([getCatalogById(), getAddOnsById()]);
+  const [catalogById, addOnsById, settings, discount] = await Promise.all([
+    getCatalogById(),
+    getAddOnsById(),
+    getSettings(),
+    resolveDiscount(body.code),
+  ]);
 
   let q;
   let orderType;
@@ -60,9 +66,13 @@ export async function POST(req: Request) {
       addOnsById,
       fulfilment: body.fulfilment,
       postal: body.customer.postal,
-      discount: resolveDiscount(body.code),
+      discount,
       orderType,
       specificTimeSelected: body.specificTimeSelected,
+      config: {
+        freeDeliveryThreshold: settings.freeDeliveryThreshold,
+        standardDeliveryFee: settings.deliveryFee,
+      },
     });
   } catch (err) {
     return Response.json({ error: (err as Error).message }, { status: 400 });

@@ -64,8 +64,20 @@ export default function ProductDetail({
         <Link href="/">← Back to shop</Link>
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,360px) 1fr', gap: 28 }}>
-        <div className="thumb" style={{ borderRadius: 16, fontSize: '6rem', minHeight: 320 }}>
-          {product.emoji ?? '🛍️'}
+        <div
+          className="thumb"
+          style={{ borderRadius: 16, fontSize: '6rem', minHeight: 320, overflow: 'hidden' }}
+        >
+          {product.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.image}
+              alt={product.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            (product.emoji ?? '🛍️')
+          )}
         </div>
         <div>
           {product.category && <span className="cat">{product.category}</span>}

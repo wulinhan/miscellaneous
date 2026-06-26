@@ -6,6 +6,7 @@
 import { getAddOnsById, getCatalogById } from '@/lib/catalog';
 import { quote } from '@/lib/pricing';
 import { resolveDiscount } from '@/lib/coupons';
+import { getSettings } from '@/lib/settings';
 import {
   earliestDeliveryDate,
   freshSlots,
@@ -36,7 +37,12 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Cart is empty' }, { status: 400 });
   }
 
-  const [catalogById, addOnsById] = await Promise.all([getCatalogById(), getAddOnsById()]);
+  const [catalogById, addOnsById, settings, discount] = await Promise.all([
+    getCatalogById(),
+    getAddOnsById(),
+    getSettings(),
+    resolveDiscount(body.code),
+  ]);
   const now = new Date();
 
   try {
@@ -47,9 +53,13 @@ export async function POST(req: Request) {
       addOnsById,
       fulfilment: body.fulfilment ?? 'delivery',
       postal: body.postal,
-      discount: resolveDiscount(body.code),
+      discount,
       orderType,
       specificTimeSelected: body.specificTimeSelected,
+      config: {
+        freeDeliveryThreshold: settings.freeDeliveryThreshold,
+        standardDeliveryFee: settings.deliveryFee,
+      },
     });
 
     return Response.json({
