@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Sofnade — Bubble Tea, Sweets, Snacks & Gift Sets</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=25">
+  <link rel="stylesheet" href="css/styles.css?v=26">
 </head>
 <body>
   <div id="header"></div>
@@ -19,6 +19,16 @@
       <p id="hero-subtitle">Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.</p>
     </div>
   </section>
+
+  <div class="wrap">
+    <div class="searchbar">
+      <span class="searchbar-icon" aria-hidden="true">🔍</span>
+      <input id="search-input" class="searchbar-input" type="search"
+             placeholder="Search bubble tea, snacks, gift sets…"
+             aria-label="Search products" autocomplete="off">
+      <button id="search-clear" class="searchbar-clear" type="button" aria-label="Clear search" hidden>×</button>
+    </div>
+  </div>
 
   <div class="wrap">
     <div class="shop-layout">
@@ -43,24 +53,35 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=25"></script>
-  <script src="js/config.js?v=25"></script>
-  <script src="js/store-data.js?v=25"></script>
-  <script src="js/images.js?v=25"></script>
-  <script src="js/cart.js?v=25"></script>
-  <script src="js/common.js?v=25"></script>
+  <script src="data/products.js?v=26"></script>
+  <script src="js/config.js?v=26"></script>
+  <script src="js/store-data.js?v=26"></script>
+  <script src="js/images.js?v=26"></script>
+  <script src="js/cart.js?v=26"></script>
+  <script src="js/common.js?v=26"></script>
   <script>
     renderChrome('shop');
 
     // Active filter comes from ?cat= so nav links + sidebar stay in sync.
     let activeFilter = param('cat'); // null = All
     let activeSub = param('sub');    // sub-section within a category (e.g. Milk Teas)
+    let searchQuery = (param('q') || '').trim(); // free-text product search
 
     function updateUrl() {
       const url = new URL(location);
       activeFilter ? url.searchParams.set('cat', activeFilter) : url.searchParams.delete('cat');
       activeSub ? url.searchParams.set('sub', activeSub) : url.searchParams.delete('sub');
+      searchQuery ? url.searchParams.set('q', searchQuery) : url.searchParams.delete('q');
       history.replaceState({}, '', url);
+    }
+
+    // Reset the search box (used when a category/sub is chosen — that's a fresh browse).
+    function clearSearchUI() {
+      searchQuery = '';
+      const input = document.getElementById('search-input');
+      const clear = document.getElementById('search-clear');
+      if (input) input.value = '';
+      if (clear) clear.hidden = true;
     }
 
     function renderSidebar() {
@@ -77,6 +98,7 @@
         btn.addEventListener('click', () => {
           activeFilter = btn.dataset.filter || null;
           activeSub = null;            // reset sub-section when the category changes
+          clearSearchUI();             // a category pick starts a fresh browse
           updateUrl();
           render();
         });
@@ -108,10 +130,10 @@
         </div>`;
 
       host.querySelector('.subnav-select').addEventListener('change', e => {
-        activeSub = e.target.value || null; updateUrl(); render();
+        activeSub = e.target.value || null; clearSearchUI(); updateUrl(); render();
       });
       host.querySelectorAll('.sub-pill').forEach(b => {
-        b.addEventListener('click', () => { activeSub = b.dataset.sub || null; updateUrl(); render(); });
+        b.addEventListener('click', () => { activeSub = b.dataset.sub || null; clearSearchUI(); updateUrl(); render(); });
       });
       const activePill = host.querySelector('.sub-pill.active');
       const row = host.querySelector('.subnav-row');
@@ -139,18 +161,38 @@
         </article>`;
     }
 
+    // Match a product against every word in the query (across name, description,
+    // category, sub-section and tags), so multi-word searches narrow results.
+    function matchesSearch(p, terms) {
+      const hay = [p.title, p.shortDesc, primaryCategory(p), p.section, (p.tags || []).join(' ')]
+        .filter(Boolean).join(' ').toLowerCase();
+      return terms.every(t => hay.includes(t));
+    }
+
     function render() {
       renderSidebar();
       renderSubnav();
-      let list = activeFilter
-        ? PRODUCTS.filter(p => p.tags.includes(activeFilter))
-        : PRODUCTS;
-      if (activeSub) list = list.filter(p => p.section === activeSub);
-      document.getElementById('listing-title').textContent = activeSub || activeFilter || 'All Products';
+      let list;
+      if (searchQuery) {
+        // Search spans the whole catalog, regardless of the active category.
+        const terms = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+        list = PRODUCTS.filter(p => matchesSearch(p, terms));
+        document.getElementById('listing-title').textContent = `Results for “${searchQuery}”`;
+      } else {
+        list = activeFilter ? PRODUCTS.filter(p => p.tags.includes(activeFilter)) : PRODUCTS;
+        if (activeSub) list = list.filter(p => p.section === activeSub);
+        document.getElementById('listing-title').textContent = activeSub || activeFilter || 'All Products';
+      }
       document.getElementById('listing-count').textContent =
         `${list.length} ${list.length === 1 ? 'item' : 'items'}`;
       document.getElementById('grid').innerHTML = list.map(productCard).join('');
-      document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+      const empty = document.getElementById('empty');
+      empty.style.display = list.length ? 'none' : 'block';
+      if (!list.length) {
+        empty.querySelector('p').textContent = searchQuery
+          ? `No products match “${searchQuery}”.`
+          : 'No products match this filter just yet.';
+      }
     }
 
     function applyHero() {
@@ -161,9 +203,30 @@
       if (s && SETTINGS.heroSubtitle) s.textContent = SETTINGS.heroSubtitle;
     }
 
+    function initSearch() {
+      const input = document.getElementById('search-input');
+      const clear = document.getElementById('search-clear');
+      if (!input) return;
+      input.value = searchQuery;        // restore from ?q= on load
+      clear.hidden = !searchQuery;
+      input.addEventListener('input', () => {
+        searchQuery = input.value.trim();
+        clear.hidden = !searchQuery;
+        updateUrl();
+        render();
+      });
+      clear.addEventListener('click', () => {
+        clearSearchUI();
+        input.focus();
+        updateUrl();
+        render();
+      });
+    }
+
     // Load CMS content (if configured), then render. Falls back to built-in data.
     (window.loadStore ? window.loadStore() : Promise.resolve()).then(() => {
       applyHero();
+      initSearch();
       render();
     });
   </script>
