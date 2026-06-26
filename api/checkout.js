@@ -37,7 +37,10 @@ module.exports = async (req, res) => {
       });
     }
 
-    const order = await rp.createOrder(quote.amountMinor, quote.currency, orderId);
+    // Razorpay test mode on a standard (India) account usually only accepts INR.
+    // Set RAZORPAY_CURRENCY=INR for testing; defaults to the order currency (SGD).
+    const currency = process.env.RAZORPAY_CURRENCY || quote.currency;
+    const order = await rp.createOrder(quote.amountMinor, currency, orderId);
     return res.status(200).json({
       orderId,
       quote,
