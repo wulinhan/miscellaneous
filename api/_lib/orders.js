@@ -3,6 +3,8 @@
 // not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY), so the store keeps
 // working in test mode exactly as before.
 
+const notify = require('./notify');
+
 function isConfigured() {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
@@ -117,9 +119,11 @@ async function updateOrder(id, patch, meta = {}) {
   const now = new Date().toISOString();
   set.updated_at = now;
 
+  let prevStatus = null;
   if (patch.status !== undefined) {
     const cur = await getOne(id);
     if (!cur) return null;
+    prevStatus = cur.status;
     if (patch.status !== cur.status) {
       const hist = Array.isArray(cur.status_history) ? cur.status_history.slice() : [];
       hist.push({ status: patch.status, at: now, by: meta.by || null });
@@ -135,7 +139,15 @@ async function updateOrder(id, patch, meta = {}) {
   });
   if (!res.ok) throw new Error(`Supabase update ${res.status}: ${await res.text()}`);
   const rows = await res.json();
-  return Array.isArray(rows) && rows.length ? rows[0] : null;
+  const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+
+  // When staff mark an order Paid (and it wasn't already), fire the receipt +
+  // Notion mirror. Best-effort; never blocks the update. No-ops if Resend/Notion
+  // aren't configured.
+  if (row && patch.status === 'paid' && prevStatus !== 'paid') {
+    try { await notify.onPaid(row); } catch (e) { console.error('[orders] onPaid failed:', e.message); }
+  }
+  return row;
 }
 
 // ---- Staff roster (for Preparer/Driver dropdowns) -------------------------
