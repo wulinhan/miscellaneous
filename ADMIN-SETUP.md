@@ -7,10 +7,12 @@ never reaches the browser.
 
 ## Activate (2 steps)
 
-1. **Add the notes/audit columns.** In the Supabase SQL Editor, run
+1. **Add the extra columns.** In the Supabase SQL Editor, run
    [`db/orders-admin-migration.sql`](db/orders-admin-migration.sql) (adds
-   `staff_notes` and `updated_at`; safe to re-run). New projects that ran the
-   latest `db/orders.sql` already have them.
+   `staff_notes`, `updated_at`) **and**
+   [`db/orders-staff-fields.sql`](db/orders-staff-fields.sql) (adds `preparer`,
+   `driver`, `status_history`). Both are safe to re-run. New projects that ran
+   the latest `db/orders.sql` already have all of them.
 
 2. **Set the password.** In **Vercel → Settings → Environment Variables**, add
    `ADMIN_PASSWORD` = a long random value (Production scope). Redeploy (or it
@@ -24,6 +26,10 @@ Then open **`https://<your-domain>/admin.html`**, enter the password, and you're
   (or `cancelled`). `created`/`paid` are set automatically by checkout/payment;
   the rest are for your fulfilment workflow.
 - Add/edit **staff notes** per order.
+- Assign a **Preparer** and **Driver** (autocomplete suggests names already used).
+- See a **status log** on each order — every change records the new status, the
+  time, and who made it (set your name once in the **"You:"** box in the header).
+- **WhatsApp customer** button opens a pre-filled chat (Singapore +65 default).
 - Expand **Order details** for items, contact, address, delivery date/slot, and
   the payment reference.
 

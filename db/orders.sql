@@ -17,6 +17,9 @@ create table if not exists public.orders (
   razorpay_order_id   text,                        -- links the payment back to us
   razorpay_payment_id text,
   staff_notes         text,                        -- free-text notes added by staff
+  preparer            text,                        -- staff member preparing the order
+  driver              text,                        -- staff member delivering the order
+  status_history      jsonb not null default '[]'::jsonb,  -- [{status, at, by}, …]
   created_at          timestamptz not null default now(),
   updated_at          timestamptz,                 -- last staff edit
   paid_at             timestamptz

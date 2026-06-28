@@ -26,7 +26,8 @@ module.exports = async (req, res) => {
     if (req.method === 'PATCH') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
       if (!body.id) return res.status(400).json({ error: 'Missing order id' });
-      const updated = await orders.updateOrder(body.id, body);
+      const by = (req.headers['x-operator'] || '').toString().slice(0, 60).trim() || null;
+      const updated = await orders.updateOrder(body.id, body, { by });
       if (!updated) return res.status(404).json({ error: 'Order not found' });
       return res.status(200).json({ order: updated });
     }

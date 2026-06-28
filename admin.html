@@ -48,12 +48,22 @@
     .info b { color:#374151; font-weight:600; }
     .items { margin:6px 0; padding-left:18px; font-size:14px; }
     .totals { font-size:13px; color:var(--muted); margin-top:4px; }
-    .edit { display:grid; grid-template-columns:200px 1fr auto; gap:10px; align-items:end; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
-    @media(max-width:640px){ .edit{grid-template-columns:1fr} }
-    .edit label { font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:3px; }
-    .edit select { width:100%; height:38px; }
+    .edit { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+    .ef { display:flex; flex-direction:column; gap:3px; }
+    .ef.grow { flex:1; min-width:200px; }
+    .ef label { font-size:12px; font-weight:600; color:#374151; }
+    .ef select, .ef input { height:38px; }
+    .ef select { min-width:150px; }
+    .ef.who input { width:130px; }
+    .ef.act { flex-direction:row; align-items:center; gap:10px; }
     .saved { color:var(--ok); font-size:13px; font-weight:600; }
     .ref { font-size:12px; color:var(--muted); margin-top:6px; }
+    .hist { font-size:12px; color:var(--muted); margin-top:8px; }
+    .hist b { color:#374151; display:block; margin-bottom:2px; }
+    .op { width:140px; height:32px; border-radius:8px; border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.12); color:#fff; padding:5px 9px; }
+    .op::placeholder { color:#aebbe0; }
+    @keyframes flashbg { from { background:#e7f7ee; } to { background:#fff; } }
+    .card.flash { animation: flashbg 1.4s ease; }
 
     .login { max-width:380px; margin:10vh auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px; }
     .login h2 { margin:0 0 6px; color:var(--navy); }
@@ -73,9 +83,11 @@
   <div id="app" class="hide">
     <header>
       <h1>Sofnade Orders</h1>
+      <input id="operator" class="op" placeholder="You (name)" title="Your name — recorded on status changes" oninput="saveOperator()" />
       <button class="btn-ghost btn-sm" onclick="load()">Refresh</button>
       <button class="btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </header>
+    <datalist id="staff-list"></datalist>
     <div class="wrap">
       <div class="filters">
         <div class="line">
@@ -125,6 +137,15 @@
     const PW_KEY = 'sofnade_admin_pw';
     let pw = sessionStorage.getItem(PW_KEY) || '';
     let ALL = [];
+    const STAFF = []; // optional seed names; suggestions also self-populate from orders
+
+    function saveOperator() { localStorage.setItem('sofnade_operator', document.getElementById('operator').value || ''); }
+    function rebuildStaffList() {
+      const names = new Set(STAFF);
+      ALL.forEach(o => { if (o.preparer) names.add(o.preparer); if (o.driver) names.add(o.driver); });
+      document.getElementById('staff-list').innerHTML =
+        [...names].filter(Boolean).sort().map(n => `<option value="${esc(n)}"></option>`).join('');
+    }
 
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const money = (n, c) => `${c || 'SGD'} ${Number(n || 0).toFixed(2)}`;
@@ -142,7 +163,8 @@
     }
 
     async function api(method, body) {
-      const opts = { method, headers: { 'x-admin-password': pw } };
+      const opEl = document.getElementById('operator');
+      const opts = { method, headers: { 'x-admin-password': pw, 'x-operator': (opEl && opEl.value || '').trim() } };
       if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
       const path = method === 'GET' ? '/api/admin/orders?limit=500' : '/api/admin/orders';
       const res = await fetch(path, opts);
@@ -180,6 +202,7 @@
       const wa = waNumber(c.phone);
       const waMsg = encodeURIComponent(`Hi ${c.name || ''}, this is Sofnade about your order ${o.id}.`.replace(/\s+/g, ' ').trim());
       const waBtn = wa ? `<a class="btn-wa" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : '';
+      const histHtml = (o.status_history || []).map(h => `<div>${esc((h.status||'').replace(/_/g,' '))} · ${when(h.at)}${h.by ? ' · ' + esc(h.by) : ''}</div>`).join('');
       return `
       <div class="card" data-card="${esc(o.id)}">
         <div class="top">
@@ -205,11 +228,14 @@
         <div><b style="font-size:14px;color:#374151">Items</b><ul class="items">${items || '<li class="muted">no items</li>'}</ul></div>
         <div class="totals">Subtotal ${money(q.subtotal,q.currency)}${q.discount ? ' · Discount -' + money(q.discount,q.currency) : ''} · Delivery ${money(q.deliveryFee,q.currency)}${q.surcharge ? ' · Surcharge ' + money(q.surcharge,q.currency) : ''}${q.specificTimeFee ? ' · Specific-time ' + money(q.specificTimeFee,q.currency) : ''} · <b>Total ${money(q.total,q.currency)}</b></div>
         ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
+        ${histHtml ? `<div class="hist"><b>Status log</b>${histHtml}</div>` : ''}
 
         <div class="edit">
-          <div><label>Status</label><select data-status="${esc(o.id)}">${statusOpts}</select></div>
-          <div><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
-          <div style="display:flex;align-items:center;gap:10px"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save</button><span class="saved hide">Saved ✓</span></div>
+          <div class="ef"><label>Status</label><select data-status="${esc(o.id)}">${statusOpts}</select></div>
+          <div class="ef who"><label>Preparer</label><input data-preparer="${esc(o.id)}" list="staff-list" value="${esc(o.preparer)}" placeholder="name" /></div>
+          <div class="ef who"><label>Driver</label><input data-driver="${esc(o.id)}" list="staff-list" value="${esc(o.driver)}" placeholder="name" /></div>
+          <div class="ef grow"><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
+          <div class="ef act"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save</button><span class="saved hide">Saved ✓</span></div>
         </div>
       </div>`;
     }
@@ -238,7 +264,7 @@
         if (terms.length) {
           const c = o.customer || {};
           const itemText = (o.quote && o.quote.items || []).map(i => i.title).join(' ');
-          const hay = [o.id, c.name, c.phone, c.email, itemText, o.status, o.staff_notes].filter(Boolean).join(' ').toLowerCase();
+          const hay = [o.id, c.name, c.phone, c.email, itemText, o.status, o.staff_notes, o.preparer, o.driver].filter(Boolean).join(' ').toLowerCase();
           if (!terms.every(t => hay.includes(t))) return false;
         }
         return true;
@@ -249,18 +275,28 @@
 
     async function save(id, btn) {
       btn.disabled = true; const old = btn.textContent; btn.textContent = 'Saving…';
-      const status = document.querySelector(`[data-status="${cssEsc(id)}"]`).value;
-      const staff_notes = document.querySelector(`[data-notes="${cssEsc(id)}"]`).value;
+      const val = (sel) => { const el = document.querySelector(sel); return el ? el.value : undefined; };
+      const patch = {
+        id,
+        status: val(`[data-status="${cssEsc(id)}"]`),
+        staff_notes: val(`[data-notes="${cssEsc(id)}"]`),
+        preparer: val(`[data-preparer="${cssEsc(id)}"]`),
+        driver: val(`[data-driver="${cssEsc(id)}"]`),
+      };
       try {
-        const { order } = await api('PATCH', { id, status, staff_notes });
+        const { order } = await api('PATCH', patch);
         const idx = ALL.findIndex(o => o.id === id);
-        if (idx >= 0 && order) ALL[idx] = order;       // keep filters consistent
+        if (idx >= 0 && order) ALL[idx] = order;       // keep filters/search consistent
         const card = document.querySelector(`[data-card="${cssEsc(id)}"]`);
-        const tag = card.querySelector('.saved'); tag.classList.remove('hide');
-        const pill = card.querySelector('.pill'); pill.className = 'pill s-' + status; pill.textContent = status.replace(/_/g,' ');
-        setTimeout(() => tag.classList.add('hide'), 1800);
-      } catch (e) { if (e.message !== 'unauthorized') alert('Could not save: ' + e.message); }
-      btn.disabled = false; btn.textContent = old;
+        if (order && card) {
+          // Re-render the card so the status log, pill, and edits all refresh.
+          const tmp = document.createElement('div'); tmp.innerHTML = orderCard(order);
+          const fresh = tmp.firstElementChild;
+          card.replaceWith(fresh);
+          fresh.classList.add('flash');
+          rebuildStaffList();
+        }
+      } catch (e) { if (e.message !== 'unauthorized') { alert('Could not save: ' + e.message); btn.disabled = false; btn.textContent = old; } }
     }
 
     async function load(fromLogin) {
@@ -269,6 +305,7 @@
         ALL = orders || [];
         document.getElementById('login').classList.add('hide');
         document.getElementById('app').classList.remove('hide');
+        rebuildStaffList();
         applyFilters();
       } catch (e) {
         if (e.message === 'unauthorized') return;
@@ -278,6 +315,7 @@
     }
 
     document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+    document.getElementById('operator').value = localStorage.getItem('sofnade_operator') || '';
     if (pw) load();
   </script>
 </body>

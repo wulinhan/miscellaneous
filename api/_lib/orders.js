@@ -36,6 +36,7 @@ async function insertPending(record) {
     amount_total: q.total ?? null,
     currency: q.currency || 'SGD',
     razorpay_order_id: record.razorpayOrderId || null,
+    status_history: [{ status: 'created', at: new Date().toISOString(), by: 'system' }],
   };
   const res = await fetch(base(), {
     method: 'POST',
@@ -65,7 +66,23 @@ async function markPaid(razorpayOrderId, paymentId) {
   });
   if (!res.ok) throw new Error(`Supabase update ${res.status}: ${await res.text()}`);
   const rows = await res.json();
-  return Array.isArray(rows) && rows.length ? rows[0] : null;
+  const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+  // Log the paid transition (best-effort; the atomic flip above already stands).
+  if (row) {
+    try {
+      const hist = Array.isArray(row.status_history) ? row.status_history.slice() : [];
+      hist.push({ status: 'paid', at: new Date().toISOString(), by: 'payment' });
+      await fetch(`${base()}?id=eq.${encodeURIComponent(row.id)}`, {
+        method: 'PATCH',
+        headers: headers({ Prefer: 'return=minimal' }),
+        body: JSON.stringify({ status_history: hist }),
+      });
+      row.status_history = hist;
+    } catch (e) {
+      console.error('[orders] paid history append failed:', e.message);
+    }
+  }
+  return row;
 }
 
 // ---- Staff admin reads/writes ---------------------------------------------
@@ -81,14 +98,35 @@ async function listOrders({ status, limit = 200 } = {}) {
   return res.json();
 }
 
+async function getOne(id) {
+  const url = `${base()}?id=eq.${encodeURIComponent(id)}&select=status,status_history&limit=1`;
+  const res = await fetch(url, { headers: headers() });
+  if (!res.ok) throw new Error(`Supabase get ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
 // Update a whitelisted set of fields for one order. Returns the updated row, or
-// null if not found / unconfigured. Stamps updated_at.
-const EDITABLE = ['status', 'staff_notes', 'delivery_date', 'slot_or_window', 'fulfilment'];
-async function updateOrder(id, patch) {
+// null if not found / unconfigured. Stamps updated_at, and appends to
+// status_history when the status actually changes (meta.by = who changed it).
+const EDITABLE = ['status', 'staff_notes', 'delivery_date', 'slot_or_window', 'fulfilment', 'preparer', 'driver'];
+async function updateOrder(id, patch, meta = {}) {
   if (!isConfigured() || !id) return null;
   const set = {};
   for (const k of EDITABLE) if (patch[k] !== undefined) set[k] = patch[k];
-  set.updated_at = new Date().toISOString();
+  const now = new Date().toISOString();
+  set.updated_at = now;
+
+  if (patch.status !== undefined) {
+    const cur = await getOne(id);
+    if (!cur) return null;
+    if (patch.status !== cur.status) {
+      const hist = Array.isArray(cur.status_history) ? cur.status_history.slice() : [];
+      hist.push({ status: patch.status, at: now, by: meta.by || null });
+      set.status_history = hist;
+    }
+  }
+
   const url = `${base()}?id=eq.${encodeURIComponent(id)}`;
   const res = await fetch(url, {
     method: 'PATCH',
