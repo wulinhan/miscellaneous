@@ -146,6 +146,32 @@
     .bulkbar .bb-btn { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:8px; padding:6px 12px; font-weight:600; cursor:pointer; }
     .preset { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:6px 11px; font-size:12px; font-weight:600; cursor:pointer; }
     .toolbtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:8px; padding:0 12px; font-weight:600; cursor:pointer; height:38px; }
+    /* KPI strip */
+    .kpis { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+    .kpi { flex:1; min-width:120px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:11px 14px; cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:2px; }
+    .kpi:hover { border-color:#c7d2ec; }
+    .kpi.active { border-color:var(--navy); box-shadow:0 0 0 2px var(--accent-soft); }
+    .kpi-n { font-size:22px; font-weight:800; }
+    .kpi-l { font-size:12px; color:var(--muted); font-weight:600; }
+    /* Orders table */
+    .otable-wrap { overflow-x:auto; }
+    .otable { width:100%; min-width:760px; border-collapse:separate; border-spacing:0; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+    .otable thead th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); padding:11px 12px; border-bottom:1px solid var(--line); background:#fafbfe; }
+    .otable td { padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:middle; font-size:14px; }
+    .orow:hover td { background:#f8faff; }
+    .orow.open td { background:#f1f5ff; }
+    .orow.flash td { animation: flashbg 1.4s ease; }
+    .otable .sub { font-size:12px; color:var(--muted); margin-top:1px; }
+    .otable .id { font-family:ui-monospace,monospace; font-weight:700; font-size:13px; color:var(--navy); }
+    .r-cust { font-weight:600; }
+    .r-team { font-size:12px; color:#374151; }
+    .c-chk { width:36px; }
+    .c-amt { text-align:right; font-weight:700; white-space:nowrap; }
+    .c-act { width:92px; white-space:nowrap; text-align:right; }
+    .otable .status-sel { min-width:138px; }
+    .exp-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:12px; margin-right:4px; }
+    .odetail > td { padding:0; background:#f6f7fb; }
+    .detailwrap { padding:14px 16px; }
     .login { max-width:380px; margin:10vh auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px; }
     .login h2 { margin:0 0 6px; color:var(--navy); }
     .error { color:#b42318; font-size:14px; margin-top:8px; min-height:18px; }
@@ -169,6 +195,7 @@
       <button class="btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </header>
     <div class="wrap">
+      <div id="kpis" class="kpis"></div>
       <div class="views">
         <button data-view="list" class="vbtn cur" onclick="setView('list')">List</button>
         <button data-view="status" class="vbtn" onclick="setView('status')">Board · by status</button>
@@ -264,6 +291,7 @@
     let FILTERED = [];
     let view = 'list'; // 'list' | 'status' | 'day'
     let sortKey = 'new';
+    let dueTodayOnly = false;
     const SELECTED = new Set();
 
     function saveOperator() { localStorage.setItem('sofnade_operator', document.getElementById('operator').value || ''); }
@@ -409,6 +437,7 @@
     function clearFilters() {
       ['search','f-from','f-to','f-min','f-max'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('f-status').value = '';
+      dueTodayOnly = false;
       applyFilters();
     }
 
@@ -433,26 +462,31 @@
       </div>`;
     }
 
-    function orderCard(o) {
-      const c = o.customer || {}; const q = o.quote || {};
-      const addr = o.fulfilment === 'delivery'
-        ? ([c.address1, c.address2, o.postal].filter(Boolean).map(esc).join(', ') || '—')
-        : 'Self pick-up';
+    // Compact table row + a hidden detail row (expanded on demand).
+    function orderRow(o) {
+      const c = o.customer || {};
+      const sc = STATUS_COLOR[o.status] || STATUS_DEFAULT;
       const statusOpts = STATUSES.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s.replace(/_/g,' ')}</option>`).join('');
       const wa = waNumber(c.phone);
       const waMsg = encodeURIComponent(`Hi ${c.name || ''}, this is Sofnade about your order ${o.id}.`.replace(/\s+/g, ' ').trim());
-      const waBtn = wa ? `<a class="btn-wa" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : '';
-      const tlHtml = renderTimeline(timelineEvents(o));
-      const sc = STATUS_COLOR[o.status] || STATUS_DEFAULT;
+      const addr = o.fulfilment === 'delivery'
+        ? ([c.address1, c.address2, o.postal].filter(Boolean).map(esc).join(', ') || '—')
+        : 'Self pick-up';
+      const deliv = o.delivery_date
+        ? `${esc(o.delivery_date)}${o.slot_or_window ? `<div class="sub">${esc(o.slot_or_window)}</div>` : ''}`
+        : '<span class="muted">—</span>';
+      const team = [o.preparer && `P: ${esc(o.preparer)}`, o.driver && `D: ${esc(o.driver)}`].filter(Boolean).join('<br>') || '<span class="muted">—</span>';
       return `
-      <div class="card" data-card="${esc(o.id)}">
-        <div class="card-row">
-        <div class="order-main">
-        <div class="top">
-          <input type="checkbox" class="card-check" ${SELECTED.has(o.id) ? 'checked' : ''} onclick="toggleSelect('${esc(o.id)}', this)" title="Select">
-          <div class="grow"><span class="id">${esc(o.id)}</span></div>
-          <select class="status-sel" style="background-color:${sc}1f;color:${sc};border-color:${sc}66" onchange="quickStatus(this, '${esc(o.id)}')" title="Change status (saves instantly)">${statusOpts}</select>
-          <div class="total">${money(o.amount_total, o.currency)}</div>
+      <tr class="orow" data-row="${esc(o.id)}">
+        <td class="c-chk"><input type="checkbox" class="card-check" ${SELECTED.has(o.id) ? 'checked' : ''} onclick="toggleSelect('${esc(o.id)}', this)" title="Select"></td>
+        <td><span class="id">${esc(o.id)}</span><div class="sub">${when(o.created_at)}</div></td>
+        <td><span class="r-cust">${esc(c.name || '—')}</span>${c.business ? `<div class="sub">${esc(c.business)}</div>` : ''}</td>
+        <td>${deliv}</td>
+        <td><select class="status-sel" style="background-color:${sc}1f;color:${sc};border-color:${sc}66" onchange="quickStatus(this, '${esc(o.id)}')" title="Change status (saves instantly)">${statusOpts}</select></td>
+        <td class="r-team">${team}</td>
+        <td class="c-amt">${money(o.amount_total, o.currency)}</td>
+        <td class="c-act">
+          <button class="exp-btn" type="button" onclick="toggleDetail('${esc(o.id)}', this)" aria-label="Expand details">▾</button>
           <div class="cardmenu-wrap">
             <button class="cardmenu-btn" type="button" onclick="toggleMenu(this)" aria-label="More actions">⋯</button>
             <div class="cardmenu hide">
@@ -462,44 +496,79 @@
               ${wa ? `<a class="mi" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : ''}
             </div>
           </div>
-        </div>
-        <div class="muted" style="font-size:13px;margin-top:2px">Placed ${when(o.created_at)}${o.updated_at ? ' · edited ' + when(o.updated_at) : ''}</div>
+        </td>
+      </tr>
+      <tr class="odetail hide" data-detail="${esc(o.id)}"><td colspan="8"><div class="detailwrap">${orderDetailInner(o)}</div></td></tr>`;
+    }
 
-        <div class="info">
-          <div><b>Customer:</b> ${esc(c.name||'—')}</div>
-          <div><b>Phone:</b> ${esc(c.phone||'—')}</div>
-          <div><b>Email:</b> ${esc(c.email||'—')}</div>
-          <div><b>${o.fulfilment === 'delivery' ? 'Deliver to' : 'Fulfilment'}:</b> ${addr}</div>
-          <div><b>When:</b> ${o.delivery_date ? esc(o.delivery_date) + (o.slot_or_window ? ' (' + esc(o.slot_or_window) + ')' : '') : '—'}</div>
-          ${c.notes ? `<div><b>Customer note:</b> ${esc(c.notes)}</div>` : ''}
-        </div>
-
-        ${waBtn ? `<div style="margin:2px 0 10px">${waBtn}</div>` : ''}
-
-        ${paymentSummary(o)}
-        ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
-
-        <div class="manage">
-          <div class="manage-h">Manage order</div>
-          <div class="manage-sub">Assign preparer/driver and add notes, then “Save changes”. (Status saves instantly from the dropdown above.)</div>
-          <div class="edit">
-          <div class="ef who"><label>Preparer</label><select data-preparer="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.preparer)}</select></div>
-          <div class="ef who"><label>Driver</label><select data-driver="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.driver)}</select></div>
-          <div class="ef grow"><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
-          <div class="ef act"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save changes</button><span class="saved hide">Saved ✓</span></div>
+    function orderDetailInner(o) {
+      const c = o.customer || {};
+      const addr = o.fulfilment === 'delivery'
+        ? ([c.address1, c.address2, o.postal].filter(Boolean).map(esc).join(', ') || '—')
+        : 'Self pick-up';
+      const wa = waNumber(c.phone);
+      const waMsg = encodeURIComponent(`Hi ${c.name || ''}, this is Sofnade about your order ${o.id}.`.replace(/\s+/g, ' ').trim());
+      const waBtn = wa ? `<a class="btn-wa" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : '';
+      const tlHtml = renderTimeline(timelineEvents(o));
+      return `
+      <div class="card-row">
+        <div class="order-main">
+          <div class="muted" style="font-size:13px">Placed ${when(o.created_at)}${o.updated_at ? ' · edited ' + when(o.updated_at) : ''}</div>
+          <div class="info">
+            <div><b>Customer:</b> ${esc(c.name||'—')}</div>
+            <div><b>Phone:</b> ${esc(c.phone||'—')}</div>
+            <div><b>Email:</b> ${esc(c.email||'—')}</div>
+            <div><b>${o.fulfilment === 'delivery' ? 'Deliver to' : 'Fulfilment'}:</b> ${addr}</div>
+            <div><b>When:</b> ${o.delivery_date ? esc(o.delivery_date) + (o.slot_or_window ? ' (' + esc(o.slot_or_window) + ')' : '') : '—'}</div>
+            ${c.notes ? `<div><b>Customer note:</b> ${esc(c.notes)}</div>` : ''}
           </div>
-        </div>
+          ${waBtn ? `<div style="margin:2px 0 10px">${waBtn}</div>` : ''}
+          ${paymentSummary(o)}
+          ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
+          <div class="manage">
+            <div class="manage-h">Manage order</div>
+            <div class="manage-sub">Assign preparer/driver and add notes, then “Save changes”. (Status saves instantly from the row.)</div>
+            <div class="edit">
+              <div class="ef who"><label>Preparer</label><select data-preparer="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.preparer)}</select></div>
+              <div class="ef who"><label>Driver</label><select data-driver="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.driver)}</select></div>
+              <div class="ef grow"><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
+              <div class="ef act"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save changes</button><span class="saved hide">Saved ✓</span></div>
+            </div>
+          </div>
         </div>
         <aside class="order-timeline">
           <div class="tl-head">Status timeline</div>
           <div class="timeline">${tlHtml || '<div class="muted" style="font-size:12px">No history yet.</div>'}</div>
         </aside>
-        </div>
       </div>`;
     }
 
+    function toggleDetail(id, btn) {
+      const det = document.querySelector(`tr[data-detail="${cssEsc(id)}"]`);
+      const row = document.querySelector(`tr[data-row="${cssEsc(id)}"]`);
+      if (!det) return;
+      const open = !det.classList.toggle('hide');
+      if (row) row.classList.toggle('open', open);
+      if (btn) btn.textContent = open ? '▴' : '▾';
+    }
+
+    function replaceOrder(id, order) {
+      const row = document.querySelector(`tr[data-row="${cssEsc(id)}"]`);
+      const det = document.querySelector(`tr[data-detail="${cssEsc(id)}"]`);
+      if (!row || !det || !order) return;
+      const wasOpen = !det.classList.contains('hide');
+      const tmp = document.createElement('tbody'); tmp.innerHTML = orderRow(order);
+      const newRow = tmp.children[0], newDet = tmp.children[1];
+      if (wasOpen) { newDet.classList.remove('hide'); newRow.classList.add('open'); const eb = newRow.querySelector('.exp-btn'); if (eb) eb.textContent = '▴'; }
+      row.replaceWith(newRow); det.replaceWith(newDet);
+      newRow.classList.add('flash');
+    }
+
     function render(orders) {
-      document.getElementById('list').innerHTML = orders.map(orderCard).join('');
+      document.getElementById('list').innerHTML =
+        `<div class="otable-wrap"><table class="otable"><thead><tr>` +
+        `<th class="c-chk"></th><th>Order</th><th>Customer</th><th>Delivery</th><th>Status</th><th>Team</th><th class="c-amt">Amount</th><th class="c-act"></th>` +
+        `</tr></thead><tbody>` + orders.map(orderRow).join('') + `</tbody></table></div>`;
     }
 
     // ---- Pagination (client-side, over the filtered set) --------------------
@@ -620,6 +689,28 @@
       renderView();
     }
 
+    // ---- KPI strip ----------------------------------------------------------
+    function renderKpis() {
+      const today = todaySG();
+      const cnt = (f) => ALL.filter(f).length;
+      const fsv = (document.getElementById('f-status') || {}).value || '';
+      const tiles = [
+        { key: 'due', label: 'Due today', n: cnt(o => o.delivery_date === today), color: '#1d4ed8', active: dueTodayOnly },
+        { key: 'created', label: 'Unpaid', n: cnt(o => o.status === 'created'), color: '#7a5b00', active: fsv === 'created' },
+        { key: 'preparing', label: 'Preparing', n: cnt(o => o.status === 'preparing'), color: '#1d4ed8', active: fsv === 'preparing' },
+        { key: 'out_for_delivery', label: 'Out for delivery', n: cnt(o => o.status === 'out_for_delivery'), color: '#6b21a8', active: fsv === 'out_for_delivery' },
+        { key: 'completed', label: 'Completed', n: cnt(o => o.status === 'completed'), color: '#1a7f4b', active: fsv === 'completed' },
+      ];
+      document.getElementById('kpis').innerHTML = tiles.map(t =>
+        `<button class="kpi ${t.active ? 'active' : ''}" onclick="kpiClick('${t.key}')"><span class="kpi-n" style="color:${t.color}">${t.n}</span><span class="kpi-l">${esc(t.label)}</span></button>`
+      ).join('');
+    }
+    function kpiClick(key) {
+      if (key === 'due') { dueTodayOnly = !dueTodayOnly; }
+      else { dueTodayOnly = false; const fs = document.getElementById('f-status'); fs.value = (fs.value === key) ? '' : key; }
+      applyFilters();
+    }
+
     // ---- Sorting ------------------------------------------------------------
     function setSort(v) { sortKey = v; applyFilters(); }
     function sortComparator(k) {
@@ -658,12 +749,11 @@
         const f = FILTERED.findIndex(o => o.id === id); if (f >= 0 && order) FILTERED[f] = order;
         const sc = STATUS_COLOR[v] || STATUS_DEFAULT;
         sel.style.backgroundColor = sc + '1f'; sel.style.color = sc; sel.style.borderColor = sc + '66';
-        const card = document.querySelector(`[data-card="${cssEsc(id)}"]`);
-        if (card && order) {
-          const tlEl = card.querySelector('.timeline');
-          if (tlEl) tlEl.innerHTML = renderTimeline(timelineEvents(order));
-          card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
-        }
+        const det = document.querySelector(`tr[data-detail="${cssEsc(id)}"]`);
+        if (det && order) { const tlEl = det.querySelector('.timeline'); if (tlEl) tlEl.innerHTML = renderTimeline(timelineEvents(order)); }
+        const row = document.querySelector(`tr[data-row="${cssEsc(id)}"]`);
+        if (row) { row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); }
+        renderKpis();
       } catch (e) { if (e.message !== 'unauthorized') alert('Could not update status: ' + e.message); }
       sel.disabled = false;
     }
@@ -739,6 +829,7 @@
 
       const filtered = ALL.filter(o => {
         if (st && o.status !== st) return false;
+        if (dueTodayOnly && o.delivery_date !== todaySG()) return false;
         const d = sgDate(o.created_at);
         if (from && d < from) return false;
         if (to && d > to) return false;
@@ -757,6 +848,7 @@
       FILTERED = filtered;
       page = 1;
       updateBulkBar();
+      renderKpis();
       renderView();
     }
 
@@ -774,14 +866,8 @@
         const { order } = await api('PATCH', '/orders', patch);
         const idx = ALL.findIndex(o => o.id === id);
         if (idx >= 0 && order) ALL[idx] = order;       // keep filters/search consistent
-        const card = document.querySelector(`[data-card="${cssEsc(id)}"]`);
-        if (order && card) {
-          // Re-render the card so the status log, pill, and edits all refresh.
-          const tmp = document.createElement('div'); tmp.innerHTML = orderCard(order);
-          const fresh = tmp.firstElementChild;
-          card.replaceWith(fresh);
-          fresh.classList.add('flash');
-        }
+        if (order) replaceOrder(id, order); // re-render row + detail (kept open)
+        renderKpis();
       } catch (e) { if (e.message !== 'unauthorized') { alert('Could not save: ' + e.message); btn.disabled = false; btn.textContent = old; } }
     }
 
