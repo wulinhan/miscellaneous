@@ -24,6 +24,11 @@
     .btn-wa { display:inline-flex; align-items:center; gap:6px; background:#25D366; color:#fff; border-radius:8px; padding:7px 12px; font-size:13px; font-weight:600; text-decoration:none; }
     .btn-wa:hover { background:#1da851; }
     select, textarea, input { font:inherit; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fff; }
+    select {
+      appearance:none; -webkit-appearance:none; -moz-appearance:none; padding-right:34px;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%2316224a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+      background-repeat:no-repeat; background-position:right 14px center; background-size:10px 6px;
+    }
     textarea { resize:vertical; min-height:46px; width:100%; }
     .muted { color:var(--muted); }
 
@@ -57,8 +62,9 @@
     .ps-items { padding-bottom:8px; margin-bottom:8px; border-bottom:1px dashed rgba(22,34,74,0.25); }
     .ps-row { display:flex; justify-content:space-between; gap:14px; font-size:13px; padding:2px 0; }
     .ps-row .r { font-variant-numeric:tabular-nums; white-space:nowrap; }
-    .ps-item .nm { color:var(--navy); }
+    .ps-item .nm { color:var(--navy); display:flex; flex-direction:column; }
     .ps-item .sub { color:#5a6b8c; font-size:12px; }
+    .ps-item .calc { color:#5a6b8c; font-size:11px; margin-top:1px; }
     .ps-disc { color:#0f7a44; }
     .ps-total { display:flex; justify-content:space-between; gap:14px; font-weight:800; font-size:15px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(22,34,74,0.25); color:var(--navy); }
     .edit { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
@@ -85,7 +91,7 @@
     .timeline { border-left:2px solid #e5e7eb; padding-left:24px; max-height:360px; overflow:auto; }
     .tl-item { position:relative; padding:0 0 14px; }
     .tl-item:last-child { padding-bottom:2px; }
-    .tl-dot { position:absolute; left:-36px; top:0; width:24px; height:24px; border-radius:50%; color:#fff; font-size:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 3px #fff; }
+    .tl-dot { position:absolute; left:-31px; top:4px; width:14px; height:14px; border-radius:50%; box-shadow:0 0 0 3px #fff; }
     .tl-time { font-size:11px; color:var(--muted); margin-bottom:1px; }
     .tl-status { font-weight:700; color:#1b2330; font-size:14px; text-transform:capitalize; }
     .tl-desc { font-size:13px; color:#374151; margin-top:1px; }
@@ -244,15 +250,11 @@
     }
 
     // ---- Status timeline ----------------------------------------------------
-    const STATUS_META = {
-      created:          { color: '#6b7280', icon: '🧾' },
-      paid:             { color: '#1a7f4b', icon: '✓' },
-      preparing:        { color: '#1d4ed8', icon: '⏳' },
-      out_for_delivery: { color: '#6b21a8', icon: '🚚' },
-      completed:        { color: '#1a7f4b', icon: '✓' },
-      cancelled:        { color: '#b42318', icon: '✕' },
+    const STATUS_COLOR = {
+      created: '#6b7280', paid: '#1a7f4b', preparing: '#1d4ed8',
+      out_for_delivery: '#6b21a8', completed: '#1a7f4b', cancelled: '#b42318',
     };
-    const STATUS_DEFAULT = { color: '#6b7280', icon: '•' };
+    const STATUS_DEFAULT = '#6b7280';
     const cap = (s) => { s = String(s || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); };
 
     // Use the recorded log; if empty (older orders), synthesise from the
@@ -277,10 +279,10 @@
     function renderTimeline(events) {
       const decorated = events.map((h, i) => ({ ...h, desc: tlDesc(h.status, i > 0 ? events[i - 1].status : null) }));
       return decorated.slice().reverse().map(h => {
-        const m = STATUS_META[h.status] || STATUS_DEFAULT;
+        const color = STATUS_COLOR[h.status] || STATUS_DEFAULT;
         const by = (h.by && h.by !== 'system' && h.by !== 'payment') ? ` <span class="tl-by">by ${esc(h.by)}</span>` : '';
         return `<div class="tl-item">
-          <span class="tl-dot" style="background:${m.color}">${m.icon}</span>
+          <span class="tl-dot" style="background:${color}"></span>
           <div class="tl-time">${h.at ? when(h.at) : ''}</div>
           <div class="tl-status">${esc(cap(h.status))}</div>
           <div class="tl-desc">${esc(h.desc)}${by}</div>
@@ -321,9 +323,10 @@
     function paymentSummary(o) {
       const q = o.quote || {}; const ccy = q.currency || 'SGD';
       const row = (l, r, cls) => `<div class="ps-row ${cls || ''}"><span>${l}</span><span class="r">${r}</span></div>`;
-      const items = (q.items || []).map(i =>
-        `<div class="ps-row ps-item"><span class="nm">${i.qty}× ${esc(i.title)} <span class="sub">${esc(i.size || '')}</span></span><span class="r">${money(i.lineTotal, ccy)}</span></div>`
-      ).join('');
+      const items = (q.items || []).map(i => {
+        const unit = i.unitPrice != null ? i.unitPrice : (i.qty ? i.lineTotal / i.qty : 0);
+        return `<div class="ps-row ps-item"><span class="nm"><span class="t">${esc(i.title)}${i.size ? ` <span class="sub">${esc(i.size)}</span>` : ''}</span><span class="calc">${i.qty} × ${money(unit, ccy)}</span></span><span class="r">${money(i.lineTotal, ccy)}</span></div>`;
+      }).join('');
       const fees = [row('Subtotal', money(q.subtotal, ccy))];
       if (q.discount) fees.push(row(`Discount${q.discountCode ? ' (' + esc(q.discountCode) + ')' : ''}`, '-' + money(q.discount, ccy), 'ps-disc'));
       fees.push(row('Delivery', q.deliveryFee ? money(q.deliveryFee, ccy) : 'Free'));
