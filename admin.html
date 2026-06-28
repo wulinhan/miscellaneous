@@ -144,7 +144,8 @@
     .card:hover { box-shadow:0 3px 14px rgba(22,34,74,.10); border-color:#d6def0; }
     .card-check { width:17px; height:17px; accent-color:var(--navy); flex:0 0 auto; cursor:pointer; }
     .status-sel { font-weight:700; text-transform:capitalize; height:34px; border-radius:999px; padding:4px 30px 4px 14px; background-position:right 11px center; cursor:pointer; }
-    .cardmenu-wrap { position:relative; flex:0 0 auto; }
+    .cardmenu-wrap { position:relative; display:none; align-items:center; }
+    .orow.open .cardmenu-wrap { display:flex; }
     .cardmenu-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; width:34px; height:34px; font-size:18px; line-height:1; cursor:pointer; }
     .cardmenu { position:absolute; right:0; top:38px; z-index:20; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:6px; min-width:170px; display:flex; flex-direction:column; }
     .cardmenu .mi { background:none; border:none; text-align:left; padding:8px 10px; border-radius:7px; font:inherit; color:#1b2330; cursor:pointer; text-decoration:none; }
@@ -179,7 +180,8 @@
     .c-act { width:92px; white-space:nowrap; }
     .acts { display:flex; align-items:center; justify-content:flex-end; gap:6px; }
     .otable .status-sel { min-width:138px; vertical-align:middle; }
-    .exp-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }
+    .exp-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:9px; width:40px; height:40px; cursor:pointer; font-size:16px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }
+    .exp-btn:hover { background:#e2e6f0; }
     .cardmenu-btn { display:inline-flex; align-items:center; justify-content:center; }
     .odetail > td { padding:0; background:#f6f7fb; }
     .detailwrap { padding:14px 16px; }
