@@ -7,6 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2316224a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <title>Sofnade — Orders (Staff)</title>
   <style>
     :root { --navy:#16224a; --gold:#ffc629; --line:#e5e7eb; --muted:#6b7280; --bg:#f6f7fb; --ok:#1a7f4b; }
@@ -101,6 +102,12 @@
     @keyframes flashbg { from { background:#e7f7ee; } to { background:#fff; } }
     .card.flash { animation: flashbg 1.4s ease; }
 
+    .pager { display:flex; align-items:center; gap:6px; justify-content:center; flex-wrap:wrap; margin:18px 0 4px; }
+    .pager button { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:8px; padding:6px 11px; font-weight:600; cursor:pointer; min-width:36px; }
+    .pager button:disabled { opacity:.45; cursor:default; }
+    .pager button.cur { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .pager .pinfo { color:var(--muted); padding:0 2px; }
+    .pager .pp { margin-left:8px; height:34px; }
     .login { max-width:380px; margin:10vh auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px; }
     .login h2 { margin:0 0 6px; color:var(--navy); }
     .error { color:#b42318; font-size:14px; margin-top:8px; min-height:18px; }
@@ -163,6 +170,7 @@
         </div>
       </div>
       <div id="list"></div>
+      <div id="pager" class="pager"></div>
       <div id="empty" class="muted hide" style="text-align:center;padding:40px">No orders match.</div>
     </div>
   </div>
@@ -173,6 +181,10 @@
     let pw = sessionStorage.getItem(PW_KEY) || '';
     let ALL = [];
     let STAFF = [];
+    const PAGE_SIZES = [20, 50, 100];
+    let pageSize = 20;
+    let page = 1;
+    let FILTERED = [];
 
     function saveOperator() { localStorage.setItem('sofnade_operator', document.getElementById('operator').value || ''); }
 
@@ -395,8 +407,50 @@
 
     function render(orders) {
       document.getElementById('list').innerHTML = orders.map(orderCard).join('');
-      document.getElementById('empty').classList.toggle('hide', orders.length > 0);
     }
+
+    // ---- Pagination (client-side, over the filtered set) --------------------
+    function pageWindow(cur, pages) {
+      const range = [];
+      for (let i = Math.max(1, cur - 2); i <= Math.min(pages, cur + 2); i++) range.push(i);
+      const out = [];
+      if (range[0] > 1) { out.push(1); if (range[0] > 2) out.push('…'); }
+      range.forEach(p => out.push(p));
+      const last = range[range.length - 1];
+      if (last < pages) { if (last < pages - 1) out.push('…'); out.push(pages); }
+      return out;
+    }
+    function renderPager(pages) {
+      const pager = document.getElementById('pager');
+      if (pages < 1) { pager.innerHTML = ''; return; }
+      const perPage = `<select class="pp" onchange="setPageSize(this.value)" title="Orders per page">` +
+        PAGE_SIZES.map(s => `<option value="${s}" ${s === pageSize ? 'selected' : ''}>${s} / page</option>`).join('') + `</select>`;
+      if (pages <= 1) { pager.innerHTML = perPage; return; }
+      const btn = (label, p, o = {}) => `<button ${o.disabled ? 'disabled' : ''} class="${o.cur ? 'cur' : ''}" onclick="gotoPage(${p})">${label}</button>`;
+      let html = btn('‹', page - 1, { disabled: page <= 1 });
+      pageWindow(page, pages).forEach(p => { html += (p === '…') ? '<span class="pinfo">…</span>' : btn(p, p, { cur: p === page }); });
+      html += btn('›', page + 1, { disabled: page >= pages });
+      pager.innerHTML = html + perPage;
+    }
+    function renderPage() {
+      const total = FILTERED.length;
+      const pages = Math.max(1, Math.ceil(total / pageSize));
+      if (page > pages) page = pages;
+      if (page < 1) page = 1;
+      const start = (page - 1) * pageSize;
+      render(FILTERED.slice(start, start + pageSize));
+      document.getElementById('empty').classList.toggle('hide', total > 0);
+      const from = total ? start + 1 : 0;
+      const to = Math.min(start + pageSize, total);
+      document.getElementById('count').textContent = total ? `Showing ${from}–${to} of ${total}` : '';
+      renderPager(total ? pages : 0);
+    }
+    function gotoPage(n) {
+      page = n;
+      renderPage();
+      document.getElementById('list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    function setPageSize(v) { pageSize = parseInt(v, 10) || 20; page = 1; renderPage(); }
 
     function applyFilters() {
       const terms = document.getElementById('search').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -422,8 +476,9 @@
         }
         return true;
       });
-      render(filtered);
-      document.getElementById('count').textContent = `Showing ${filtered.length} of ${ALL.length}`;
+      FILTERED = filtered;
+      page = 1;
+      renderPage();
     }
 
     async function save(id, btn) {
