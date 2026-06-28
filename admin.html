@@ -130,6 +130,10 @@
     .kc-when { font-size:12px; color:#374151; margin-top:3px; }
     .kc-pp { font-size:12px; color:var(--muted); margin-top:3px; }
     .kc-amt { font-weight:800; color:var(--navy); margin-top:6px; }
+    .board-hint { font-size:12px; color:var(--muted); margin-bottom:8px; }
+    .kcard[draggable] { cursor:grab; }
+    .kcard.dragging { opacity:.45; }
+    .bcards.dragover { outline:2px dashed var(--navy); outline-offset:3px; border-radius:8px; }
     /* List enhancements: hover, bulk select, inline status, row menu, presets, export */
     .card { transition:box-shadow .12s ease, border-color .12s ease; }
     .card:hover { box-shadow:0 3px 14px rgba(22,34,74,.10); border-color:#d6def0; }
@@ -652,11 +656,12 @@
         cards: groups[k].slice().sort((a, b) => slotMinutes(a) - slotMinutes(b)),
       }));
     }
-    function kanbanCard(o, showStatus) {
+    function kanbanCard(o, showStatus, draggable) {
       const c = o.customer || {};
       const dt = o.delivery_date ? esc(o.delivery_date) + (o.slot_or_window ? ' · ' + esc(o.slot_or_window) : '') : 'No delivery date';
       const pill = showStatus ? `<span class="pill s-${esc(o.status)}">${esc((o.status || '').replace(/_/g, ' '))}</span>` : '';
-      return `<div class="kcard">
+      const dragAttrs = draggable ? ` draggable="true" ondragstart="onCardDragStart(event,'${esc(o.id)}')" ondragend="onCardDragEnd(event)"` : '';
+      return `<div class="kcard"${dragAttrs}>
         <div class="kc-top"><span class="kc-id">${esc(o.id)}</span>${pill}</div>
         <div class="kc-cust">${esc(c.name || '—')}${c.business ? ` <span class="kc-org">· ${esc(c.business)}</span>` : ''}</div>
         <div class="kc-when">🗓 ${dt}</div>
@@ -667,11 +672,43 @@
     function renderBoard(mode) {
       const cols = mode === 'status' ? statusColumns() : dayColumns();
       const showStatus = mode === 'day';
-      document.getElementById('list').innerHTML = `<div class="board">` + cols.map(col => {
+      const drag = mode === 'status';
+      const hint = drag ? `<div class="board-hint">Tip: drag a card to another column to change its status.</div>` : '';
+      document.getElementById('list').innerHTML = hint + `<div class="board">` + cols.map(col => {
         const dot = mode === 'status' ? `<span class="dot" style="background:${col.color || '#999'}"></span>` : '';
-        const cards = col.cards.map(o => kanbanCard(o, showStatus)).join('') || '<div class="bempty">—</div>';
-        return `<div class="bcol"><div class="bcol-h"><span>${dot}${esc(col.label)}</span><span class="bcount">${col.cards.length}</span></div><div class="bcards">${cards}</div></div>`;
+        const cards = col.cards.map(o => kanbanCard(o, showStatus, drag)).join('') || '<div class="bempty">—</div>';
+        const drop = drag ? ` data-dropstatus="${esc(col.key)}" ondragover="onColDragOver(event)" ondragleave="onColDragLeave(event)" ondrop="onColDrop(event)"` : '';
+        return `<div class="bcol"><div class="bcol-h"><span>${dot}${esc(col.label)}</span><span class="bcount">${col.cards.length}</span></div><div class="bcards"${drop}>${cards}</div></div>`;
       }).join('') + `</div>`;
+    }
+
+    // ---- Drag-to-update (status board) --------------------------------------
+    let DRAG_ID = null;
+    function onCardDragStart(e, id) {
+      DRAG_ID = id; e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', id); } catch (_) {}
+      e.currentTarget.classList.add('dragging');
+    }
+    function onCardDragEnd(e) {
+      e.currentTarget.classList.remove('dragging');
+      document.querySelectorAll('.bcards.dragover').forEach(el => el.classList.remove('dragover'));
+    }
+    function onColDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('dragover'); }
+    function onColDragLeave(e) { e.currentTarget.classList.remove('dragover'); }
+    async function onColDrop(e) {
+      e.preventDefault();
+      const col = e.currentTarget; col.classList.remove('dragover');
+      const status = col.getAttribute('data-dropstatus');
+      const id = DRAG_ID || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+      DRAG_ID = null;
+      const o = ALL.find(x => x.id === id);
+      if (!id || !status || !o || o.status === status) return;
+      try {
+        const { order } = await api('PATCH', '/orders', { id, status });
+        const i = ALL.findIndex(x => x.id === id); if (i >= 0 && order) ALL[i] = order;
+        renderKpis();
+        applyFilters(); // re-render the board with the card in its new column
+      } catch (err) { if (err.message !== 'unauthorized') alert('Could not move: ' + err.message); }
     }
 
     function renderView() {
