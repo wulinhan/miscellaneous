@@ -58,8 +58,20 @@
     .ef.act { flex-direction:row; align-items:center; gap:10px; }
     .saved { color:var(--ok); font-size:13px; font-weight:600; }
     .ref { font-size:12px; color:var(--muted); margin-top:6px; }
-    .hist { font-size:12px; color:var(--muted); margin-top:8px; }
-    .hist b { color:#374151; display:block; margin-bottom:2px; }
+    /* Inline "add staff" box */
+    .addbox { display:inline-flex; align-items:center; gap:6px; }
+    .addinput { height:38px; width:150px; }
+    .addx { background:#eef1f8; color:#475569; border:none; border-radius:8px; height:32px; width:32px; font-size:18px; line-height:1; cursor:pointer; }
+    .addx:hover { background:#e2e6f0; }
+    /* Collapsible vertical status timeline (right-aligned) */
+    .tl-toggle { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .tl-toggle.open { background:var(--navy); color:#fff; }
+    .timeline { margin:10px 0 0 auto; max-width:300px; border-left:2px solid var(--line); padding-left:14px; }
+    .tl-item { position:relative; padding:2px 0 8px; }
+    .tl-item::before { content:''; position:absolute; left:-21px; top:5px; width:10px; height:10px; border-radius:50%; background:var(--gold); box-shadow:0 0 0 2px #fff, 0 0 0 3px var(--line); }
+    .tl-item:last-child { padding-bottom:0; }
+    .tl-item .st { font-weight:700; color:var(--navy); text-transform:capitalize; font-size:13px; }
+    .tl-item .meta { color:var(--muted); font-size:12px; }
     .op { width:140px; height:32px; border-radius:8px; border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.12); color:#fff; padding:5px 9px; }
     .op::placeholder { color:#aebbe0; }
     @keyframes flashbg { from { background:#e7f7ee; } to { background:#fff; } }
@@ -157,23 +169,49 @@
         sel.value = cur;
       });
     }
-    function onStaffChange(sel) { if (sel.value === '__add__') addNewStaff(sel); }
-    async function addNewStaff(sel) {
-      const name = (window.prompt('New staff name:') || '').trim();
-      if (!name) { sel.value = ''; return; }
-      try {
-        const { staff } = await api('POST', '/staff', { name });
-        STAFF = staff || STAFF;
-      } catch (e) {
-        if (e.message !== 'unauthorized') alert('Could not add: ' + e.message);
-        sel.value = ''; return;
-      }
-      if (![...sel.options].some(o => o.value === name)) {
-        const opt = document.createElement('option'); opt.value = name; opt.textContent = name;
-        sel.insertBefore(opt, sel.querySelector('option[value="__add__"]'));
-      }
-      sel.value = name;
-      rebuildAllStaffSelects(); // make the new name available in every dropdown
+    function onStaffChange(sel) { if (sel.value === '__add__') enterAddMode(sel); }
+
+    // Swap the dropdown for an inline name input: Enter/Add saves, Esc/× cancels.
+    function enterAddMode(sel) {
+      const id = sel.getAttribute('data-preparer') || sel.getAttribute('data-driver');
+      const field = sel.hasAttribute('data-preparer') ? 'preparer' : 'driver';
+      const box = document.createElement('span');
+      box.className = 'addbox';
+      box.innerHTML = '<input class="addinput" placeholder="New name" maxlength="60" />' +
+                      '<button class="btn-gold btn-sm" type="button">Add</button>' +
+                      '<button class="addx" type="button" title="Cancel">×</button>';
+      sel.style.display = 'none';
+      sel.insertAdjacentElement('afterend', box);
+      const input = box.querySelector('.addinput');
+      input.focus();
+
+      const restore = (value) => { sel.innerHTML = staffOptions(value); sel.value = value; sel.style.display = ''; box.remove(); };
+      const cancel = () => { const o = ALL.find(x => x.id === id) || {}; restore(o[field] || ''); };
+      const commit = async () => {
+        const name = input.value.trim();
+        if (!name) { cancel(); return; }
+        const addBtn = box.querySelector('.btn-gold'); addBtn.disabled = true; addBtn.textContent = '…';
+        try {
+          const { staff } = await api('POST', '/staff', { name });
+          STAFF = staff || STAFF;
+        } catch (e) {
+          if (e.message !== 'unauthorized') alert('Could not add: ' + e.message);
+          cancel(); return;
+        }
+        restore(name);
+        rebuildAllStaffSelects(); // make the new name available in every dropdown
+      };
+      box.querySelector('.btn-gold').addEventListener('click', commit);
+      box.querySelector('.addx').addEventListener('click', cancel);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+      });
+    }
+
+    function toggleTimeline(btn) {
+      const tl = btn.closest('.card').querySelector('.timeline');
+      if (tl) { tl.classList.toggle('hide'); btn.classList.toggle('open'); }
     }
 
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -230,7 +268,9 @@
       const wa = waNumber(c.phone);
       const waMsg = encodeURIComponent(`Hi ${c.name || ''}, this is Sofnade about your order ${o.id}.`.replace(/\s+/g, ' ').trim());
       const waBtn = wa ? `<a class="btn-wa" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : '';
-      const histHtml = (o.status_history || []).map(h => `<div>${esc((h.status||'').replace(/_/g,' '))} · ${when(h.at)}${h.by ? ' · ' + esc(h.by) : ''}</div>`).join('');
+      const tl = o.status_history || [];
+      const tlHtml = tl.map(h => `<div class="tl-item"><span class="st">${esc((h.status||'').replace(/_/g,' '))}</span><div class="meta">${when(h.at)}${h.by ? ' · ' + esc(h.by) : ''}</div></div>`).join('');
+      const tlToggle = tl.length ? `<button class="tl-toggle" type="button" onclick="toggleTimeline(this)">Timeline (${tl.length})</button>` : '';
       return `
       <div class="card" data-card="${esc(o.id)}">
         <div class="top">
@@ -239,6 +279,7 @@
             <span class="pill s-${esc(o.status)}">${esc((o.status||'').replace(/_/g,' '))}</span>
           </div>
           <div class="total">${money(o.amount_total, o.currency)}</div>
+          ${tlToggle}
         </div>
         <div class="muted" style="font-size:13px;margin-top:2px">Placed ${when(o.created_at)}${o.updated_at ? ' · edited ' + when(o.updated_at) : ''}</div>
 
@@ -256,7 +297,7 @@
         <div><b style="font-size:14px;color:#374151">Items</b><ul class="items">${items || '<li class="muted">no items</li>'}</ul></div>
         <div class="totals">Subtotal ${money(q.subtotal,q.currency)}${q.discount ? ' · Discount -' + money(q.discount,q.currency) : ''} · Delivery ${money(q.deliveryFee,q.currency)}${q.surcharge ? ' · Surcharge ' + money(q.surcharge,q.currency) : ''}${q.specificTimeFee ? ' · Specific-time ' + money(q.specificTimeFee,q.currency) : ''} · <b>Total ${money(q.total,q.currency)}</b></div>
         ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
-        ${histHtml ? `<div class="hist"><b>Status log</b>${histHtml}</div>` : ''}
+        ${tlHtml ? `<div class="timeline hide">${tlHtml}</div>` : ''}
 
         <div class="edit">
           <div class="ef"><label>Status</label><select data-status="${esc(o.id)}">${statusOpts}</select></div>
