@@ -34,7 +34,7 @@
     .muted { color:var(--muted); }
 
     /* Filter bar */
-    .filters { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:16px; position:sticky; top:60px; z-index:5; }
+    .filters { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:16px; position:sticky; top:74px; z-index:5; }
     .filters .line { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
     .fg { display:flex; flex-direction:column; gap:3px; }
     .fg label { font-size:12px; font-weight:600; color:#374151; }
@@ -149,7 +149,7 @@
     .cardmenu { position:absolute; right:0; top:38px; z-index:20; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:6px; min-width:170px; display:flex; flex-direction:column; }
     .cardmenu .mi { background:none; border:none; text-align:left; padding:8px 10px; border-radius:7px; font:inherit; color:#1b2330; cursor:pointer; text-decoration:none; }
     .cardmenu .mi:hover { background:var(--bg); }
-    .bulkbar { position:sticky; top:60px; z-index:6; display:flex; align-items:center; gap:10px; background:var(--navy); color:#fff; border-radius:10px; padding:8px 14px; margin-bottom:12px; flex-wrap:wrap; }
+    .bulkbar { position:sticky; top:74px; z-index:6; display:flex; align-items:center; gap:10px; background:var(--navy); color:#fff; border-radius:10px; padding:8px 14px; margin-bottom:12px; flex-wrap:wrap; }
     .bulkbar .bb-n { font-weight:700; }
     .bulkbar select { height:34px; }
     .bulkbar .bb-btn { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:8px; padding:6px 12px; font-weight:600; cursor:pointer; }
@@ -724,11 +724,15 @@
     function renderView() {
       const isList = view === 'list';
       document.getElementById('pager').style.display = isList ? '' : 'none';
-      if (isList) { renderPage(); return; }
-      const n = FILTERED.length;
-      document.getElementById('count').textContent = `${n} order${n === 1 ? '' : 's'}`;
-      document.getElementById('empty').classList.toggle('hide', n > 0);
-      renderBoard(view);
+      if (isList) {
+        renderPage();
+      } else {
+        const n = FILTERED.length;
+        document.getElementById('count').textContent = `${n} order${n === 1 ? '' : 's'}`;
+        document.getElementById('empty').classList.toggle('hide', n > 0);
+        renderBoard(view);
+      }
+      onScrollFade();
     }
     function setView(v) {
       view = v;
@@ -870,6 +874,27 @@
         const s = document.getElementById('search'); if (s) { e.preventDefault(); s.focus(); }
       }
     });
+
+    // Fade rows/cards out as they scroll up under the (stuck) filter bar.
+    let _fadeRAF = null;
+    function updateFade() {
+      _fadeRAF = null;
+      const filters = document.querySelector('.filters');
+      if (!filters) return;
+      const fr = filters.getBoundingClientRect();
+      const stuck = fr.top <= 80;          // sticky engaged (scrolled)
+      const ref = fr.bottom;
+      document.querySelectorAll('#list tr, #list .kcard').forEach(el => {
+        if (el.offsetParent === null) return;
+        if (!stuck) { el.style.opacity = ''; return; }
+        const top = el.getBoundingClientRect().top;
+        const op = (top - ref) / 40;       // fade over the 40px just below the bar
+        el.style.opacity = op < 0 ? 0 : op > 1 ? 1 : op;
+      });
+    }
+    function onScrollFade() { if (!_fadeRAF) _fadeRAF = requestAnimationFrame(updateFade); }
+    window.addEventListener('scroll', onScrollFade, { passive: true });
+    window.addEventListener('resize', onScrollFade);
 
     function applyFilters() {
       const terms = document.getElementById('search').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
