@@ -66,10 +66,13 @@
     .addinput { height:38px; width:150px; }
     .addx { background:#eef1f8; color:#475569; border:none; border-radius:8px; height:32px; width:32px; font-size:18px; line-height:1; cursor:pointer; }
     .addx:hover { background:#e2e6f0; }
-    /* Collapsible vertical status timeline (right-aligned) */
-    .tl-toggle { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
-    .tl-toggle.open { background:var(--navy); color:#fff; }
-    .timeline { margin:12px 0 0 auto; max-width:340px; border-left:2px solid #e5e7eb; padding-left:24px; }
+    /* Two-column card: order on the left, status timeline panel on the right */
+    .card-row { display:flex; gap:18px; align-items:flex-start; }
+    .order-main { flex:1; min-width:0; }
+    .order-timeline { flex:0 0 300px; width:300px; background:#fafbfe; border:1px solid var(--line); border-radius:10px; padding:14px; }
+    .tl-head { font-weight:700; font-size:13px; color:var(--navy); margin-bottom:14px; }
+    @media(max-width:760px){ .card-row{flex-direction:column} .order-timeline{flex:none; width:auto} }
+    .timeline { border-left:2px solid #e5e7eb; padding-left:24px; max-height:360px; overflow:auto; }
     .tl-item { position:relative; padding:0 0 14px; }
     .tl-item:last-child { padding-bottom:2px; }
     .tl-dot { position:absolute; left:-36px; top:0; width:24px; height:24px; border-radius:50%; color:#fff; font-size:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 3px #fff; }
@@ -214,10 +217,6 @@
       });
     }
 
-    function toggleTimeline(btn) {
-      const tl = btn.closest('.card').querySelector('.timeline');
-      if (tl) { tl.classList.toggle('hide'); btn.classList.toggle('open'); }
-    }
 
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const money = (n, c) => `${c || 'SGD'} ${Number(n || 0).toFixed(2)}`;
@@ -318,18 +317,17 @@
       const wa = waNumber(c.phone);
       const waMsg = encodeURIComponent(`Hi ${c.name || ''}, this is Sofnade about your order ${o.id}.`.replace(/\s+/g, ' ').trim());
       const waBtn = wa ? `<a class="btn-wa" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : '';
-      const tlEvents = timelineEvents(o);
-      const tlHtml = renderTimeline(tlEvents);
-      const tlToggle = tlEvents.length ? `<button class="tl-toggle" type="button" onclick="toggleTimeline(this)">Timeline (${tlEvents.length})</button>` : '';
+      const tlHtml = renderTimeline(timelineEvents(o));
       return `
       <div class="card" data-card="${esc(o.id)}">
+        <div class="card-row">
+        <div class="order-main">
         <div class="top">
           <div class="grow">
             <span class="id">${esc(o.id)}</span>
             <span class="pill s-${esc(o.status)}">${esc((o.status||'').replace(/_/g,' '))}</span>
           </div>
           <div class="total">${money(o.amount_total, o.currency)}</div>
-          ${tlToggle}
         </div>
         <div class="muted" style="font-size:13px;margin-top:2px">Placed ${when(o.created_at)}${o.updated_at ? ' · edited ' + when(o.updated_at) : ''}</div>
 
@@ -347,7 +345,6 @@
         <div><b style="font-size:14px;color:#374151">Items</b><ul class="items">${items || '<li class="muted">no items</li>'}</ul></div>
         <div class="totals">Subtotal ${money(q.subtotal,q.currency)}${q.discount ? ' · Discount -' + money(q.discount,q.currency) : ''} · Delivery ${money(q.deliveryFee,q.currency)}${q.surcharge ? ' · Surcharge ' + money(q.surcharge,q.currency) : ''}${q.specificTimeFee ? ' · Specific-time ' + money(q.specificTimeFee,q.currency) : ''} · <b>Total ${money(q.total,q.currency)}</b></div>
         ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
-        ${tlHtml ? `<div class="timeline hide">${tlHtml}</div>` : ''}
 
         <div class="edit">
           <div class="ef"><label>Status</label><select data-status="${esc(o.id)}">${statusOpts}</select></div>
@@ -355,6 +352,12 @@
           <div class="ef who"><label>Driver</label><select data-driver="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.driver)}</select></div>
           <div class="ef grow"><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
           <div class="ef act"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save</button><span class="saved hide">Saved ✓</span></div>
+        </div>
+        </div>
+        <aside class="order-timeline">
+          <div class="tl-head">Status timeline</div>
+          <div class="timeline">${tlHtml || '<div class="muted" style="font-size:12px">No history yet.</div>'}</div>
+        </aside>
         </div>
       </div>`;
     }
