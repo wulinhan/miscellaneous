@@ -68,7 +68,10 @@
     .ps-item .calc { color:#5a6b8c; font-size:11px; margin-top:1px; }
     .ps-disc { color:#0f7a44; }
     .ps-total { display:flex; justify-content:space-between; gap:14px; font-weight:800; font-size:15px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(22,34,74,0.25); color:var(--navy); }
-    .edit { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+    .edit { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+    .manage { background:rgba(255,198,41,0.13); border:1px solid rgba(240,180,26,0.55); border-radius:10px; padding:12px 14px; margin-top:12px; }
+    .manage-h { font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:#7a5b00; }
+    .manage-sub { font-size:12px; color:#8a6d12; margin:2px 0 10px; }
     .ef { display:flex; flex-direction:column; gap:3px; }
     .ef.grow { flex:1; min-width:200px; }
     .ef label { font-size:12px; font-weight:600; color:#374151; }
@@ -272,13 +275,14 @@
     // Use the recorded log; if empty (older orders), synthesise from the
     // created/paid timestamps so every order still shows a timeline.
     function timelineEvents(o) {
-      let ev = Array.isArray(o.status_history) ? o.status_history.slice() : [];
-      if (!ev.length) {
-        ev = [];
-        if (o.created_at) ev.push({ status: 'created', at: o.created_at, by: 'system' });
-        if (o.paid_at) ev.push({ status: 'paid', at: o.paid_at, by: 'payment' });
-        if (o.status && !ev.some(e => e.status === o.status)) ev.push({ status: o.status, at: o.updated_at || null, by: null });
-      }
+      const ev = Array.isArray(o.status_history) ? o.status_history.slice() : [];
+      const has = (s) => ev.some(e => e.status === s);
+      // Always anchor the log with a Created step (older orders have no history).
+      if (o.created_at && !has('created')) ev.push({ status: 'created', at: o.created_at, by: 'system' });
+      // Include the paid step from the payment timestamp if not already logged.
+      if (o.paid_at && !has('paid')) ev.push({ status: 'paid', at: o.paid_at, by: 'payment' });
+      // Chronological order (entries without a time go last).
+      ev.sort((a, b) => (a.at ? Date.parse(a.at) : Infinity) - (b.at ? Date.parse(b.at) : Infinity));
       return ev;
     }
     function tlDesc(cur, prev) {
@@ -389,12 +393,16 @@
         ${paymentSummary(o)}
         ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
 
-        <div class="edit">
+        <div class="manage">
+          <div class="manage-h">Manage order</div>
+          <div class="manage-sub">Set status, preparer, driver and notes, then “Save changes” to apply all.</div>
+          <div class="edit">
           <div class="ef"><label>Status</label><select data-status="${esc(o.id)}">${statusOpts}</select></div>
           <div class="ef who"><label>Preparer</label><select data-preparer="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.preparer)}</select></div>
           <div class="ef who"><label>Driver</label><select data-driver="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.driver)}</select></div>
           <div class="ef grow"><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
-          <div class="ef act"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save</button><span class="saved hide">Saved ✓</span></div>
+          <div class="ef act"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save changes</button><span class="saved hide">Saved ✓</span></div>
+          </div>
         </div>
         </div>
         <aside class="order-timeline">
