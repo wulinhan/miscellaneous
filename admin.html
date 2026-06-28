@@ -154,6 +154,12 @@
     .bulkbar .bb-n { font-weight:700; }
     .bulkbar select { height:34px; }
     .bulkbar .bb-btn { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:8px; padding:6px 12px; font-weight:600; cursor:pointer; }
+    .bulkbar .bb-btn:hover { background:rgba(255,255,255,.25); }
+    .bb-drop { position:relative; }
+    .bb-menu { position:absolute; left:0; top:40px; z-index:30; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 10px 28px rgba(0,0,0,.22); padding:6px; min-width:180px; display:flex; flex-direction:column; }
+    .bb-menu.hide { display:none; }
+    .bb-menu button { background:none; border:none; text-align:left; padding:8px 10px; border-radius:7px; font:inherit; color:#1b2330; cursor:pointer; text-transform:capitalize; }
+    .bb-menu button:hover { background:var(--bg); }
     .preset { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:6px 11px; font-size:12px; font-weight:600; cursor:pointer; }
     .toolbtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:8px; padding:0 12px; font-weight:600; cursor:pointer; height:38px; }
     /* KPI strip */
@@ -278,14 +284,16 @@
       </div>
       <div id="bulkbar" class="bulkbar hide">
         <span class="bb-n"><span id="bb-count">0</span> selected</span>
-        <select id="bb-status" onchange="bulkStatus(this.value); this.value='';">
-          <option value="">Set status…</option>
-          <option value="paid">Paid</option>
-          <option value="preparing">Preparing</option>
-          <option value="out_for_delivery">Out for delivery</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <div class="bb-drop">
+          <button class="bb-btn" type="button" onclick="toggleBbMenu(event)">Set status ▾</button>
+          <div class="bb-menu hide">
+            <button type="button" onclick="bulkStatus('paid')">Paid</button>
+            <button type="button" onclick="bulkStatus('preparing')">Preparing</button>
+            <button type="button" onclick="bulkStatus('out_for_delivery')">Out for delivery</button>
+            <button type="button" onclick="bulkStatus('completed')">Completed</button>
+            <button type="button" onclick="bulkStatus('cancelled')">Cancelled</button>
+          </div>
+        </div>
         <button class="bb-btn" onclick="exportSelected()">Export selected</button>
         <button class="bb-btn" onclick="selectAllFiltered()">Select all (<span id="bb-all">0</span>)</button>
         <button class="bb-btn" onclick="clearSelection()">Clear</button>
@@ -503,7 +511,6 @@
         <td class="r-team">${team}</td>
         <td class="c-amt">${money(o.amount_total, o.currency)}</td>
         <td class="c-act"><div class="acts">
-          <button class="exp-btn" type="button" onclick="toggleDetail('${esc(o.id)}', this)" aria-label="Expand details">▾</button>
           <div class="cardmenu-wrap">
             <button class="cardmenu-btn" type="button" onclick="toggleMenu(this)" aria-label="More actions">⋯</button>
             <div class="cardmenu hide">
@@ -513,6 +520,7 @@
               ${wa ? `<a class="mi" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : ''}
             </div>
           </div>
+          <button class="exp-btn" type="button" onclick="toggleDetail('${esc(o.id)}', this)" aria-label="Expand details">▾</button>
         </div></td>
       </tr>
       <tr class="odetail hide" data-detail="${esc(o.id)}"><td colspan="8"><div class="detailwrap">${orderDetailInner(o)}</div></td></tr>`;
@@ -822,6 +830,7 @@
     function selectAllFiltered() { FILTERED.forEach(o => SELECTED.add(o.id)); updateBulkBar(); renderView(); }
     function clearSelection() { SELECTED.clear(); updateBulkBar(); renderView(); }
     async function bulkStatus(v) {
+      document.querySelectorAll('.bb-menu').forEach(m => m.classList.add('hide'));
       const ids = [...SELECTED];
       if (!v || !ids.length) return;
       if (!confirm(`Set ${ids.length} order${ids.length === 1 ? '' : 's'} to "${v.replace(/_/g, ' ')}"?`)) return;
@@ -861,6 +870,13 @@
       document.querySelectorAll('.cardmenu').forEach(m => { if (m !== menu) m.classList.add('hide'); });
       menu.classList.toggle('hide');
     }
+    function toggleBbMenu(e) {
+      const m = e.currentTarget.nextElementSibling;
+      if (!m) return;
+      const show = m.classList.contains('hide');
+      document.querySelectorAll('.bb-menu').forEach(x => x.classList.add('hide'));
+      if (show) m.classList.remove('hide');
+    }
     document.addEventListener('click', (e) => {
       const mi = e.target.closest('.mi[data-copy]');
       if (mi) {
@@ -870,6 +886,7 @@
         return;
       }
       if (!e.target.closest('.cardmenu-wrap')) document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+      if (!e.target.closest('.bb-drop')) document.querySelectorAll('.bb-menu').forEach(m => m.classList.add('hide'));
     });
     document.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
