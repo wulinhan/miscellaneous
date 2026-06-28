@@ -44,7 +44,7 @@
     .count { margin-left:auto; align-self:center; font-size:13px; }
 
     .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:12px; }
-    .top { display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
+    .top { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .top .grow { flex:1; min-width:140px; }
     .id { font-family:ui-monospace,monospace; font-weight:700; color:var(--navy); }
     .total { font-weight:700; font-size:17px; }
@@ -130,6 +130,22 @@
     .kc-when { font-size:12px; color:#374151; margin-top:3px; }
     .kc-pp { font-size:12px; color:var(--muted); margin-top:3px; }
     .kc-amt { font-weight:800; color:var(--navy); margin-top:6px; }
+    /* List enhancements: hover, bulk select, inline status, row menu, presets, export */
+    .card { transition:box-shadow .12s ease, border-color .12s ease; }
+    .card:hover { box-shadow:0 3px 14px rgba(22,34,74,.10); border-color:#d6def0; }
+    .card-check { width:17px; height:17px; accent-color:var(--navy); flex:0 0 auto; cursor:pointer; }
+    .status-sel { font-weight:700; text-transform:capitalize; height:34px; border-radius:999px; padding:4px 30px 4px 14px; background-position:right 11px center; cursor:pointer; }
+    .cardmenu-wrap { position:relative; flex:0 0 auto; }
+    .cardmenu-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; width:34px; height:34px; font-size:18px; line-height:1; cursor:pointer; }
+    .cardmenu { position:absolute; right:0; top:38px; z-index:20; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:6px; min-width:170px; display:flex; flex-direction:column; }
+    .cardmenu .mi { background:none; border:none; text-align:left; padding:8px 10px; border-radius:7px; font:inherit; color:#1b2330; cursor:pointer; text-decoration:none; }
+    .cardmenu .mi:hover { background:var(--bg); }
+    .bulkbar { position:sticky; top:60px; z-index:6; display:flex; align-items:center; gap:10px; background:var(--navy); color:#fff; border-radius:10px; padding:8px 14px; margin-bottom:12px; flex-wrap:wrap; }
+    .bulkbar .bb-n { font-weight:700; }
+    .bulkbar select { height:34px; }
+    .bulkbar .bb-btn { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:8px; padding:6px 12px; font-weight:600; cursor:pointer; }
+    .preset { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:6px 11px; font-size:12px; font-weight:600; cursor:pointer; }
+    .toolbtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:8px; padding:0 12px; font-weight:600; cursor:pointer; height:38px; }
     .login { max-width:380px; margin:10vh auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px; }
     .login h2 { margin:0 0 6px; color:var(--navy); }
     .error { color:#b42318; font-size:14px; margin-top:8px; min-height:18px; }
@@ -192,9 +208,43 @@
             <label>Max $</label>
             <input id="f-max" class="num" type="number" min="0" step="1" inputmode="decimal" oninput="applyFilters()" />
           </div>
+          <div class="fg">
+            <label>Sort</label>
+            <select id="sort" onchange="setSort(this.value)">
+              <option value="new">Newest</option>
+              <option value="old">Oldest</option>
+              <option value="deliv">Delivery soonest</option>
+              <option value="amt_desc">Amount high→low</option>
+              <option value="amt_asc">Amount low→high</option>
+              <option value="status">Status</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Order date</label>
+            <div style="display:flex;gap:6px">
+              <button class="preset" onclick="datePreset('today')">Today</button>
+              <button class="preset" onclick="datePreset('7d')">7d</button>
+              <button class="preset" onclick="datePreset('30d')">30d</button>
+            </div>
+          </div>
           <button class="btn-light btn-sm" onclick="clearFilters()">Clear</button>
+          <button class="toolbtn" onclick="exportCsv(FILTERED)">⬇ Export CSV</button>
           <span id="count" class="count muted"></span>
         </div>
+      </div>
+      <div id="bulkbar" class="bulkbar hide">
+        <span class="bb-n"><span id="bb-count">0</span> selected</span>
+        <select id="bb-status" onchange="bulkStatus(this.value); this.value='';">
+          <option value="">Set status…</option>
+          <option value="paid">Paid</option>
+          <option value="preparing">Preparing</option>
+          <option value="out_for_delivery">Out for delivery</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <button class="bb-btn" onclick="exportSelected()">Export selected</button>
+        <button class="bb-btn" onclick="selectAllFiltered()">Select all (<span id="bb-all">0</span>)</button>
+        <button class="bb-btn" onclick="clearSelection()">Clear</button>
       </div>
       <div id="list"></div>
       <div id="pager" class="pager"></div>
@@ -213,6 +263,8 @@
     let page = 1;
     let FILTERED = [];
     let view = 'list'; // 'list' | 'status' | 'day'
+    let sortKey = 'new';
+    const SELECTED = new Set();
 
     function saveOperator() { localStorage.setItem('sofnade_operator', document.getElementById('operator').value || ''); }
 
@@ -391,16 +443,25 @@
       const waMsg = encodeURIComponent(`Hi ${c.name || ''}, this is Sofnade about your order ${o.id}.`.replace(/\s+/g, ' ').trim());
       const waBtn = wa ? `<a class="btn-wa" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : '';
       const tlHtml = renderTimeline(timelineEvents(o));
+      const sc = STATUS_COLOR[o.status] || STATUS_DEFAULT;
       return `
       <div class="card" data-card="${esc(o.id)}">
         <div class="card-row">
         <div class="order-main">
         <div class="top">
-          <div class="grow">
-            <span class="id">${esc(o.id)}</span>
-            <span class="pill s-${esc(o.status)}">${esc((o.status||'').replace(/_/g,' '))}</span>
-          </div>
+          <input type="checkbox" class="card-check" ${SELECTED.has(o.id) ? 'checked' : ''} onclick="toggleSelect('${esc(o.id)}', this)" title="Select">
+          <div class="grow"><span class="id">${esc(o.id)}</span></div>
+          <select class="status-sel" style="background-color:${sc}1f;color:${sc};border-color:${sc}66" onchange="quickStatus(this, '${esc(o.id)}')" title="Change status (saves instantly)">${statusOpts}</select>
           <div class="total">${money(o.amount_total, o.currency)}</div>
+          <div class="cardmenu-wrap">
+            <button class="cardmenu-btn" type="button" onclick="toggleMenu(this)" aria-label="More actions">⋯</button>
+            <div class="cardmenu hide">
+              <button class="mi" data-copy="${esc(o.id)}">Copy order #</button>
+              ${c.phone ? `<button class="mi" data-copy="${esc(c.phone)}">Copy phone</button>` : ''}
+              <button class="mi" data-copy="${esc(addr)}">Copy address</button>
+              ${wa ? `<a class="mi" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : ''}
+            </div>
+          </div>
         </div>
         <div class="muted" style="font-size:13px;margin-top:2px">Placed ${when(o.created_at)}${o.updated_at ? ' · edited ' + when(o.updated_at) : ''}</div>
 
@@ -420,9 +481,8 @@
 
         <div class="manage">
           <div class="manage-h">Manage order</div>
-          <div class="manage-sub">Set status, preparer, driver and notes, then “Save changes” to apply all.</div>
+          <div class="manage-sub">Assign preparer/driver and add notes, then “Save changes”. (Status saves instantly from the dropdown above.)</div>
           <div class="edit">
-          <div class="ef"><label>Status</label><select data-status="${esc(o.id)}">${statusOpts}</select></div>
           <div class="ef who"><label>Preparer</label><select data-preparer="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.preparer)}</select></div>
           <div class="ef who"><label>Driver</label><select data-driver="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.driver)}</select></div>
           <div class="ef grow"><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
@@ -560,6 +620,115 @@
       renderView();
     }
 
+    // ---- Sorting ------------------------------------------------------------
+    function setSort(v) { sortKey = v; applyFilters(); }
+    function sortComparator(k) {
+      const t = (o) => (o.created_at ? Date.parse(o.created_at) : 0);
+      const amt = (o) => Number(o.amount_total || 0);
+      switch (k) {
+        case 'old': return (a, b) => t(a) - t(b);
+        case 'deliv': return (a, b) => (deliveryKey(a) < deliveryKey(b) ? -1 : deliveryKey(a) > deliveryKey(b) ? 1 : 0);
+        case 'amt_desc': return (a, b) => amt(b) - amt(a);
+        case 'amt_asc': return (a, b) => amt(a) - amt(b);
+        case 'status': return (a, b) => (STATUSES.indexOf(a.status) - STATUSES.indexOf(b.status)) || (t(b) - t(a));
+        default: return (a, b) => t(b) - t(a); // 'new'
+      }
+    }
+
+    // ---- Date presets (order date) ------------------------------------------
+    function setDateRange(from, to) {
+      document.getElementById('f-from').value = from;
+      document.getElementById('f-to').value = to;
+      applyFilters();
+    }
+    function datePreset(p) {
+      const today = todaySG();
+      const minus = (n) => { const d = new Date(today + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+      if (p === 'today') setDateRange(today, today);
+      else if (p === '7d') setDateRange(minus(6), today);
+      else if (p === '30d') setDateRange(minus(29), today);
+    }
+
+    // ---- Inline status (instant save) ---------------------------------------
+    async function quickStatus(sel, id) {
+      const v = sel.value; sel.disabled = true;
+      try {
+        const { order } = await api('PATCH', '/orders', { id, status: v });
+        const i = ALL.findIndex(o => o.id === id); if (i >= 0 && order) ALL[i] = order;
+        const f = FILTERED.findIndex(o => o.id === id); if (f >= 0 && order) FILTERED[f] = order;
+        const sc = STATUS_COLOR[v] || STATUS_DEFAULT;
+        sel.style.backgroundColor = sc + '1f'; sel.style.color = sc; sel.style.borderColor = sc + '66';
+        const card = document.querySelector(`[data-card="${cssEsc(id)}"]`);
+        if (card && order) {
+          const tlEl = card.querySelector('.timeline');
+          if (tlEl) tlEl.innerHTML = renderTimeline(timelineEvents(order));
+          card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+        }
+      } catch (e) { if (e.message !== 'unauthorized') alert('Could not update status: ' + e.message); }
+      sel.disabled = false;
+    }
+
+    // ---- Bulk selection -----------------------------------------------------
+    function toggleSelect(id, el) { el.checked ? SELECTED.add(id) : SELECTED.delete(id); updateBulkBar(); }
+    function updateBulkBar() {
+      const n = SELECTED.size;
+      document.getElementById('bulkbar').classList.toggle('hide', n === 0);
+      document.getElementById('bb-count').textContent = n;
+      const all = document.getElementById('bb-all'); if (all) all.textContent = FILTERED.length;
+    }
+    function selectAllFiltered() { FILTERED.forEach(o => SELECTED.add(o.id)); updateBulkBar(); renderView(); }
+    function clearSelection() { SELECTED.clear(); updateBulkBar(); renderView(); }
+    async function bulkStatus(v) {
+      const ids = [...SELECTED];
+      if (!v || !ids.length) return;
+      if (!confirm(`Set ${ids.length} order${ids.length === 1 ? '' : 's'} to "${v.replace(/_/g, ' ')}"?`)) return;
+      let ok = 0;
+      for (const id of ids) { try { await api('PATCH', '/orders', { id, status: v }); ok++; } catch (e) { /* skip */ } }
+      SELECTED.clear();
+      await load();
+      if (ok < ids.length) alert(`Updated ${ok} of ${ids.length}. Some failed — try again.`);
+    }
+
+    // ---- CSV export ---------------------------------------------------------
+    function csvCell(v) { return `"${String(v == null ? '' : v).replace(/"/g, '""')}"`; }
+    function csvFromOrders(orders) {
+      const head = ['Order ID', 'Status', 'Placed', 'Customer', 'Business', 'Phone', 'Email', 'Fulfilment', 'Postal', 'Delivery date', 'Slot/Window', 'Preparer', 'Driver', 'Amount', 'Currency', 'Items'];
+      const rows = orders.map(o => {
+        const c = o.customer || {};
+        const items = (o.quote && o.quote.items || []).map(i => `${i.qty}x ${i.title} (${i.size || ''})`).join('; ');
+        return [o.id, o.status, o.created_at || '', c.name || '', c.business || '', c.phone || '', c.email || '', o.fulfilment || '', o.postal || '', o.delivery_date || '', o.slot_or_window || '', o.preparer || '', o.driver || '', o.amount_total == null ? '' : o.amount_total, o.currency || '', items].map(csvCell).join(',');
+      });
+      return [head.map(csvCell).join(','), ...rows].join('\r\n');
+    }
+    function downloadCsv(name, text) {
+      const blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+    function exportCsv(orders) {
+      if (!orders || !orders.length) { alert('No orders to export.'); return; }
+      downloadCsv(`sofnade-orders-${todaySG()}.csv`, csvFromOrders(orders));
+    }
+    function exportSelected() { exportCsv(ALL.filter(o => SELECTED.has(o.id))); }
+
+    // ---- Row overflow menu --------------------------------------------------
+    function toggleMenu(btn) {
+      const menu = btn.nextElementSibling;
+      document.querySelectorAll('.cardmenu').forEach(m => { if (m !== menu) m.classList.add('hide'); });
+      menu.classList.toggle('hide');
+    }
+    document.addEventListener('click', (e) => {
+      const mi = e.target.closest('.mi[data-copy]');
+      if (mi) {
+        try { navigator.clipboard.writeText(mi.getAttribute('data-copy')); } catch (_) {}
+        const t = mi.textContent; mi.textContent = 'Copied ✓'; setTimeout(() => { mi.textContent = t; }, 1100);
+        document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+        return;
+      }
+      if (!e.target.closest('.cardmenu-wrap')) document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+    });
+
     function applyFilters() {
       const terms = document.getElementById('search').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
       const st = document.getElementById('f-status').value;
@@ -584,8 +753,10 @@
         }
         return true;
       });
+      filtered.sort(sortComparator(sortKey));
       FILTERED = filtered;
       page = 1;
+      updateBulkBar();
       renderView();
     }
 
@@ -595,7 +766,6 @@
       const norm = (v) => (v === '__add__' ? '' : v);
       const patch = {
         id,
-        status: val(`[data-status="${cssEsc(id)}"]`),
         staff_notes: val(`[data-notes="${cssEsc(id)}"]`),
         preparer: norm(val(`[data-preparer="${cssEsc(id)}"]`)),
         driver: norm(val(`[data-driver="${cssEsc(id)}"]`)),
