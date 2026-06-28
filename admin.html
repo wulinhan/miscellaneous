@@ -18,6 +18,8 @@
     .btn-ghost { background:transparent; color:#fff; border:1px solid rgba(255,255,255,.4); }
     .btn-light { background:#eef1f8; color:var(--navy); }
     .btn-sm { padding:6px 10px; font-size:13px; }
+    .btn-wa { display:inline-flex; align-items:center; gap:6px; background:#25D366; color:#fff; border-radius:8px; padding:7px 12px; font-size:13px; font-weight:600; text-decoration:none; }
+    .btn-wa:hover { background:#1da851; }
     select, textarea, input { font:inherit; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fff; }
     textarea { resize:vertical; min-height:46px; width:100%; }
     .muted { color:var(--muted); }
@@ -130,6 +132,14 @@
     // Order date in Singapore time as YYYY-MM-DD (for the date filters).
     const sgDate = (iso) => { try { return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso)); } catch { return (iso||'').slice(0,10); } };
     const cssEsc = (s) => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/["\\]/g,'\\$&');
+    // Normalise a phone to wa.me digits (international, no +). Singapore default.
+    function waNumber(phone) {
+      if (!phone) return '';
+      let d = String(phone).replace(/[^\d]/g, '');
+      if (d.startsWith('00')) d = d.slice(2);   // drop international dialing prefix
+      if (d.length === 8) d = '65' + d;          // bare SG local number -> add +65
+      return d;
+    }
 
     async function api(method, body) {
       const opts = { method, headers: { 'x-admin-password': pw } };
@@ -167,6 +177,9 @@
         ? ([c.address1, c.address2, o.postal].filter(Boolean).map(esc).join(', ') || '—')
         : 'Self pick-up';
       const statusOpts = STATUSES.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s.replace(/_/g,' ')}</option>`).join('');
+      const wa = waNumber(c.phone);
+      const waMsg = encodeURIComponent(`Hi ${c.name || ''}, this is Sofnade about your order ${o.id}.`.replace(/\s+/g, ' ').trim());
+      const waBtn = wa ? `<a class="btn-wa" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : '';
       return `
       <div class="card" data-card="${esc(o.id)}">
         <div class="top">
@@ -186,6 +199,8 @@
           <div><b>When:</b> ${o.delivery_date ? esc(o.delivery_date) + (o.slot_or_window ? ' (' + esc(o.slot_or_window) + ')' : '') : '—'}</div>
           ${c.notes ? `<div><b>Customer note:</b> ${esc(c.notes)}</div>` : ''}
         </div>
+
+        ${waBtn ? `<div style="margin:2px 0 10px">${waBtn}</div>` : ''}
 
         <div><b style="font-size:14px;color:#374151">Items</b><ul class="items">${items || '<li class="muted">no items</li>'}</ul></div>
         <div class="totals">Subtotal ${money(q.subtotal,q.currency)}${q.discount ? ' · Discount -' + money(q.discount,q.currency) : ''} · Delivery ${money(q.deliveryFee,q.currency)}${q.surcharge ? ' · Surcharge ' + money(q.surcharge,q.currency) : ''}${q.specificTimeFee ? ' · Specific-time ' + money(q.specificTimeFee,q.currency) : ''} · <b>Total ${money(q.total,q.currency)}</b></div>
