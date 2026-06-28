@@ -51,6 +51,16 @@
     .info b { color:#374151; font-weight:600; }
     .items { margin:6px 0; padding-left:18px; font-size:14px; }
     .totals { font-size:13px; color:var(--muted); margin-top:4px; }
+    /* Boxed payment summary — navy on a low-opacity navy wash */
+    .paysum { background:rgba(22,34,74,0.06); border:1px solid rgba(22,34,74,0.16); border-radius:10px; padding:12px 14px; margin:10px 0; color:var(--navy); }
+    .ps-h { font-weight:800; font-size:12px; letter-spacing:.03em; text-transform:uppercase; color:var(--navy); margin-bottom:8px; }
+    .ps-items { padding-bottom:8px; margin-bottom:8px; border-bottom:1px dashed rgba(22,34,74,0.25); }
+    .ps-row { display:flex; justify-content:space-between; gap:14px; font-size:13px; padding:2px 0; }
+    .ps-row .r { font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .ps-item .nm { color:var(--navy); }
+    .ps-item .sub { color:#5a6b8c; font-size:12px; }
+    .ps-disc { color:#0f7a44; }
+    .ps-total { display:flex; justify-content:space-between; gap:14px; font-weight:800; font-size:15px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(22,34,74,0.25); color:var(--navy); }
     .edit { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
     .ef { display:flex; flex-direction:column; gap:3px; }
     .ef.grow { flex:1; min-width:200px; }
@@ -307,9 +317,28 @@
       applyFilters();
     }
 
+    // Boxed payment summary mirroring the checkout breakdown (items + fees).
+    function paymentSummary(o) {
+      const q = o.quote || {}; const ccy = q.currency || 'SGD';
+      const row = (l, r, cls) => `<div class="ps-row ${cls || ''}"><span>${l}</span><span class="r">${r}</span></div>`;
+      const items = (q.items || []).map(i =>
+        `<div class="ps-row ps-item"><span class="nm">${i.qty}× ${esc(i.title)} <span class="sub">${esc(i.size || '')}</span></span><span class="r">${money(i.lineTotal, ccy)}</span></div>`
+      ).join('');
+      const fees = [row('Subtotal', money(q.subtotal, ccy))];
+      if (q.discount) fees.push(row(`Discount${q.discountCode ? ' (' + esc(q.discountCode) + ')' : ''}`, '-' + money(q.discount, ccy), 'ps-disc'));
+      fees.push(row('Delivery', q.deliveryFee ? money(q.deliveryFee, ccy) : 'Free'));
+      if (q.surcharge) fees.push(row('Transport surcharge', money(q.surcharge, ccy)));
+      if (q.specificTimeFee) fees.push(row('Specific-time delivery', money(q.specificTimeFee, ccy)));
+      return `<div class="paysum">
+        <div class="ps-h">Payment summary</div>
+        ${items ? `<div class="ps-items">${items}</div>` : ''}
+        ${fees.join('')}
+        <div class="ps-total"><span>Total</span><span class="r">${money(q.total, ccy)}</span></div>
+      </div>`;
+    }
+
     function orderCard(o) {
       const c = o.customer || {}; const q = o.quote || {};
-      const items = (q.items || []).map(i => `<li>${i.qty}× ${esc(i.title)} <span class="muted">(${esc(i.size)})</span> — ${money(i.lineTotal, q.currency)}</li>`).join('');
       const addr = o.fulfilment === 'delivery'
         ? ([c.address1, c.address2, o.postal].filter(Boolean).map(esc).join(', ') || '—')
         : 'Self pick-up';
@@ -342,8 +371,7 @@
 
         ${waBtn ? `<div style="margin:2px 0 10px">${waBtn}</div>` : ''}
 
-        <div><b style="font-size:14px;color:#374151">Items</b><ul class="items">${items || '<li class="muted">no items</li>'}</ul></div>
-        <div class="totals">Subtotal ${money(q.subtotal,q.currency)}${q.discount ? ' · Discount -' + money(q.discount,q.currency) : ''} · Delivery ${money(q.deliveryFee,q.currency)}${q.surcharge ? ' · Surcharge ' + money(q.surcharge,q.currency) : ''}${q.specificTimeFee ? ' · Specific-time ' + money(q.specificTimeFee,q.currency) : ''} · <b>Total ${money(q.total,q.currency)}</b></div>
+        ${paymentSummary(o)}
         ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
 
         <div class="edit">
