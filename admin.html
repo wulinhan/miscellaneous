@@ -54,7 +54,7 @@
     .ef label { font-size:12px; font-weight:600; color:#374151; }
     .ef select, .ef input { height:38px; }
     .ef select { min-width:150px; }
-    .ef.who input { width:130px; }
+    .ef.who select { width:150px; }
     .ef.act { flex-direction:row; align-items:center; gap:10px; }
     .saved { color:var(--ok); font-size:13px; font-weight:600; }
     .ref { font-size:12px; color:var(--muted); margin-top:6px; }
@@ -87,7 +87,6 @@
       <button class="btn-ghost btn-sm" onclick="load()">Refresh</button>
       <button class="btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </header>
-    <datalist id="staff-list"></datalist>
     <div class="wrap">
       <div class="filters">
         <div class="line">
@@ -137,14 +136,44 @@
     const PW_KEY = 'sofnade_admin_pw';
     let pw = sessionStorage.getItem(PW_KEY) || '';
     let ALL = [];
-    const STAFF = []; // optional seed names; suggestions also self-populate from orders
+    let STAFF = [];
 
     function saveOperator() { localStorage.setItem('sofnade_operator', document.getElementById('operator').value || ''); }
-    function rebuildStaffList() {
-      const names = new Set(STAFF);
-      ALL.forEach(o => { if (o.preparer) names.add(o.preparer); if (o.driver) names.add(o.driver); });
-      document.getElementById('staff-list').innerHTML =
-        [...names].filter(Boolean).sort().map(n => `<option value="${esc(n)}"></option>`).join('');
+
+    // <option>s for a Preparer/Driver dropdown: unassigned, the roster, any
+    // legacy value not in the roster, then an "add new" action.
+    function staffOptions(selected) {
+      const names = STAFF.slice();
+      if (selected && !names.includes(selected)) names.unshift(selected);
+      const opts = ['<option value="">— unassigned —</option>'];
+      names.forEach(n => opts.push(`<option value="${esc(n)}" ${n === selected ? 'selected' : ''}>${esc(n)}</option>`));
+      opts.push('<option value="__add__">➕ Add new…</option>');
+      return opts.join('');
+    }
+    function rebuildAllStaffSelects() {
+      document.querySelectorAll('select[data-preparer], select[data-driver]').forEach(sel => {
+        const cur = sel.value === '__add__' ? '' : sel.value;
+        sel.innerHTML = staffOptions(cur);
+        sel.value = cur;
+      });
+    }
+    function onStaffChange(sel) { if (sel.value === '__add__') addNewStaff(sel); }
+    async function addNewStaff(sel) {
+      const name = (window.prompt('New staff name:') || '').trim();
+      if (!name) { sel.value = ''; return; }
+      try {
+        const { staff } = await api('POST', '/staff', { name });
+        STAFF = staff || STAFF;
+      } catch (e) {
+        if (e.message !== 'unauthorized') alert('Could not add: ' + e.message);
+        sel.value = ''; return;
+      }
+      if (![...sel.options].some(o => o.value === name)) {
+        const opt = document.createElement('option'); opt.value = name; opt.textContent = name;
+        sel.insertBefore(opt, sel.querySelector('option[value="__add__"]'));
+      }
+      sel.value = name;
+      rebuildAllStaffSelects(); // make the new name available in every dropdown
     }
 
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -162,12 +191,11 @@
       return d;
     }
 
-    async function api(method, body) {
+    async function api(method, path, body) {
       const opEl = document.getElementById('operator');
       const opts = { method, headers: { 'x-admin-password': pw, 'x-operator': (opEl && opEl.value || '').trim() } };
       if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
-      const path = method === 'GET' ? '/api/admin/orders?limit=500' : '/api/admin/orders';
-      const res = await fetch(path, opts);
+      const res = await fetch('/api/admin' + path, opts);
       if (res.status === 401) { logout('Wrong password.'); throw new Error('unauthorized'); }
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || ('HTTP ' + res.status));
@@ -232,8 +260,8 @@
 
         <div class="edit">
           <div class="ef"><label>Status</label><select data-status="${esc(o.id)}">${statusOpts}</select></div>
-          <div class="ef who"><label>Preparer</label><input data-preparer="${esc(o.id)}" list="staff-list" value="${esc(o.preparer)}" placeholder="name" /></div>
-          <div class="ef who"><label>Driver</label><input data-driver="${esc(o.id)}" list="staff-list" value="${esc(o.driver)}" placeholder="name" /></div>
+          <div class="ef who"><label>Preparer</label><select data-preparer="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.preparer)}</select></div>
+          <div class="ef who"><label>Driver</label><select data-driver="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.driver)}</select></div>
           <div class="ef grow"><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
           <div class="ef act"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save</button><span class="saved hide">Saved ✓</span></div>
         </div>
@@ -276,15 +304,16 @@
     async function save(id, btn) {
       btn.disabled = true; const old = btn.textContent; btn.textContent = 'Saving…';
       const val = (sel) => { const el = document.querySelector(sel); return el ? el.value : undefined; };
+      const norm = (v) => (v === '__add__' ? '' : v);
       const patch = {
         id,
         status: val(`[data-status="${cssEsc(id)}"]`),
         staff_notes: val(`[data-notes="${cssEsc(id)}"]`),
-        preparer: val(`[data-preparer="${cssEsc(id)}"]`),
-        driver: val(`[data-driver="${cssEsc(id)}"]`),
+        preparer: norm(val(`[data-preparer="${cssEsc(id)}"]`)),
+        driver: norm(val(`[data-driver="${cssEsc(id)}"]`)),
       };
       try {
-        const { order } = await api('PATCH', patch);
+        const { order } = await api('PATCH', '/orders', patch);
         const idx = ALL.findIndex(o => o.id === id);
         if (idx >= 0 && order) ALL[idx] = order;       // keep filters/search consistent
         const card = document.querySelector(`[data-card="${cssEsc(id)}"]`);
@@ -294,18 +323,20 @@
           const fresh = tmp.firstElementChild;
           card.replaceWith(fresh);
           fresh.classList.add('flash');
-          rebuildStaffList();
         }
       } catch (e) { if (e.message !== 'unauthorized') { alert('Could not save: ' + e.message); btn.disabled = false; btn.textContent = old; } }
     }
 
     async function load(fromLogin) {
       try {
-        const { orders } = await api('GET');
-        ALL = orders || [];
+        const [ordersRes, staffRes] = await Promise.all([
+          api('GET', '/orders?limit=500'),
+          api('GET', '/staff').catch(() => ({ staff: [] })),
+        ]);
+        ALL = ordersRes.orders || [];
+        STAFF = staffRes.staff || [];
         document.getElementById('login').classList.add('hide');
         document.getElementById('app').classList.remove('hide');
-        rebuildStaffList();
         applyFilters();
       } catch (e) {
         if (e.message === 'unauthorized') return;

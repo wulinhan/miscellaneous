@@ -12,7 +12,9 @@ never reaches the browser.
    `staff_notes`, `updated_at`) **and**
    [`db/orders-staff-fields.sql`](db/orders-staff-fields.sql) (adds `preparer`,
    `driver`, `status_history`). Both are safe to re-run. New projects that ran
-   the latest `db/orders.sql` already have all of them.
+   the latest `db/orders.sql` already have all of them. Also run
+   [`db/staff.sql`](db/staff.sql) once to create the staff roster table used by
+   the Preparer/Driver dropdowns.
 
 2. **Set the password.** In **Vercel → Settings → Environment Variables**, add
    `ADMIN_PASSWORD` = a long random value (Production scope). Redeploy (or it

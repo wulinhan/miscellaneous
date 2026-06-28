@@ -138,4 +138,31 @@ async function updateOrder(id, patch, meta = {}) {
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
-module.exports = { isConfigured, insertPending, markPaid, listOrders, updateOrder };
+// ---- Staff roster (for Preparer/Driver dropdowns) -------------------------
+
+function staffBase() {
+  return `${process.env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/staff`;
+}
+
+async function listStaff() {
+  if (!isConfigured()) return [];
+  const res = await fetch(`${staffBase()}?select=name&active=eq.true&order=name.asc`, { headers: headers() });
+  if (!res.ok) throw new Error(`Supabase staff list ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  return rows.map((r) => r.name).filter(Boolean);
+}
+
+// Add a name (idempotent upsert on the name PK). Returns the refreshed list.
+async function addStaff(name) {
+  const clean = String(name || '').trim();
+  if (!isConfigured() || !clean) return listStaff();
+  const res = await fetch(`${staffBase()}?on_conflict=name`, {
+    method: 'POST',
+    headers: headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify({ name: clean, active: true }),
+  });
+  if (!res.ok) throw new Error(`Supabase staff add ${res.status}: ${await res.text()}`);
+  return listStaff();
+}
+
+module.exports = { isConfigured, insertPending, markPaid, listOrders, updateOrder, listStaff, addStaff };
