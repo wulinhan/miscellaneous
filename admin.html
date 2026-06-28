@@ -6,39 +6,53 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Sofnade — Orders (Staff)</title>
   <style>
-    :root { --navy:#16224a; --navy2:#0f1838; --gold:#ffc629; --line:#e5e7eb; --muted:#6b7280; --bg:#f6f7fb; --ok:#1a7f4b; }
+    :root { --navy:#16224a; --gold:#ffc629; --line:#e5e7eb; --muted:#6b7280; --bg:#f6f7fb; --ok:#1a7f4b; }
     * { box-sizing: border-box; }
     body { margin:0; font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif; color:#1b2330; background:var(--bg); }
-    header { background:var(--navy); color:#fff; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; position:sticky; top:0; z-index:5; }
+    header { background:var(--navy); color:#fff; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; position:sticky; top:0; z-index:6; }
     header h1 { font-size:18px; margin:0; flex:1; }
     header .who { color:#c9d4f0; font-size:13px; }
-    .wrap { max-width:1000px; margin:0 auto; padding:20px; }
+    .wrap { max-width:1040px; margin:0 auto; padding:18px 20px 60px; }
     button { font:inherit; cursor:pointer; border:none; border-radius:8px; padding:8px 14px; font-weight:600; }
     .btn-gold { background:var(--gold); color:var(--navy); }
     .btn-ghost { background:transparent; color:#fff; border:1px solid rgba(255,255,255,.4); }
+    .btn-light { background:#eef1f8; color:var(--navy); }
     .btn-sm { padding:6px 10px; font-size:13px; }
-    select, textarea, input { font:inherit; border:1px solid var(--line); border-radius:8px; padding:8px 10px; width:100%; background:#fff; }
-    textarea { resize:vertical; min-height:46px; }
-    .toolbar { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
-    .toolbar .grow { flex:1; }
+    select, textarea, input { font:inherit; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fff; }
+    textarea { resize:vertical; min-height:46px; width:100%; }
     .muted { color:var(--muted); }
+
+    /* Filter bar */
+    .filters { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:16px; position:sticky; top:60px; z-index:5; }
+    .filters .line { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    .fg { display:flex; flex-direction:column; gap:3px; }
+    .fg label { font-size:12px; font-weight:600; color:#374151; }
+    .fg input, .fg select { height:38px; }
+    #search { width:280px; max-width:60vw; }
+    .num { width:96px; }
+    .count { margin-left:auto; align-self:center; font-size:13px; }
+
     .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:12px; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    .row .grow { flex:1; min-width:160px; }
+    .top { display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
+    .top .grow { flex:1; min-width:140px; }
     .id { font-family:ui-monospace,monospace; font-weight:700; color:var(--navy); }
-    .total { font-weight:700; }
-    .pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:700; }
+    .total { font-weight:700; font-size:17px; }
+    .pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:700; text-transform:capitalize; }
     .s-created{background:#fff3cd;color:#7a5b00}.s-paid{background:#d7f0e0;color:#1a7f4b}
     .s-preparing{background:#dbe7ff;color:#1d4ed8}.s-out_for_delivery{background:#e7defb;color:#6b21a8}
     .s-completed{background:#e2e8f0;color:#334155}.s-cancelled{background:#fde2e1;color:#b42318}
-    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
-    @media(max-width:640px){ .grid2{grid-template-columns:1fr} }
-    .field label { display:block; font-size:13px; font-weight:600; margin-bottom:4px; color:#374151; }
-    details summary { cursor:pointer; color:var(--navy); font-weight:600; font-size:14px; margin-top:10px; }
-    .detail { margin-top:10px; font-size:14px; }
-    .detail b { color:#374151; }
-    .items { margin:8px 0 0; padding-left:18px; }
+    .info { display:grid; grid-template-columns:1fr 1fr; gap:6px 18px; margin:10px 0; font-size:14px; }
+    @media(max-width:640px){ .info{grid-template-columns:1fr} }
+    .info b { color:#374151; font-weight:600; }
+    .items { margin:6px 0; padding-left:18px; font-size:14px; }
+    .totals { font-size:13px; color:var(--muted); margin-top:4px; }
+    .edit { display:grid; grid-template-columns:200px 1fr auto; gap:10px; align-items:end; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+    @media(max-width:640px){ .edit{grid-template-columns:1fr} }
+    .edit label { font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:3px; }
+    .edit select { width:100%; height:38px; }
     .saved { color:var(--ok); font-size:13px; font-weight:600; }
+    .ref { font-size:12px; color:var(--muted); margin-top:6px; }
+
     .login { max-width:380px; margin:10vh auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px; }
     .login h2 { margin:0 0 6px; color:var(--navy); }
     .error { color:#b42318; font-size:14px; margin-top:8px; min-height:18px; }
@@ -46,38 +60,61 @@
   </style>
 </head>
 <body>
-  <!-- Login gate -->
   <div id="login" class="login">
     <h2>Sofnade Orders</h2>
     <p class="muted" style="margin-top:0">Staff access. Enter the shared password.</p>
-    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" />
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" style="width:100%" />
     <button class="btn-gold" style="width:100%;margin-top:10px" onclick="login()">Sign in</button>
     <div id="login-error" class="error"></div>
   </div>
 
-  <!-- App -->
   <div id="app" class="hide">
     <header>
       <h1>Sofnade Orders</h1>
-      <span id="count" class="who"></span>
+      <button class="btn-ghost btn-sm" onclick="load()">Refresh</button>
       <button class="btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </header>
     <div class="wrap">
-      <div class="toolbar">
-        <select id="filter" style="width:auto" onchange="load()">
-          <option value="">All statuses</option>
-          <option value="created">Created (unpaid)</option>
-          <option value="paid">Paid</option>
-          <option value="preparing">Preparing</option>
-          <option value="out_for_delivery">Out for delivery</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-        <span class="grow"></span>
-        <button class="btn-gold btn-sm" onclick="load()">Refresh</button>
+      <div class="filters">
+        <div class="line">
+          <div class="fg">
+            <label>Search</label>
+            <input id="search" placeholder="Order id, name, phone, email, item…" oninput="applyFilters()" />
+          </div>
+          <div class="fg">
+            <label>Status</label>
+            <select id="f-status" onchange="applyFilters()">
+              <option value="">All</option>
+              <option value="created">Created (unpaid)</option>
+              <option value="paid">Paid</option>
+              <option value="preparing">Preparing</option>
+              <option value="out_for_delivery">Out for delivery</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>From (order date)</label>
+            <input id="f-from" type="date" onchange="applyFilters()" />
+          </div>
+          <div class="fg">
+            <label>To</label>
+            <input id="f-to" type="date" onchange="applyFilters()" />
+          </div>
+          <div class="fg">
+            <label>Min $</label>
+            <input id="f-min" class="num" type="number" min="0" step="1" inputmode="decimal" oninput="applyFilters()" />
+          </div>
+          <div class="fg">
+            <label>Max $</label>
+            <input id="f-max" class="num" type="number" min="0" step="1" inputmode="decimal" oninput="applyFilters()" />
+          </div>
+          <button class="btn-light btn-sm" onclick="clearFilters()">Clear</button>
+          <span id="count" class="count muted"></span>
+        </div>
       </div>
       <div id="list"></div>
-      <div id="empty" class="muted hide" style="text-align:center;padding:40px">No orders yet.</div>
+      <div id="empty" class="muted hide" style="text-align:center;padding:40px">No orders match.</div>
     </div>
   </div>
 
@@ -85,17 +122,20 @@
     const STATUSES = ['created','paid','preparing','out_for_delivery','completed','cancelled'];
     const PW_KEY = 'sofnade_admin_pw';
     let pw = sessionStorage.getItem(PW_KEY) || '';
+    let ALL = [];
 
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const money = (n, c) => `${c || 'SGD'} ${Number(n || 0).toFixed(2)}`;
-    const when = (iso) => { try { return new Date(iso).toLocaleString('en-SG', { dateStyle:'medium', timeStyle:'short' }); } catch { return iso || ''; } };
+    const when = (iso) => { try { return new Date(iso).toLocaleString('en-SG', { dateStyle:'medium', timeStyle:'short', timeZone:'Asia/Singapore' }); } catch { return iso || ''; } };
+    // Order date in Singapore time as YYYY-MM-DD (for the date filters).
+    const sgDate = (iso) => { try { return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso)); } catch { return (iso||'').slice(0,10); } };
+    const cssEsc = (s) => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/["\\]/g,'\\$&');
 
     async function api(method, body) {
       const opts = { method, headers: { 'x-admin-password': pw } };
       if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
-      const qs = (method === 'GET' && document.getElementById('filter').value)
-        ? `?status=${encodeURIComponent(document.getElementById('filter').value)}` : '';
-      const res = await fetch('/api/admin/orders' + qs, opts);
+      const path = method === 'GET' ? '/api/admin/orders?limit=500' : '/api/admin/orders';
+      const res = await fetch(path, opts);
       if (res.status === 401) { logout('Wrong password.'); throw new Error('unauthorized'); }
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || ('HTTP ' + res.status));
@@ -114,61 +154,82 @@
       document.getElementById('login').classList.remove('hide');
       document.getElementById('login-error').textContent = msg || '';
     }
-
-    function statusSelect(order) {
-      return `<select data-status="${esc(order.id)}">` +
-        STATUSES.map(s => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${s.replace(/_/g,' ')}</option>`).join('') +
-        `</select>`;
+    function clearFilters() {
+      ['search','f-from','f-to','f-min','f-max'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('f-status').value = '';
+      applyFilters();
     }
 
     function orderCard(o) {
       const c = o.customer || {}; const q = o.quote || {};
       const items = (q.items || []).map(i => `<li>${i.qty}× ${esc(i.title)} <span class="muted">(${esc(i.size)})</span> — ${money(i.lineTotal, q.currency)}</li>`).join('');
       const addr = o.fulfilment === 'delivery'
-        ? [c.address1, c.address2, o.postal].filter(Boolean).map(esc).join(', ')
+        ? ([c.address1, c.address2, o.postal].filter(Boolean).map(esc).join(', ') || '—')
         : 'Self pick-up';
+      const statusOpts = STATUSES.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s.replace(/_/g,' ')}</option>`).join('');
       return `
       <div class="card" data-card="${esc(o.id)}">
-        <div class="row">
+        <div class="top">
           <div class="grow">
             <span class="id">${esc(o.id)}</span>
             <span class="pill s-${esc(o.status)}">${esc((o.status||'').replace(/_/g,' '))}</span>
-            <div class="muted" style="font-size:13px">${esc(c.name||'')} · ${esc(c.phone||'')} · ${when(o.created_at)}</div>
           </div>
           <div class="total">${money(o.amount_total, o.currency)}</div>
         </div>
+        <div class="muted" style="font-size:13px;margin-top:2px">Placed ${when(o.created_at)}${o.updated_at ? ' · edited ' + when(o.updated_at) : ''}</div>
 
-        <div class="grid2">
-          <div class="field">
-            <label>Status</label>
-            ${statusSelect(o)}
-          </div>
-          <div class="field">
-            <label>Staff notes</label>
-            <textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea>
-          </div>
+        <div class="info">
+          <div><b>Customer:</b> ${esc(c.name||'—')}</div>
+          <div><b>Phone:</b> ${esc(c.phone||'—')}</div>
+          <div><b>Email:</b> ${esc(c.email||'—')}</div>
+          <div><b>${o.fulfilment === 'delivery' ? 'Deliver to' : 'Fulfilment'}:</b> ${addr}</div>
+          <div><b>When:</b> ${o.delivery_date ? esc(o.delivery_date) + (o.slot_or_window ? ' (' + esc(o.slot_or_window) + ')' : '') : '—'}</div>
+          ${c.notes ? `<div><b>Customer note:</b> ${esc(c.notes)}</div>` : ''}
         </div>
 
-        <div class="row" style="margin-top:10px">
-          <button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save</button>
-          <span class="saved hide">Saved ✓</span>
-          <span class="grow"></span>
-          ${o.updated_at ? `<span class="muted" style="font-size:12px">edited ${when(o.updated_at)}</span>` : ''}
-        </div>
+        <div><b style="font-size:14px;color:#374151">Items</b><ul class="items">${items || '<li class="muted">no items</li>'}</ul></div>
+        <div class="totals">Subtotal ${money(q.subtotal,q.currency)}${q.discount ? ' · Discount -' + money(q.discount,q.currency) : ''} · Delivery ${money(q.deliveryFee,q.currency)}${q.surcharge ? ' · Surcharge ' + money(q.surcharge,q.currency) : ''}${q.specificTimeFee ? ' · Specific-time ' + money(q.specificTimeFee,q.currency) : ''} · <b>Total ${money(q.total,q.currency)}</b></div>
+        ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
 
-        <details>
-          <summary>Order details</summary>
-          <div class="detail">
-            <div><b>Email:</b> ${esc(c.email||'')}</div>
-            <div><b>${o.fulfilment === 'delivery' ? 'Deliver to' : 'Fulfilment'}:</b> ${addr}</div>
-            ${o.delivery_date ? `<div><b>When:</b> ${esc(o.delivery_date)}${o.slot_or_window ? ' (' + esc(o.slot_or_window) + ')' : ''}</div>` : ''}
-            ${c.notes ? `<div><b>Customer note:</b> ${esc(c.notes)}</div>` : ''}
-            <ul class="items">${items || '<li class="muted">no items</li>'}</ul>
-            <div class="muted" style="font-size:12px;margin-top:6px">Subtotal ${money(q.subtotal,q.currency)} · Delivery ${money(q.deliveryFee,q.currency)} · Surcharge ${money(q.surcharge,q.currency)} · Total ${money(q.total,q.currency)}</div>
-            ${o.razorpay_payment_id ? `<div class="muted" style="font-size:12px">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
-          </div>
-        </details>
+        <div class="edit">
+          <div><label>Status</label><select data-status="${esc(o.id)}">${statusOpts}</select></div>
+          <div><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
+          <div style="display:flex;align-items:center;gap:10px"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save</button><span class="saved hide">Saved ✓</span></div>
+        </div>
       </div>`;
+    }
+
+    function render(orders) {
+      document.getElementById('list').innerHTML = orders.map(orderCard).join('');
+      document.getElementById('empty').classList.toggle('hide', orders.length > 0);
+    }
+
+    function applyFilters() {
+      const terms = document.getElementById('search').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const st = document.getElementById('f-status').value;
+      const from = document.getElementById('f-from').value;
+      const to = document.getElementById('f-to').value;
+      const min = parseFloat(document.getElementById('f-min').value);
+      const max = parseFloat(document.getElementById('f-max').value);
+
+      const filtered = ALL.filter(o => {
+        if (st && o.status !== st) return false;
+        const d = sgDate(o.created_at);
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+        const amt = Number(o.amount_total || 0);
+        if (!isNaN(min) && amt < min) return false;
+        if (!isNaN(max) && amt > max) return false;
+        if (terms.length) {
+          const c = o.customer || {};
+          const itemText = (o.quote && o.quote.items || []).map(i => i.title).join(' ');
+          const hay = [o.id, c.name, c.phone, c.email, itemText, o.status].filter(Boolean).join(' ').toLowerCase();
+          if (!terms.every(t => hay.includes(t))) return false;
+        }
+        return true;
+      });
+      render(filtered);
+      document.getElementById('count').textContent = `Showing ${filtered.length} of ${ALL.length}`;
     }
 
     async function save(id, btn) {
@@ -176,27 +237,24 @@
       const status = document.querySelector(`[data-status="${cssEsc(id)}"]`).value;
       const staff_notes = document.querySelector(`[data-notes="${cssEsc(id)}"]`).value;
       try {
-        await api('PATCH', { id, status, staff_notes });
+        const { order } = await api('PATCH', { id, status, staff_notes });
+        const idx = ALL.findIndex(o => o.id === id);
+        if (idx >= 0 && order) ALL[idx] = order;       // keep filters consistent
         const card = document.querySelector(`[data-card="${cssEsc(id)}"]`);
         const tag = card.querySelector('.saved'); tag.classList.remove('hide');
-        const pill = card.querySelector('.pill');
-        pill.className = 'pill s-' + status; pill.textContent = status.replace(/_/g,' ');
+        const pill = card.querySelector('.pill'); pill.className = 'pill s-' + status; pill.textContent = status.replace(/_/g,' ');
         setTimeout(() => tag.classList.add('hide'), 1800);
-      } catch (e) { alert('Could not save: ' + e.message); }
+      } catch (e) { if (e.message !== 'unauthorized') alert('Could not save: ' + e.message); }
       btn.disabled = false; btn.textContent = old;
     }
-    // CSS.escape fallback for attribute selectors with our SOF- ids (safe chars).
-    function cssEsc(s){ return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/["\\]/g,'\\$&'); }
 
     async function load(fromLogin) {
       try {
         const { orders } = await api('GET');
+        ALL = orders || [];
         document.getElementById('login').classList.add('hide');
         document.getElementById('app').classList.remove('hide');
-        const list = document.getElementById('list');
-        list.innerHTML = (orders || []).map(orderCard).join('');
-        document.getElementById('empty').classList.toggle('hide', (orders || []).length > 0);
-        document.getElementById('count').textContent = `${(orders||[]).length} order${(orders||[]).length===1?'':'s'}`;
+        applyFilters();
       } catch (e) {
         if (e.message === 'unauthorized') return;
         if (fromLogin) document.getElementById('login-error').textContent = e.message;
@@ -205,7 +263,7 @@
     }
 
     document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
-    if (pw) load(); // try stored password on load
+    if (pw) load();
   </script>
 </body>
 </html>
