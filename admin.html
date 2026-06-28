@@ -78,7 +78,7 @@
     .ef select, .ef input { height:38px; }
     .ef select { min-width:150px; }
     .ef.who select { width:150px; }
-    .ef.act { flex-direction:row; align-items:center; gap:10px; }
+    .ef.act { flex-direction:row; align-items:center; gap:10px; flex-basis:100%; margin-top:2px; }
     .saved { color:var(--ok); font-size:13px; font-weight:600; }
     .ref { font-size:12px; color:var(--muted); margin-top:6px; }
     /* Inline "add staff" box */
@@ -111,6 +111,25 @@
     .pager button.cur { background:var(--navy); color:#fff; border-color:var(--navy); }
     .pager .pinfo { color:var(--muted); padding:0 2px; }
     .pager .pp { margin-left:8px; height:34px; }
+    /* View switcher + kanban board */
+    .views { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+    .vbtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:8px; padding:7px 14px; font-weight:600; cursor:pointer; }
+    .vbtn.cur { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .board { display:flex; gap:14px; overflow-x:auto; padding-bottom:10px; align-items:flex-start; }
+    .bcol { flex:0 0 264px; width:264px; background:#eef1f7; border-radius:12px; padding:10px; }
+    .bcol-h { display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:13px; color:var(--navy); padding:6px 8px; margin-bottom:8px; }
+    .bcol-h .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:7px; vertical-align:middle; }
+    .bcount { background:rgba(0,0,0,.08); border-radius:999px; padding:1px 8px; font-size:12px; font-weight:600; }
+    .bcards { display:flex; flex-direction:column; gap:8px; max-height:72vh; overflow:auto; }
+    .bempty { color:var(--muted); font-size:12px; text-align:center; padding:10px; }
+    .kcard { background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 11px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+    .kc-top { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px; }
+    .kc-id { font-family:ui-monospace,monospace; font-weight:700; font-size:12px; color:var(--navy); }
+    .kc-cust { font-weight:600; font-size:13px; }
+    .kc-org { color:var(--muted); font-weight:400; }
+    .kc-when { font-size:12px; color:#374151; margin-top:3px; }
+    .kc-pp { font-size:12px; color:var(--muted); margin-top:3px; }
+    .kc-amt { font-weight:800; color:var(--navy); margin-top:6px; }
     .login { max-width:380px; margin:10vh auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px; }
     .login h2 { margin:0 0 6px; color:var(--navy); }
     .error { color:#b42318; font-size:14px; margin-top:8px; min-height:18px; }
@@ -134,6 +153,11 @@
       <button class="btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </header>
     <div class="wrap">
+      <div class="views">
+        <button data-view="list" class="vbtn cur" onclick="setView('list')">List</button>
+        <button data-view="status" class="vbtn" onclick="setView('status')">Board · by status</button>
+        <button data-view="day" class="vbtn" onclick="setView('day')">Board · by day</button>
+      </div>
       <div class="filters">
         <div class="line">
           <div class="fg">
@@ -188,6 +212,7 @@
     let pageSize = 20;
     let page = 1;
     let FILTERED = [];
+    let view = 'list'; // 'list' | 'status' | 'day'
 
     function saveOperator() { localStorage.setItem('sofnade_operator', document.getElementById('operator').value || ''); }
 
@@ -460,6 +485,81 @@
     }
     function setPageSize(v) { pageSize = parseInt(v, 10) || 20; page = 1; renderPage(); }
 
+    // ---- Kanban boards ------------------------------------------------------
+    // Sortable minutes from a slot/window label like "9:00 AM - 9:30 AM".
+    function slotMinutes(o) {
+      const m = String(o.slot_or_window || '').match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (!m) return 9999;
+      let h = parseInt(m[1], 10); const min = parseInt(m[2], 10); const ap = (m[3] || '').toUpperCase();
+      if (ap === 'PM' && h !== 12) h += 12;
+      if (ap === 'AM' && h === 12) h = 0;
+      return h * 60 + min;
+    }
+    const deliveryKey = (o) => (o.delivery_date || '9999-99-99') + ' ' + String(slotMinutes(o)).padStart(4, '0');
+    function todaySG() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
+    function dayLabel(dateStr) {
+      if (!dateStr) return 'No delivery date';
+      const diff = Math.round((Date.parse(dateStr + 'T00:00:00Z') - Date.parse(todaySG() + 'T00:00:00Z')) / 86400000);
+      if (diff === 0) return 'Today';
+      if (diff === 1) return 'Tomorrow';
+      if (diff === -1) return 'Yesterday';
+      const d = new Date(dateStr + 'T00:00:00Z');
+      const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()];
+      const mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
+      return `${wd}, ${d.getUTCDate()} ${mon}${diff < 0 ? ' (late)' : ''}`;
+    }
+    function statusColumns() {
+      return STATUSES.map(s => ({
+        key: s, label: cap(s), color: STATUS_COLOR[s],
+        cards: FILTERED.filter(o => o.status === s).sort((a, b) => deliveryKey(a) < deliveryKey(b) ? -1 : 1),
+      }));
+    }
+    function dayColumns() {
+      const groups = {};
+      FILTERED.forEach(o => { const k = o.delivery_date || ''; (groups[k] = groups[k] || []).push(o); });
+      const keys = Object.keys(groups).sort((a, b) => (!a ? 1 : !b ? -1 : a < b ? -1 : 1)); // dates asc, no-date last
+      return keys.map(k => ({
+        key: k, label: dayLabel(k),
+        cards: groups[k].slice().sort((a, b) => slotMinutes(a) - slotMinutes(b)),
+      }));
+    }
+    function kanbanCard(o, showStatus) {
+      const c = o.customer || {};
+      const dt = o.delivery_date ? esc(o.delivery_date) + (o.slot_or_window ? ' · ' + esc(o.slot_or_window) : '') : 'No delivery date';
+      const pill = showStatus ? `<span class="pill s-${esc(o.status)}">${esc((o.status || '').replace(/_/g, ' '))}</span>` : '';
+      return `<div class="kcard">
+        <div class="kc-top"><span class="kc-id">${esc(o.id)}</span>${pill}</div>
+        <div class="kc-cust">${esc(c.name || '—')}${c.business ? ` <span class="kc-org">· ${esc(c.business)}</span>` : ''}</div>
+        <div class="kc-when">🗓 ${dt}</div>
+        <div class="kc-pp">Prep: ${esc(o.preparer || '—')} · Drv: ${esc(o.driver || '—')}</div>
+        <div class="kc-amt">${money(o.amount_total, o.currency)}</div>
+      </div>`;
+    }
+    function renderBoard(mode) {
+      const cols = mode === 'status' ? statusColumns() : dayColumns();
+      const showStatus = mode === 'day';
+      document.getElementById('list').innerHTML = `<div class="board">` + cols.map(col => {
+        const dot = mode === 'status' ? `<span class="dot" style="background:${col.color || '#999'}"></span>` : '';
+        const cards = col.cards.map(o => kanbanCard(o, showStatus)).join('') || '<div class="bempty">—</div>';
+        return `<div class="bcol"><div class="bcol-h"><span>${dot}${esc(col.label)}</span><span class="bcount">${col.cards.length}</span></div><div class="bcards">${cards}</div></div>`;
+      }).join('') + `</div>`;
+    }
+
+    function renderView() {
+      const isList = view === 'list';
+      document.getElementById('pager').style.display = isList ? '' : 'none';
+      if (isList) { renderPage(); return; }
+      const n = FILTERED.length;
+      document.getElementById('count').textContent = `${n} order${n === 1 ? '' : 's'}`;
+      document.getElementById('empty').classList.toggle('hide', n > 0);
+      renderBoard(view);
+    }
+    function setView(v) {
+      view = v;
+      document.querySelectorAll('.vbtn').forEach(b => b.classList.toggle('cur', b.getAttribute('data-view') === v));
+      renderView();
+    }
+
     function applyFilters() {
       const terms = document.getElementById('search').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
       const st = document.getElementById('f-status').value;
@@ -486,7 +586,7 @@
       });
       FILTERED = filtered;
       page = 1;
-      renderPage();
+      renderView();
     }
 
     async function save(id, btn) {
