@@ -1,7 +1,11 @@
 // POST /api/verify-payment — verify the Razorpay checkout handler signature
-// before showing the customer a success screen. The webhook remains the
-// authoritative "paid" signal; this is the immediate, tamper-proof UX check.
+// before showing the customer a success screen. This is the immediate path:
+// on a valid signature we mark the order paid and fire notifications. The
+// webhook is the server-to-server backstop; the markPaid() guard ensures the
+// order is recorded + notified exactly once whichever arrives first.
 const rp = require('./_lib/razorpay');
+const orders = require('./_lib/orders');
+const notify = require('./_lib/notify');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -12,7 +16,16 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Missing payment fields' });
     }
     const ok = rp.verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-    // TODO: on ok, optimistically mark the order paid; the webhook confirms it.
+    if (ok) {
+      // Best-effort: never let bookkeeping/notification failures block the
+      // customer's success screen. The webhook will retry the same work.
+      try {
+        const order = await orders.markPaid(razorpay_order_id, razorpay_payment_id);
+        if (order) await notify.onPaid(order);
+      } catch (e) {
+        console.error('[verify-payment] record/notify failed:', e.message);
+      }
+    }
     return res.status(ok ? 200 : 400).json({ ok });
   } catch (e) {
     return res.status(500).json({ error: e.message });
