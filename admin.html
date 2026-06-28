@@ -105,12 +105,17 @@
     @keyframes flashbg { from { background:#e7f7ee; } to { background:#fff; } }
     .card.flash { animation: flashbg 1.4s ease; }
 
-    .pager { display:flex; align-items:center; gap:6px; justify-content:center; flex-wrap:wrap; margin:18px 0 4px; }
-    .pager button { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:8px; padding:6px 11px; font-weight:600; cursor:pointer; min-width:36px; }
-    .pager button:disabled { opacity:.45; cursor:default; }
-    .pager button.cur { background:var(--navy); color:#fff; border-color:var(--navy); }
-    .pager .pinfo { color:var(--muted); padding:0 2px; }
-    .pager .pp { margin-left:8px; height:34px; }
+    .pager { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:18px 2px 4px; }
+    .pg-btn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:10px; padding:9px 16px; font-weight:600; cursor:pointer; }
+    .pg-btn:disabled { opacity:.45; cursor:default; }
+    .pg-btn:hover:not(:disabled) { border-color:#c7d2ec; }
+    .pg-info { color:var(--muted); font-size:14px; }
+    /* Search pill */
+    .searchbox { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:999px; padding:8px 14px; height:38px; }
+    .searchbox:focus-within { border-color:var(--navy); box-shadow:0 0 0 3px var(--accent-soft); }
+    .searchbox svg { flex:0 0 auto; opacity:.6; }
+    .searchbox input { border:none; outline:none; background:none; font:inherit; flex:1; min-width:0; padding:0; height:auto; }
+    .kbd { font:inherit; font-size:11px; color:var(--muted); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:2px 6px; flex:0 0 auto; }
     /* View switcher + kanban board */
     .views { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
     .vbtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:8px; padding:7px 14px; font-weight:600; cursor:pointer; }
@@ -171,9 +176,11 @@
     .r-team { font-size:12px; color:#374151; }
     .c-chk { width:36px; }
     .c-amt { text-align:right; font-weight:700; white-space:nowrap; }
-    .c-act { width:92px; white-space:nowrap; text-align:right; }
-    .otable .status-sel { min-width:138px; }
-    .exp-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:12px; margin-right:4px; }
+    .c-act { width:92px; white-space:nowrap; }
+    .acts { display:flex; align-items:center; justify-content:flex-end; gap:6px; }
+    .otable .status-sel { min-width:138px; vertical-align:middle; }
+    .exp-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }
+    .cardmenu-btn { display:inline-flex; align-items:center; justify-content:center; }
     .odetail > td { padding:0; background:#f6f7fb; }
     .detailwrap { padding:14px 16px; }
     .login { max-width:380px; margin:10vh auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px; }
@@ -207,9 +214,13 @@
       </div>
       <div class="filters">
         <div class="line">
-          <div class="fg">
+          <div class="fg" style="flex:1 1 280px">
             <label>Search</label>
-            <input id="search" placeholder="Order id, name, phone, email, item, notes…" oninput="applyFilters()" />
+            <div class="searchbox">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16224a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+              <input id="search" placeholder="Search by name, order ID, item, notes…" oninput="applyFilters()" autocomplete="off" />
+              <kbd class="kbd">⌘K</kbd>
+            </div>
           </div>
           <div class="fg">
             <label>Status</label>
@@ -489,7 +500,7 @@
         <td><select class="status-sel" style="background-color:${sc}1f;color:${sc};border-color:${sc}66" onchange="quickStatus(this, '${esc(o.id)}')" title="Change status (saves instantly)">${statusOpts}</select></td>
         <td class="r-team">${team}</td>
         <td class="c-amt">${money(o.amount_total, o.currency)}</td>
-        <td class="c-act">
+        <td class="c-act"><div class="acts">
           <button class="exp-btn" type="button" onclick="toggleDetail('${esc(o.id)}', this)" aria-label="Expand details">▾</button>
           <div class="cardmenu-wrap">
             <button class="cardmenu-btn" type="button" onclick="toggleMenu(this)" aria-label="More actions">⋯</button>
@@ -500,7 +511,7 @@
               ${wa ? `<a class="mi" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : ''}
             </div>
           </div>
-        </td>
+        </div></td>
       </tr>
       <tr class="odetail hide" data-detail="${esc(o.id)}"><td colspan="8"><div class="detailwrap">${orderDetailInner(o)}</div></td></tr>`;
     }
@@ -588,15 +599,14 @@
     }
     function renderPager(pages) {
       const pager = document.getElementById('pager');
-      if (pages < 1) { pager.innerHTML = ''; return; }
-      const perPage = `<select class="pp" onchange="setPageSize(this.value)" title="Orders per page">` +
-        PAGE_SIZES.map(s => `<option value="${s}" ${s === pageSize ? 'selected' : ''}>${s} / page</option>`).join('') + `</select>`;
-      if (pages <= 1) { pager.innerHTML = perPage; return; }
-      const btn = (label, p, o = {}) => `<button ${o.disabled ? 'disabled' : ''} class="${o.cur ? 'cur' : ''}" onclick="gotoPage(${p})">${label}</button>`;
-      let html = btn('‹', page - 1, { disabled: page <= 1 });
-      pageWindow(page, pages).forEach(p => { html += (p === '…') ? '<span class="pinfo">…</span>' : btn(p, p, { cur: p === page }); });
-      html += btn('›', page + 1, { disabled: page >= pages });
-      pager.innerHTML = html + perPage;
+      const total = FILTERED.length;
+      if (total === 0) { pager.innerHTML = ''; return; }
+      const start = (page - 1) * pageSize;
+      const from = start + 1, to = Math.min(start + pageSize, total);
+      pager.innerHTML =
+        `<button class="pg-btn" ${page <= 1 ? 'disabled' : ''} onclick="gotoPage(${page - 1})">← Previous</button>` +
+        `<span class="pg-info">Showing entries ${from} to ${to} of ${total}</span>` +
+        `<button class="pg-btn" ${page >= pages ? 'disabled' : ''} onclick="gotoPage(${page + 1})">Next →</button>`;
     }
     function renderPage() {
       const total = FILTERED.length;
@@ -854,6 +864,11 @@
         return;
       }
       if (!e.target.closest('.cardmenu-wrap')) document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+    });
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        const s = document.getElementById('search'); if (s) { e.preventDefault(); s.focus(); }
+      }
     });
 
     function applyFilters() {
