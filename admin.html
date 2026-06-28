@@ -79,7 +79,7 @@
         <div class="line">
           <div class="fg">
             <label>Search</label>
-            <input id="search" placeholder="Order id, name, phone, email, item…" oninput="applyFilters()" />
+            <input id="search" placeholder="Order id, name, phone, email, item, notes…" oninput="applyFilters()" />
           </div>
           <div class="fg">
             <label>Status</label>
@@ -223,7 +223,7 @@
         if (terms.length) {
           const c = o.customer || {};
           const itemText = (o.quote && o.quote.items || []).map(i => i.title).join(' ');
-          const hay = [o.id, c.name, c.phone, c.email, itemText, o.status].filter(Boolean).join(' ').toLowerCase();
+          const hay = [o.id, c.name, c.phone, c.email, itemText, o.status, o.staff_notes].filter(Boolean).join(' ').toLowerCase();
           if (!terms.every(t => hay.includes(t))) return false;
         }
         return true;
