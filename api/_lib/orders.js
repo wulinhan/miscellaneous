@@ -68,4 +68,36 @@ async function markPaid(razorpayOrderId, paymentId) {
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
-module.exports = { isConfigured, insertPending, markPaid };
+// ---- Staff admin reads/writes ---------------------------------------------
+
+// Newest-first list, optionally filtered by status. Returns [] if unconfigured.
+async function listOrders({ status, limit = 200 } = {}) {
+  if (!isConfigured()) return [];
+  const lim = Math.min(Number(limit) || 200, 500);
+  let url = `${base()}?select=*&order=created_at.desc&limit=${lim}`;
+  if (status) url += `&status=eq.${encodeURIComponent(status)}`;
+  const res = await fetch(url, { headers: headers() });
+  if (!res.ok) throw new Error(`Supabase list ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// Update a whitelisted set of fields for one order. Returns the updated row, or
+// null if not found / unconfigured. Stamps updated_at.
+const EDITABLE = ['status', 'staff_notes', 'delivery_date', 'slot_or_window', 'fulfilment'];
+async function updateOrder(id, patch) {
+  if (!isConfigured() || !id) return null;
+  const set = {};
+  for (const k of EDITABLE) if (patch[k] !== undefined) set[k] = patch[k];
+  set.updated_at = new Date().toISOString();
+  const url = `${base()}?id=eq.${encodeURIComponent(id)}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: headers({ Prefer: 'return=representation' }),
+    body: JSON.stringify(set),
+  });
+  if (!res.ok) throw new Error(`Supabase update ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+module.exports = { isConfigured, insertPending, markPaid, listOrders, updateOrder };

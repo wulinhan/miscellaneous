@@ -16,7 +16,9 @@ create table if not exists public.orders (
   currency            text default 'SGD',
   razorpay_order_id   text,                        -- links the payment back to us
   razorpay_payment_id text,
+  staff_notes         text,                        -- free-text notes added by staff
   created_at          timestamptz not null default now(),
+  updated_at          timestamptz,                 -- last staff edit
   paid_at             timestamptz
 );
 
