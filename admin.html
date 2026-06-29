@@ -153,8 +153,7 @@
     .card:hover { box-shadow:0 3px 14px rgba(22,34,74,.10); border-color:#d6def0; }
     .card-check { width:17px; height:17px; accent-color:var(--navy); flex:0 0 auto; cursor:pointer; }
     .status-sel { font-weight:700; text-transform:capitalize; height:34px; border-radius:999px; padding:4px 30px 4px 14px; background-position:right 11px center; cursor:pointer; }
-    .cardmenu-wrap { position:relative; display:none; align-items:center; }
-    .orow.open .cardmenu-wrap { display:flex; }
+    .cardmenu-wrap { position:relative; display:inline-flex; align-items:center; }
     .cardmenu-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; width:34px; height:34px; font-size:18px; line-height:1; cursor:pointer; }
     .cardmenu { position:absolute; right:0; top:38px; z-index:20; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:6px; min-width:170px; display:flex; flex-direction:column; }
     .cardmenu .mi { background:none; border:none; text-align:left; padding:8px 10px; border-radius:7px; font:inherit; color:#1b2330; cursor:pointer; text-decoration:none; }
@@ -189,21 +188,33 @@
     .otable .sub { font-size:12px; color:var(--muted); margin-top:1px; }
     .otable .id { font-family:ui-monospace,monospace; font-weight:700; font-size:13px; color:var(--navy); }
     .r-cust { font-weight:600; }
-    .r-team { font-size:12px; color:#374151; }
     .c-chk { width:36px; }
     .c-amt { text-align:right; font-weight:700; white-space:nowrap; }
-    .c-act { width:92px; white-space:nowrap; }
+    .c-act { width:132px; white-space:nowrap; }
     .acts { display:flex; align-items:center; justify-content:flex-end; gap:6px; }
     .otable .status-sel { min-width:138px; vertical-align:middle; }
-    .exp-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:9px; width:40px; height:40px; cursor:pointer; font-size:16px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }
-    .exp-btn:hover { background:#e2e6f0; }
     .cardmenu-btn { display:inline-flex; align-items:center; justify-content:center; }
-    .odetail > td { padding:0; background:#f6f7fb; }
-    .detailwrap { padding:14px 16px; }
     .login { max-width:380px; margin:10vh auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px; }
     .login h2 { margin:0 0 6px; color:var(--navy); }
     .error { color:#b42318; font-size:14px; margin-top:8px; min-height:18px; }
     .hide { display:none !important; }
+    /* Open button (row action) */
+    .open-btn { background:var(--navy); color:#fff; border:none; border-radius:9px; padding:0 16px; height:38px; cursor:pointer; font-weight:700; font-size:13px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }
+    .open-btn:hover { background:#16296b; }
+    /* Slide-over order drawer */
+    .drawer-backdrop { position:fixed; inset:0; background:rgba(15,23,42,.45); opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:40; }
+    .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+    .drawer { position:fixed; top:0; right:0; height:100%; width:50%; max-width:760px; min-width:360px; background:#fff; box-shadow:-12px 0 40px rgba(15,23,42,.18); transform:translateX(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); z-index:41; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateX(0); }
+    .drawer-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:15px 20px; background:var(--navy); color:#fff; }
+    .drawer-title { font-weight:800; font-size:16px; font-family:ui-monospace,monospace; }
+    .drawer-close { background:rgba(255,255,255,.15); color:#fff; border:none; width:34px; height:34px; border-radius:9px; font-size:22px; line-height:1; cursor:pointer; }
+    .drawer-close:hover { background:rgba(255,255,255,.28); }
+    .drawer-body { padding:18px 20px; overflow:auto; flex:1; }
+    .drawer .card-row { flex-direction:column; }
+    .drawer .order-timeline { flex:none; width:auto; }
+    .drawer .timeline { max-height:none; }
+    @media(max-width:640px){ .drawer { width:100%; max-width:none; min-width:0; } }
   </style>
 </head>
 <body>
@@ -509,7 +520,6 @@
       const deliv = o.delivery_date
         ? `${esc(o.delivery_date)}${o.slot_or_window ? `<div class="sub">${esc(o.slot_or_window)}</div>` : ''}`
         : '<span class="muted">—</span>';
-      const team = [o.preparer && `P: ${esc(o.preparer)}`, o.driver && `D: ${esc(o.driver)}`].filter(Boolean).join('<br>') || '<span class="muted">—</span>';
       return `
       <tr class="orow" data-row="${esc(o.id)}">
         <td class="c-chk"><input type="checkbox" class="card-check" ${SELECTED.has(o.id) ? 'checked' : ''} onclick="toggleSelect('${esc(o.id)}', this)" title="Select"></td>
@@ -517,7 +527,6 @@
         <td><span class="r-cust">${esc(c.name || '—')}</span>${c.business ? `<div class="sub">${esc(c.business)}</div>` : ''}</td>
         <td>${deliv}</td>
         <td><select class="status-sel" style="background-color:${sc}1f;color:${sc};border-color:${sc}66" onchange="quickStatus(this, '${esc(o.id)}')" title="Change status (saves instantly)">${statusOpts}</select></td>
-        <td class="r-team">${team}</td>
         <td class="c-amt">${money(o.amount_total, o.currency)}</td>
         <td class="c-act"><div class="acts">
           <div class="cardmenu-wrap">
@@ -529,10 +538,9 @@
               ${wa ? `<a class="mi" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : ''}
             </div>
           </div>
-          <button class="exp-btn" type="button" onclick="toggleDetail('${esc(o.id)}', this)" aria-label="Expand details">▾</button>
+          <button class="open-btn" type="button" onclick="openDrawer('${esc(o.id)}')">Open</button>
         </div></td>
-      </tr>
-      <tr class="odetail hide" data-detail="${esc(o.id)}"><td colspan="8"><div class="detailwrap">${orderDetailInner(o)}</div></td></tr>`;
+      </tr>`;
     }
 
     function orderDetailInner(o) {
@@ -577,31 +585,46 @@
       </div>`;
     }
 
-    function toggleDetail(id, btn) {
-      const det = document.querySelector(`tr[data-detail="${cssEsc(id)}"]`);
-      const row = document.querySelector(`tr[data-row="${cssEsc(id)}"]`);
-      if (!det) return;
-      const open = !det.classList.toggle('hide');
-      if (row) row.classList.toggle('open', open);
-      if (btn) btn.textContent = open ? '▴' : '▾';
+    // ---- Slide-over order drawer (right half of the screen) -----------------
+    let DRAWER_ID = null;
+    function findOrder(id) { return ALL.find(o => o.id === id) || FILTERED.find(o => o.id === id) || null; }
+    function renderDrawerBody(o) {
+      document.getElementById('drawer-title').textContent = o.id;
+      document.getElementById('drawer-body').innerHTML = orderDetailInner(o);
     }
+    function openDrawer(id) {
+      const o = findOrder(id);
+      if (!o) return;
+      DRAWER_ID = id;
+      renderDrawerBody(o);
+      document.getElementById('drawer').classList.add('open');
+      document.getElementById('drawer-backdrop').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeDrawer() {
+      DRAWER_ID = null;
+      document.getElementById('drawer').classList.remove('open');
+      document.getElementById('drawer-backdrop').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && DRAWER_ID) closeDrawer(); });
 
     function replaceOrder(id, order) {
+      if (!order) return;
       const row = document.querySelector(`tr[data-row="${cssEsc(id)}"]`);
-      const det = document.querySelector(`tr[data-detail="${cssEsc(id)}"]`);
-      if (!row || !det || !order) return;
-      const wasOpen = !det.classList.contains('hide');
-      const tmp = document.createElement('tbody'); tmp.innerHTML = orderRow(order);
-      const newRow = tmp.children[0], newDet = tmp.children[1];
-      if (wasOpen) { newDet.classList.remove('hide'); newRow.classList.add('open'); const eb = newRow.querySelector('.exp-btn'); if (eb) eb.textContent = '▴'; }
-      row.replaceWith(newRow); det.replaceWith(newDet);
-      newRow.classList.add('flash');
+      if (row) {
+        const tmp = document.createElement('tbody'); tmp.innerHTML = orderRow(order);
+        const newRow = tmp.children[0];
+        row.replaceWith(newRow);
+        newRow.classList.add('flash');
+      }
+      if (DRAWER_ID === id) renderDrawerBody(order);   // keep the open drawer in sync
     }
 
     function render(orders) {
       document.getElementById('list').innerHTML =
         `<div class="otable-wrap"><table class="otable"><thead><tr>` +
-        `<th class="c-chk"></th><th>Order</th><th>Customer</th><th>Delivery</th><th>Status</th><th>Team</th><th class="c-amt">Amount</th><th class="c-act"></th>` +
+        `<th class="c-chk"></th><th>Order</th><th>Customer</th><th>Delivery</th><th>Status</th><th class="c-amt">Amount</th><th class="c-act"></th>` +
         `</tr></thead><tbody>` + orders.map(orderRow).join('') + `</tbody></table></div>`;
     }
 
@@ -690,7 +713,7 @@
       const dt = o.delivery_date ? esc(o.delivery_date) + (o.slot_or_window ? ' · ' + esc(o.slot_or_window) : '') : 'No delivery date';
       const pill = showStatus ? `<span class="pill s-${esc(o.status)}">${esc((o.status || '').replace(/_/g, ' '))}</span>` : '';
       const dragAttrs = draggable ? ` draggable="true" ondragstart="onCardDragStart(event,'${esc(o.id)}')" ondragend="onCardDragEnd(event)"` : '';
-      return `<div class="kcard"${dragAttrs}>
+      return `<div class="kcard" onclick="openDrawer('${esc(o.id)}')"${dragAttrs}>
         <div class="kc-top"><span class="kc-id">${esc(o.id)}</span>${pill}</div>
         <div class="kc-cust">${esc(c.name || '—')}${c.business ? ` <span class="kc-org">· ${esc(c.business)}</span>` : ''}</div>
         <div class="kc-when">🗓 ${dt}</div>
@@ -821,8 +844,7 @@
         const f = FILTERED.findIndex(o => o.id === id); if (f >= 0 && order) FILTERED[f] = order;
         const sc = STATUS_COLOR[v] || STATUS_DEFAULT;
         sel.style.backgroundColor = sc + '1f'; sel.style.color = sc; sel.style.borderColor = sc + '66';
-        const det = document.querySelector(`tr[data-detail="${cssEsc(id)}"]`);
-        if (det && order) { const tlEl = det.querySelector('.timeline'); if (tlEl) tlEl.innerHTML = renderTimeline(timelineEvents(order)); }
+        if (DRAWER_ID === id && order) renderDrawerBody(order);
         const row = document.querySelector(`tr[data-row="${cssEsc(id)}"]`);
         if (row) { row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); }
         renderKpis();
@@ -1072,5 +1094,15 @@
   </script>
   <div id="toasts" class="toasts"></div>
   <button id="newbanner" class="newbanner hide" type="button" onclick="refreshFromBanner()"></button>
+
+  <!-- Slide-over order detail drawer -->
+  <div id="drawer-backdrop" class="drawer-backdrop" onclick="closeDrawer()"></div>
+  <aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-label="Order details">
+    <div class="drawer-head">
+      <div class="drawer-title" id="drawer-title">Order</div>
+      <button class="drawer-close" type="button" onclick="closeDrawer()" aria-label="Close">×</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
 </body>
 </html>
