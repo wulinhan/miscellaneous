@@ -208,7 +208,7 @@
     .drawer.open { transform:translateX(0); }
     .drawer-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:15px 20px; background:var(--navy); color:#fff; }
     .drawer-title { font-weight:800; font-size:16px; font-family:ui-monospace,monospace; }
-    .drawer-close { background:rgba(255,255,255,.15); color:#fff; border:none; width:34px; height:34px; border-radius:9px; font-size:22px; line-height:1; cursor:pointer; }
+    .drawer-close { background:rgba(255,255,255,.15); color:#fff; border:none; width:34px; height:34px; border-radius:9px; font-size:22px; line-height:1; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
     .drawer-close:hover { background:rgba(255,255,255,.28); }
     .drawer-body { padding:18px 20px; overflow:auto; flex:1; }
     .drawer .card-row { flex-direction:column; }
@@ -299,7 +299,6 @@
           </div>
           <button class="btn-light btn-sm" onclick="clearFilters()">Clear</button>
           <button class="toolbtn" onclick="exportCsv(FILTERED)">⬇ Export CSV</button>
-          <span id="count" class="count muted"></span>
         </div>
       </div>
       <div id="bulkbar" class="bulkbar hide">
@@ -658,9 +657,6 @@
       const start = (page - 1) * pageSize;
       render(FILTERED.slice(start, start + pageSize));
       document.getElementById('empty').classList.toggle('hide', total > 0);
-      const from = total ? start + 1 : 0;
-      const to = Math.min(start + pageSize, total);
-      document.getElementById('count').textContent = total ? `Showing ${from}–${to} of ${total}` : '';
       renderPager(total ? pages : 0);
     }
     function gotoPage(n) {
@@ -771,11 +767,9 @@
         renderPage();
       } else {
         const n = FILTERED.length;
-        document.getElementById('count').textContent = `${n} order${n === 1 ? '' : 's'}`;
         document.getElementById('empty').classList.toggle('hide', n > 0);
         renderBoard(view);
       }
-      onScrollFade();
     }
     function setView(v) {
       view = v;
@@ -928,26 +922,6 @@
       }
     });
 
-    // Fade rows/cards out as they scroll up under the (stuck) filter bar.
-    let _fadeRAF = null;
-    function updateFade() {
-      _fadeRAF = null;
-      const filters = document.querySelector('.filters');
-      if (!filters) return;
-      const fr = filters.getBoundingClientRect();
-      const stuck = fr.top <= 80;          // sticky engaged (scrolled)
-      const ref = fr.bottom;               // fade rows as they pass under the sticky filter bar
-      document.querySelectorAll('#list tbody tr, #list .kcard').forEach(el => {
-        if (el.offsetParent === null) return;
-        if (!stuck) { el.style.opacity = ''; return; }
-        const top = el.getBoundingClientRect().top;
-        const op = (top - ref) / 40;       // fade over the 40px just below the bar
-        el.style.opacity = op < 0 ? 0 : op > 1 ? 1 : op;
-      });
-    }
-    function onScrollFade() { if (!_fadeRAF) _fadeRAF = requestAnimationFrame(updateFade); }
-    window.addEventListener('scroll', onScrollFade, { passive: true });
-    window.addEventListener('resize', onScrollFade);
 
     function applyFilters() {
       const terms = document.getElementById('search').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -1016,7 +990,6 @@
         document.getElementById('newbanner').classList.add('hide');
         loadState();
         applyFilters();
-        syncSticky();
         startPolling();
       } catch (e) {
         if (e.message === 'unauthorized') return;
@@ -1064,13 +1037,6 @@
       sv('search', s.search); sv('f-status', s.status); sv('f-from', s.from); sv('f-to', s.to); sv('f-min', s.min); sv('f-max', s.max); sv('sort', s.sortKey);
       document.querySelectorAll('.vbtn').forEach(b => b.classList.toggle('cur', b.getAttribute('data-view') === view));
     }
-
-    // ---- Sticky table header offset (below the sticky filter bar) ------------
-    function syncSticky() {
-      const f = document.querySelector('.filters');
-      if (f) document.documentElement.style.setProperty('--thead-top', (Math.round(f.getBoundingClientRect().height) + 74) + 'px');
-    }
-    window.addEventListener('resize', syncSticky);
 
     // ---- New-orders auto-refresh --------------------------------------------
     let pollTimer = null;
