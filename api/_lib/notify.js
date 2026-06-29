@@ -87,28 +87,136 @@ async function mirrorToNotion(order) {
 
 // ---- Resend ----------------------------------------------------------------
 
+// Brand palette (kept in sync with css/styles.css :root).
+const NAVY = '#1f3a8a';
+const GOLD = '#ffc629';
+const WA_GREEN = '#25d366';
+
+// Support WhatsApp number — digits only, no '+'. Configurable; defaults to the
+// Sofnade line. Used for the "Message us on WhatsApp" CTA in receipts.
+function supportWa() {
+  return (process.env.SUPPORT_WHATSAPP || '6589309756').replace(/\D/g, '');
+}
+function supportWaPretty() {
+  const d = supportWa();
+  const m = d.match(/^65(\d{4})(\d{4})$/);
+  return m ? `+65 ${m[1]} ${m[2]}` : `+${d}`;
+}
+function waHref(order) {
+  const msg = `Hi Sofnade! I have a question about my order ${order.id}.`;
+  return `https://wa.me/${supportWa()}?text=${encodeURIComponent(msg)}`;
+}
+
+// Branded, email-client-safe receipt: table layout + inline styles only (no
+// <style> blocks / flexbox / external CSS, which many clients strip).
+function receiptHtml(order) {
+  const q = order.quote || {};
+  const ccy = q.currency || 'SGD';
+  const c = order.customer || {};
+
+  const itemRows = (q.items || [])
+    .map((i) => {
+      const qty = Number(i.qty || 0);
+      const unit = i.unitPrice != null ? Number(i.unitPrice) : (qty ? Number(i.lineTotal || 0) / qty : 0);
+      return `<tr>
+        <td style="padding:10px 0;border-bottom:1px solid #e6e7ec;font:14px/1.4 Arial,sans-serif;color:#1b2330;">
+          <strong>${escapeHtml(i.title || '')}</strong>${i.size ? ` <span style="color:#6b7280;">(${escapeHtml(i.size)})</span>` : ''}<br>
+          <span style="color:#6b7280;font-size:13px;">${qty} &times; ${money(unit, ccy)}</span>
+        </td>
+        <td style="padding:10px 0;border-bottom:1px solid #e6e7ec;font:14px/1.4 Arial,sans-serif;color:#1b2330;text-align:right;white-space:nowrap;">${money(i.lineTotal, ccy)}</td>
+      </tr>`;
+    })
+    .join('');
+
+  const totalRow = (label, val, bold) => `<tr>
+      <td style="padding:4px 0;font:${bold ? 'bold ' : ''}14px/1.4 Arial,sans-serif;color:${bold ? '#1b2330' : '#6b7280'};">${escapeHtml(label)}</td>
+      <td style="padding:4px 0;font:${bold ? 'bold ' : ''}14px/1.4 Arial,sans-serif;color:${bold ? '#1b2330' : '#6b7280'};text-align:right;white-space:nowrap;">${val}</td>
+    </tr>`;
+
+  const totals = [
+    totalRow('Subtotal', money(q.subtotal, ccy)),
+    q.discount ? totalRow(`Discount${q.discountCode ? ` (${q.discountCode})` : ''}`, `-${money(q.discount, ccy)}`) : '',
+    q.deliveryFee ? totalRow('Delivery', money(q.deliveryFee, ccy)) : (order.fulfilment === 'delivery' ? totalRow('Delivery', 'Free') : ''),
+    q.surcharge ? totalRow('Transport surcharge', money(q.surcharge, ccy)) : '',
+    q.specificTimeFee ? totalRow('Specific-time add-on', money(q.specificTimeFee, ccy)) : '',
+    totalRow('Total', money(q.total, ccy), true),
+  ].join('');
+
+  const where =
+    order.fulfilment === 'delivery'
+      ? `Delivery to ${escapeHtml([c.address1, c.address2, order.postal ? 'Singapore ' + order.postal : ''].filter(Boolean).join(', '))}`
+      : 'Self pick-up';
+  const when = order.delivery_date
+    ? `${escapeHtml(order.delivery_date)}${order.slot_or_window ? ` &middot; ${escapeHtml(order.slot_or_window)}` : ''}`
+    : '';
+
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#eef1f7;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f7;padding:24px 0;">
+   <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(27,35,48,.08);">
+      <tr><td style="background:${NAVY};padding:24px 28px;">
+        <span style="font:bold 22px Arial,sans-serif;color:#ffffff;letter-spacing:.5px;">Sofnade</span>
+        <span style="display:inline-block;margin-left:10px;font:bold 11px Arial,sans-serif;color:${NAVY};background:${GOLD};padding:3px 10px;border-radius:999px;">PAID</span>
+      </td></tr>
+      <tr><td style="padding:28px;">
+        <h1 style="margin:0 0 6px;font:bold 20px Arial,sans-serif;color:#1b2330;">Thanks for your order, ${escapeHtml((c.name || '').split(' ')[0] || 'there')}!</h1>
+        <p style="margin:0 0 18px;font:14px/1.6 Arial,sans-serif;color:#6b7280;">Order <strong style="color:#1b2330;">${escapeHtml(order.id)}</strong> is confirmed and paid. Here is your summary.</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemRows}</table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-top:2px solid ${NAVY};padding-top:8px;">${totals}</table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;background:#f7f8fb;border-radius:10px;">
+          <tr><td style="padding:14px 16px;font:14px/1.5 Arial,sans-serif;color:#1b2330;">
+            <strong style="color:${NAVY};">${order.fulfilment === 'delivery' ? 'Delivery' : 'Pick-up'}</strong><br>${where}${when ? `<br>${when}` : ''}
+          </td></tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 6px;">
+          <tr><td align="center">
+            <a href="${waHref(order)}" style="display:inline-block;background:${WA_GREEN};color:#ffffff;font:bold 15px Arial,sans-serif;text-decoration:none;padding:14px 26px;border-radius:999px;">Message us on WhatsApp</a>
+          </td></tr>
+        </table>
+        <p style="margin:6px 0 0;font:13px/1.5 Arial,sans-serif;color:#6b7280;text-align:center;">Questions about your order? Reach us anytime at ${supportWaPretty()}.</p>
+      </td></tr>
+      <tr><td style="background:#f7f8fb;padding:18px 28px;border-top:1px solid #e6e7ec;">
+        <p style="margin:0;font:12px/1.6 Arial,sans-serif;color:#9aa1ad;">Payment ref: ${escapeHtml(order.razorpay_payment_id || order.razorpay_order_id || '-')}<br>
+        &copy; ${new Date().getFullYear()} Sofnade &middot; Crafted fresh &middot; Delivered across Singapore</p>
+      </td></tr>
+    </table>
+   </td></tr>
+  </table>
+  </body></html>`;
+}
+
+// Plain-text alternative (improves deliverability and accessibility).
+function receiptText(order) {
+  const c = order.customer || {};
+  const lines = [
+    `Thanks for your order, ${c.name || ''}!`.trim(),
+    `Order ${order.id} is confirmed and paid.`,
+    '',
+    ...summaryLines(order),
+    '',
+  ];
+  if (order.delivery_date) {
+    lines.push(
+      `${order.fulfilment === 'delivery' ? 'Delivery' : 'Pick-up'}: ${order.delivery_date}${order.slot_or_window ? ` (${order.slot_or_window})` : ''}`,
+    );
+    lines.push('');
+  }
+  lines.push(`Questions? WhatsApp us at ${supportWaPretty()}: ${waHref(order)}`);
+  lines.push('- Sofnade');
+  return lines.join('\n');
+}
+
 async function sendReceipt(order) {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RECEIPT_FROM;
   const c = order.customer || {};
   if (!key || !from || !c.email) return; // not configured / no recipient
-  const when = order.delivery_date
-    ? `<p>${order.fulfilment === 'delivery' ? 'Delivery' : 'Pick-up'} on <strong>${escapeHtml(order.delivery_date)}</strong>${
-        order.slot_or_window ? ` (${escapeHtml(order.slot_or_window)})` : ''
-      }.</p>`
-    : '';
-  const html = [
-    `<h2>Thanks for your order, ${escapeHtml(c.name || '')}!</h2>`,
-    `<p>Order <strong>${escapeHtml(order.id)}</strong> is confirmed and paid.</p>`,
-    `<pre style="font:14px/1.5 ui-monospace,monospace">${escapeHtml(summaryLines(order).join('\n'))}</pre>`,
-    when,
-    `<p>We will be in touch with delivery details. - Sofnade</p>`,
-  ].join('\n');
   const payload = {
     from,
     to: [c.email],
-    subject: `Your Sofnade order ${order.id}`,
-    html,
+    subject: `Your Sofnade order ${order.id} is confirmed`,
+    html: receiptHtml(order),
+    text: receiptText(order),
   };
   if (process.env.ORDER_NOTIFY_EMAIL) payload.bcc = [process.env.ORDER_NOTIFY_EMAIL];
   const res = await fetch('https://api.resend.com/emails', {

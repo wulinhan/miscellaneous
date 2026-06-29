@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>Checkout — Sofnade</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=26">
+  <link rel="stylesheet" href="css/styles.css?v=27">
 </head>
 <body>
   <div id="header"></div>
@@ -140,12 +140,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=26"></script>
-  <script src="js/config.js?v=26"></script>
-  <script src="js/store-data.js?v=26"></script>
-  <script src="js/images.js?v=26"></script>
-  <script src="js/cart.js?v=26"></script>
-  <script src="js/common.js?v=26"></script>
+  <script src="data/products.js?v=27"></script>
+  <script src="js/config.js?v=27"></script>
+  <script src="js/store-data.js?v=27"></script>
+  <script src="js/images.js?v=27"></script>
+  <script src="js/cart.js?v=27"></script>
+  <script src="js/common.js?v=27"></script>
   <script>
     renderChrome();
 
@@ -474,7 +474,7 @@
 
       // Render the success screen (used for real payment, test mode, and the
       // static-only demo host).
-      function showConfirmation() {
+      function showConfirmation(orderId) {
         const ds = document.getElementById('date-select');
         const date = ds.options[ds.selectedIndex].text;
         const name = detail('name').split(' ')[0];
@@ -494,12 +494,18 @@
           : `We will deliver to <strong>${detail('addr1')}${detail('postal') ? ', Singapore ' + detail('postal') : ''}</strong> on <strong>${date}</strong> ${when}.`;
         Cart.clear();
         toast('Order placed! 🎉');
+        const waText = orderId
+          ? `Hi Sofnade! I just placed order ${orderId} and have a question.`
+          : 'Hi Sofnade! I just placed an order and have a question.';
         document.getElementById('checkout').innerHTML = `
           <div class="empty-state" style="grid-column:1/-1">
             <div class="big">✅</div>
             <h2>${hi}</h2>
             <p>${line}</p>
-            <a class="btn" href="index.html">Continue shopping</a>
+            <div class="confirm-actions">
+              <a class="btn" href="index.html">Continue shopping</a>
+              <a class="btn btn-wa" href="${waUrl(waText)}" target="_blank" rel="noopener">Message us on WhatsApp</a>
+            </div>
           </div>`;
         refreshCartBadges();
       }
@@ -544,7 +550,7 @@
                   body: JSON.stringify(resp)
                 });
                 const vj = await v.json().catch(() => ({}));
-                if (v.ok && vj.ok) showConfirmation();
+                if (v.ok && vj.ok) showConfirmation(json.orderId);
                 else { toast('Payment could not be verified. If you were charged, please contact us.'); resetPlaceBtn(); }
               } catch (e) {
                 toast('Payment verification failed. Please contact us.'); resetPlaceBtn();
@@ -582,7 +588,7 @@
           return resetPlaceBtn();
         }
         if (json.payment && json.payment.configured) openRazorpay(json);
-        else showConfirmation();       // test mode (no Razorpay keys): same confirmation
+        else showConfirmation(json && json.orderId);  // test mode (no Razorpay keys): same confirmation
       });
 
       updateScheduleLabels();
