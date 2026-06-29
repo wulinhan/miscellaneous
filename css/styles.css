@@ -76,6 +76,10 @@ img { display: block; max-width: 100%; }
   .main-nav.open { display: flex; }
   .main-nav a { padding: 13px 0; font-size: 16px; border-bottom: 1px solid var(--line); }
   .main-nav a:last-child { border-bottom: none; }
+  /* Shrink the hero so the first row of products is visible sooner */
+  .hero .wrap { padding: 26px 20px; }
+  .hero h1 { font-size: 28px; margin: 0 0 8px; }
+  .hero p { font-size: 15px; line-height: 1.5; }
 }
 
 .cart-link {
@@ -135,7 +139,7 @@ img { display: block; max-width: 100%; }
   display: grid; grid-template-columns: 248px 1fr; gap: 36px;
   padding: 32px 0 64px;
 }
-@media (max-width: 860px) { .shop-layout { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .shop-layout { grid-template-columns: 1fr; gap: 0; } }
 /* Let grid columns shrink so a wide scroll row can't blow out the page width */
 .shop-layout > * { min-width: 0; }
 
@@ -144,6 +148,7 @@ img { display: block; max-width: 100%; }
 .filter-btn {
   width: 100%; text-align: left; background: none; border: none; cursor: pointer;
   font: inherit; color: var(--ink); padding: 9px 12px; border-radius: 10px; font-size: 15px;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 .filter-btn:hover { background: var(--bg-soft); }
 .filter-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
@@ -152,11 +157,16 @@ img { display: block; max-width: 100%; }
    sitting flush right under the hero. */
 @media (max-width: 860px) {
   .shop-layout { padding-top: 0; }
+  /* Clear gap under the search bar, before the category ribbon */
+  .searchbar { margin: 16px 0 14px; }
+  /* Sit the category (gold) ribbon directly above the sub-category ribbon */
   .sidebar {
-    position: sticky; top: 67px; z-index: 20; margin: 0 0 16px;
+    position: sticky; top: 67px; z-index: 20; margin: 0;
     width: 100vw; margin-inline: calc(50% - 50vw);   /* full-bleed, no page overflow */
     background: var(--gold);
   }
+  /* Breathing room before the product grid (in both ribbon states) */
+  .listing-head { margin-top: 16px; }
   .filter-bar {
     flex-direction: row; gap: 8px; overflow-x: auto; padding: 12px 20px;
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
@@ -186,10 +196,12 @@ img { display: block; max-width: 100%; }
 /* Two columns on mobile (was one giant column) */
 @media (max-width: 560px)  { .grid { grid-template-columns: repeat(2, 1fr); gap: 14px; } }
 
+@keyframes cardIn { from { opacity: 0; } to { opacity: 1; } }
 .card {
   background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius);
   overflow: hidden; display: flex; flex-direction: column;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: cardIn 0.26s ease;
 }
 .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 .card-media { position: relative; aspect-ratio: 1 / 1; background: var(--bg-soft); }
@@ -348,7 +360,7 @@ img { display: block; max-width: 100%; }
 }
 .subnav-row { display: none; }
 @media (max-width: 860px) {
-  .subnav { width: 100vw; margin-inline: calc(50% - 50vw); margin-bottom: 16px; background: var(--accent); }
+  .subnav { width: 100vw; margin-inline: calc(50% - 50vw); margin-bottom: 0; background: var(--accent); }
   .subnav-select { display: none; }
   .subnav-row {
     display: flex; gap: 8px; overflow-x: auto; padding: 11px 20px;
@@ -359,6 +371,7 @@ img { display: block; max-width: 100%; }
     flex: 0 0 auto; white-space: nowrap; font: inherit; font-weight: 600; cursor: pointer;
     background: transparent; color: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.45); border-radius: 999px; padding: 7px 15px;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   }
   .sub-pill.active { background: var(--gold); color: var(--accent); border-color: var(--gold); }
 }
