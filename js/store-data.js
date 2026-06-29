@@ -30,7 +30,7 @@
     "toppings": *[_type == "topping"]{ "id": slug.current, title, price },
     "discounts": *[_type == "discountCode"]{ "code": upper(code), type, value, label },
     "products": *[_type == "product"] | order(order asc){
-      "id": slug.current, title, unit, shortDesc, longDesc,
+      "id": slug.current, title, unit, shortDesc, longDesc, section,
       "categories": categories[]->title,
       "primary": primaryCategory->title,
       sizes[]{label, price},
@@ -69,6 +69,10 @@
         shortDesc: p.shortDesc || '',
         longDesc: p.longDesc || p.shortDesc || '',
         tags: tags,
+        // Sub-section (e.g. "Fusion Teas") drives the sub-category filter. Use the
+        // CMS value if set, else fall back to the bundled product's section so the
+        // sub-filters keep working until sections are managed in the CMS.
+        section: p.section || (builtin ? builtin.section : undefined),
         sizes: sizes,
         price: sizes[0].price,
         upsell: (p.upsell || []).filter(Boolean),

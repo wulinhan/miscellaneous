@@ -9,7 +9,7 @@
   <title>Sofnade — Bubble Tea, Sweets, Snacks & Gift Sets</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=28">
+  <link rel="stylesheet" href="css/styles.css?v=29">
 </head>
 <body>
   <div id="header"></div>
@@ -54,12 +54,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=28"></script>
-  <script src="js/config.js?v=28"></script>
-  <script src="js/store-data.js?v=28"></script>
-  <script src="js/images.js?v=28"></script>
-  <script src="js/cart.js?v=28"></script>
-  <script src="js/common.js?v=28"></script>
+  <script src="data/products.js?v=29"></script>
+  <script src="js/config.js?v=29"></script>
+  <script src="js/store-data.js?v=29"></script>
+  <script src="js/images.js?v=29"></script>
+  <script src="js/cart.js?v=29"></script>
+  <script src="js/common.js?v=29"></script>
   <script>
     renderChrome('shop');
 
@@ -93,7 +93,9 @@
       const pills = [mkBtn('', 'All')]
         .concat(filterCategories().map(c => mkBtn(c, c)))
         .join('');
-      document.getElementById('sidebar').innerHTML = `<div class="filter-bar">${pills}</div>`;
+      const host = document.getElementById('sidebar');
+      const prevScroll = (host.querySelector('.filter-bar') || {}).scrollLeft || 0;
+      host.innerHTML = `<div class="filter-bar">${pills}</div>`;
 
       document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -105,11 +107,9 @@
         });
       });
 
-      // Keep the active pill in view on the mobile scroll bar (snap instantly —
-      // only the sub-menu animates).
-      const activeBtn = document.querySelector('.filter-btn.active');
-      const bar = document.querySelector('.filter-bar');
-      if (activeBtn && bar) bar.scrollLeft = activeBtn.offsetLeft - 16;
+      // Keep the ribbon exactly where the user left it (no auto-scroll/displace).
+      const bar = host.querySelector('.filter-bar');
+      if (bar) bar.scrollLeft = prevScroll;
     }
 
     // Sub-navigation (dropdown on desktop, scroll row on mobile) for categories
@@ -125,6 +125,7 @@
       const rowPills = opts.map(o =>
         `<button class="sub-pill ${activeSub === o.v || (!activeSub && o.v === '') ? 'active' : ''}" data-sub="${o.v}">${o.label}</button>`).join('');
 
+      const prevScroll = (host.querySelector('.subnav-row') || {}).scrollLeft || 0;
       host.innerHTML = `
         <div class="subnav">
           <select class="subnav-select" aria-label="Filter ${activeFilter}">${selOpts}</select>
@@ -137,9 +138,9 @@
       host.querySelectorAll('.sub-pill').forEach(b => {
         b.addEventListener('click', () => { activeSub = b.dataset.sub || null; clearSearchUI(); updateUrl(); render(); });
       });
-      const activePill = host.querySelector('.sub-pill.active');
+      // Keep the row exactly where the user left it (no auto-scroll/displace).
       const row = host.querySelector('.subnav-row');
-      if (activePill && row) row.scrollTo({ left: activePill.offsetLeft - 16, behavior: 'smooth' });
+      if (row) row.scrollLeft = prevScroll;
     }
 
     function productCard(p) {
