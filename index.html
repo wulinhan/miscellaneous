@@ -105,10 +105,11 @@
         });
       });
 
-      // Keep the active pill in view on the mobile scroll bar.
+      // Keep the active pill in view on the mobile scroll bar (snap instantly —
+      // only the sub-menu animates).
       const activeBtn = document.querySelector('.filter-btn.active');
       const bar = document.querySelector('.filter-bar');
-      if (activeBtn && bar) bar.scrollTo({ left: activeBtn.offsetLeft - 16, behavior: 'smooth' });
+      if (activeBtn && bar) bar.scrollLeft = activeBtn.offsetLeft - 16;
     }
 
     // Sub-navigation (dropdown on desktop, scroll row on mobile) for categories
