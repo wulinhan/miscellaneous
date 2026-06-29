@@ -119,18 +119,18 @@ function receiptHtml(order) {
       const qty = Number(i.qty || 0);
       const unit = i.unitPrice != null ? Number(i.unitPrice) : (qty ? Number(i.lineTotal || 0) / qty : 0);
       return `<tr>
-        <td style="padding:10px 0;border-bottom:1px solid #e6e7ec;font:14px/1.4 Arial,sans-serif;color:#1b2330;">
+        <td width="68%" style="width:68%;padding:10px 8px 10px 0;border-bottom:1px solid #e6e7ec;font:14px/1.4 Arial,sans-serif;color:#1b2330;vertical-align:top;">
           <strong>${escapeHtml(i.title || '')}</strong>${i.size ? ` <span style="color:#6b7280;">(${escapeHtml(i.size)})</span>` : ''}<br>
           <span style="color:#6b7280;font-size:13px;">${qty} &times; ${money(unit, ccy)}</span>
         </td>
-        <td style="padding:10px 0;border-bottom:1px solid #e6e7ec;font:14px/1.4 Arial,sans-serif;color:#1b2330;text-align:right;white-space:nowrap;">${money(i.lineTotal, ccy)}</td>
+        <td width="32%" align="right" style="width:32%;padding:10px 0;border-bottom:1px solid #e6e7ec;font:14px/1.4 Arial,sans-serif;color:#1b2330;text-align:right;vertical-align:top;white-space:nowrap;">${money(i.lineTotal, ccy)}</td>
       </tr>`;
     })
     .join('');
 
   const totalRow = (label, val, bold) => `<tr>
-      <td style="padding:4px 0;font:${bold ? 'bold ' : ''}14px/1.4 Arial,sans-serif;color:${bold ? '#1b2330' : '#6b7280'};">${escapeHtml(label)}</td>
-      <td style="padding:4px 0;font:${bold ? 'bold ' : ''}14px/1.4 Arial,sans-serif;color:${bold ? '#1b2330' : '#6b7280'};text-align:right;white-space:nowrap;">${val}</td>
+      <td width="60%" style="width:60%;padding:4px 8px 4px 0;font:${bold ? 'bold ' : ''}14px/1.4 Arial,sans-serif;color:${bold ? '#1b2330' : '#6b7280'};">${escapeHtml(label)}</td>
+      <td width="40%" align="right" style="width:40%;padding:4px 0;font:${bold ? 'bold ' : ''}14px/1.4 Arial,sans-serif;color:${bold ? '#1b2330' : '#6b7280'};text-align:right;white-space:nowrap;">${val}</td>
     </tr>`;
 
   const totals = [
@@ -150,10 +150,15 @@ function receiptHtml(order) {
     ? `${escapeHtml(order.delivery_date)}${order.slot_or_window ? ` &middot; ${escapeHtml(order.slot_or_window)}` : ''}`
     : '';
 
-  return `<!doctype html><html><body style="margin:0;padding:0;background:#eef1f7;">
+  return `<!doctype html><html><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  </head><body style="margin:0;padding:0;background:#eef1f7;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f7;padding:24px 0;">
-   <tr><td align="center">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(27,35,48,.08);">
+   <tr><td align="center" style="padding:0 12px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(27,35,48,.08);">
       <tr><td style="background:${NAVY};padding:24px 28px;">
         <span style="font:bold 22px Arial,sans-serif;color:#ffffff;letter-spacing:.5px;">Sofnade</span>
         <span style="display:inline-block;margin-left:10px;font:bold 11px Arial,sans-serif;color:${NAVY};background:${GOLD};padding:3px 10px;border-radius:999px;">PAID</span>
