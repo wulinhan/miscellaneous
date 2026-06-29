@@ -181,7 +181,7 @@
     /* Orders table */
     .otable-wrap { overflow-x:auto; }
     .otable { width:100%; min-width:760px; border-collapse:separate; border-spacing:0; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
-    .otable thead th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); padding:11px 12px; border-bottom:1px solid var(--line); background:#fafbfe; position:sticky; top:var(--thead-top, 190px); z-index:3; }
+    .otable thead th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); padding:11px 12px; border-bottom:1px solid var(--line); background:#fafbfe; }
     .otable td { padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:middle; font-size:14px; }
     .orow:hover td { background:#f8faff; }
     .orow.open td { background:#f1f5ff; }
@@ -914,8 +914,7 @@
       if (!filters) return;
       const fr = filters.getBoundingClientRect();
       const stuck = fr.top <= 80;          // sticky engaged (scrolled)
-      const thead = document.querySelector('#list thead');
-      const ref = thead ? thead.getBoundingClientRect().bottom : fr.bottom;
+      const ref = fr.bottom;               // fade rows as they pass under the sticky filter bar
       document.querySelectorAll('#list tbody tr, #list .kcard').forEach(el => {
         if (el.offsetParent === null) return;
         if (!stuck) { el.style.opacity = ''; return; }
