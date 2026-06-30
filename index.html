@@ -9,7 +9,7 @@
   <title>Sofnade — Drinks, Sweets, Snacks & Gift Sets</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=32">
+  <link rel="stylesheet" href="css/styles.css?v=33">
 </head>
 <body>
   <div id="header"></div>
@@ -57,14 +57,23 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=32"></script>
-  <script src="js/config.js?v=32"></script>
-  <script src="js/store-data.js?v=32"></script>
-  <script src="js/images.js?v=32"></script>
-  <script src="js/cart.js?v=32"></script>
-  <script src="js/common.js?v=32"></script>
+  <!-- Desktop quick-view product modal -->
+  <div id="pdp-modal-backdrop" class="pdp-modal-backdrop"></div>
+  <div id="pdp-modal" class="pdp-modal" role="dialog" aria-modal="true" aria-label="Product details">
+    <button class="pdp-modal-close" type="button" aria-label="Close">×</button>
+    <div class="pdp-modal-body" id="pdp-modal-body"></div>
+  </div>
+
+  <script src="data/products.js?v=33"></script>
+  <script src="js/config.js?v=33"></script>
+  <script src="js/store-data.js?v=33"></script>
+  <script src="js/images.js?v=33"></script>
+  <script src="js/cart.js?v=33"></script>
+  <script src="js/common.js?v=33"></script>
+  <script src="js/pdp.js?v=33"></script>
   <script>
     renderChrome('shop');
+    const INDEX_TITLE = document.title;
 
     // Active filter comes from ?cat= so nav links + sidebar stay in sync.
     let activeFilter = param('cat'); // null = All
@@ -152,16 +161,16 @@
       const chips = cat ? `<span class="tag-chip cat">${cat}</span>` : '';
       return `
         <article class="card">
-          <a class="card-media" href="product.html?id=${p.id}">
+          <a class="card-media" href="/product/${p.id}" data-pslug="${p.id}">
             <div class="card-tags">${chips}</div>
             <img src="${productImage(p, 0)}" alt="${p.title}" loading="lazy">
           </a>
           <div class="card-body">
-            <h3><a href="product.html?id=${p.id}">${p.title}</a></h3>
+            <h3><a href="/product/${p.id}" data-pslug="${p.id}">${p.title}</a></h3>
             <p class="card-desc">${p.shortDesc}</p>
             <div class="card-foot">
               <span class="price">${hasSizeChoice(p) ? '<span class="from">from </span>' : ''}${money(p.price)}<span class="from"> / ${p.unit}</span></span>
-              <a class="btn ghost" href="product.html?id=${p.id}">View</a>
+              <a class="btn ghost" href="/product/${p.id}" data-pslug="${p.id}">View</a>
             </div>
           </div>
         </article>`;
@@ -228,6 +237,54 @@
         render();
       });
     }
+
+    /* ---- Desktop quick-view modal + /product/<slug> routing ----
+       On desktop, product links open a large modal with the full detail
+       (rendered by the shared pdp.js). Clicking outside / Esc / Back closes it
+       and returns to the listing. On mobile the links navigate to the page. */
+    function openProductModal(slug, push) {
+      const p = getProduct(slug);
+      if (!p || !p.tags) { location.href = '/product/' + slug; return; }
+      const body = document.getElementById('pdp-modal-body');
+      body.innerHTML =
+        '<div class="breadcrumb" id="crumb"></div>' +
+        '<div id="pdp"></div>' +
+        '<section class="section" id="also-bought-section" style="display:none"><h2>Customers also bought</h2><div class="grid" id="also-bought"></div></section>';
+      renderPDP(p);
+      body.scrollTop = 0;
+      document.getElementById('pdp-modal').classList.add('open');
+      document.getElementById('pdp-modal-backdrop').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      document.title = p.title + ' — Sofnade';
+      if (push !== false) history.pushState({ pdp: slug }, '', '/product/' + slug);
+    }
+    function hideProductModal() {
+      document.getElementById('pdp-modal').classList.remove('open');
+      document.getElementById('pdp-modal-backdrop').classList.remove('open');
+      document.body.style.overflow = '';
+      document.title = INDEX_TITLE;
+    }
+    function dismissProductModal() {
+      if (history.state && history.state.pdp) history.back(); // restore the listing URL
+      else hideProductModal();
+    }
+    window.addEventListener('popstate', (e) => {
+      const slug = e.state && e.state.pdp;
+      if (slug) openProductModal(slug, false);
+      else hideProductModal();
+    });
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[data-pslug]');
+      if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; // allow new-tab
+      if (!window.matchMedia('(min-width: 861px)').matches) return;       // mobile navigates
+      e.preventDefault();
+      openProductModal(a.getAttribute('data-pslug'), true);
+    });
+    document.getElementById('pdp-modal-backdrop').addEventListener('click', dismissProductModal);
+    document.querySelector('.pdp-modal-close').addEventListener('click', dismissProductModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById('pdp-modal').classList.contains('open')) dismissProductModal();
+    });
 
     // Load CMS content (if configured), then render. Falls back to built-in data.
     (window.loadStore ? window.loadStore() : Promise.resolve()).then(() => {
