@@ -28,7 +28,7 @@ function renderChrome(active) {
         <a href="index.html?cat=Gift%20Sets">Gift Sets</a>
       </nav>
       <div class="header-actions">
-        <a class="cart-link" href="checkout.html">
+        <a class="cart-link" href="checkout.html" onclick="openCart(); return false;">
           Cart <span class="cart-badge" data-cart-count>0</span>
         </a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
@@ -79,6 +79,23 @@ function renderChrome(active) {
     document.body.appendChild(wa);
   }
 
+  // Cart drawer (slide-over sidebar) with free-delivery progress.
+  if (!document.getElementById('cart-drawer')) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML =
+      `<div id="cart-backdrop" class="cart-backdrop"></div>` +
+      `<aside id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-label="Your cart">` +
+      `<div class="cart-head"><span>Your cart</span><button class="cart-close" type="button" aria-label="Close">×</button></div>` +
+      `<div class="cart-ship" id="cart-ship"></div>` +
+      `<div class="cart-body" id="cart-body"></div>` +
+      `<div class="cart-foot" id="cart-foot"></div>` +
+      `</aside>`;
+    while (wrap.firstChild) document.body.appendChild(wrap.firstChild);
+    document.getElementById('cart-backdrop').addEventListener('click', closeCart);
+    document.querySelector('#cart-drawer .cart-close').addEventListener('click', closeCart);
+  }
+  updateFreeshipMobile();
+
   refreshCartBadges();
 }
 
@@ -99,6 +116,87 @@ function money(n) {
 function param(name) {
   return new URLSearchParams(location.search).get(name);
 }
+
+/* =========================================================================
+   CART DRAWER + FREE-DELIVERY PROGRESS
+   A slide-over cart (desktop sidebar) and a mobile "how much more for free
+   delivery" banner, both driven by the shared Cart and SETTINGS.
+   ========================================================================= */
+function freeShipState() {
+  const threshold = (typeof SETTINGS !== 'undefined' && SETTINGS.freeDeliveryThreshold) || 150;
+  const subtotal = (typeof Cart !== 'undefined') ? Cart.subtotal() : 0;
+  return {
+    threshold: threshold,
+    subtotal: subtotal,
+    remaining: Math.max(0, threshold - subtotal),
+    qualified: subtotal > 0 && subtotal >= threshold,
+    pct: threshold > 0 ? Math.min(100, (subtotal / threshold) * 100) : 0
+  };
+}
+function freeShipLabel(st) {
+  if (st.subtotal <= 0) return `Spend <strong>${money(st.threshold)}</strong> to unlock free delivery`;
+  return st.qualified
+    ? '🎉 <strong>You\'ve unlocked free delivery!</strong>'
+    : `You're <strong>${money(st.remaining)}</strong> away from free delivery`;
+}
+function freeShipBarHTML(st) {
+  return `<div class="fs-track"><div class="fs-fill" style="width:${st.pct}%"></div></div>` +
+         `<div class="fs-label">${freeShipLabel(st)}</div>`;
+}
+function updateFreeshipMobile() {
+  const el = document.getElementById('freeship-mobile');
+  if (el) el.innerHTML = freeShipBarHTML(freeShipState());
+}
+
+function openCart() {
+  renderCartDrawer();
+  const d = document.getElementById('cart-drawer'), b = document.getElementById('cart-backdrop');
+  if (d) { d.classList.add('open'); b.classList.add('open'); document.body.style.overflow = 'hidden'; }
+}
+function closeCart() {
+  const d = document.getElementById('cart-drawer'), b = document.getElementById('cart-backdrop');
+  if (d) { d.classList.remove('open'); b.classList.remove('open'); document.body.style.overflow = ''; }
+}
+function cartInc(key) { const l = Cart.all().find(x => x.key === key); if (l) Cart.setQty(key, l.qty + 1); }
+function cartDec(key) { const l = Cart.all().find(x => x.key === key); if (l) Cart.setQty(key, l.qty - 1); }
+function cartRemove(key) { Cart.remove(key); }
+function cartLineHTML(l) {
+  const p = (typeof getProduct === 'function') ? getProduct(l.productId) : null;
+  const title = p ? p.title : l.productId;
+  const img = (typeof productImage === 'function' && p) ? productImage(p, 0) : '';
+  const line = Cart.unitPrice(l) * l.qty;
+  return `<div class="cart-line">` +
+    `<img class="cl-img" src="${img}" alt="" loading="lazy">` +
+    `<div class="cl-main">` +
+      `<div class="cl-title">${title}</div>` +
+      (l.size ? `<div class="cl-sub">${l.size}</div>` : '') +
+      `<div class="cl-qty">` +
+        `<button type="button" onclick="cartDec('${l.key}')" aria-label="Decrease">−</button>` +
+        `<span>${l.qty}</span>` +
+        `<button type="button" onclick="cartInc('${l.key}')" aria-label="Increase">+</button>` +
+        `<button type="button" class="cl-rm" onclick="cartRemove('${l.key}')">Remove</button>` +
+      `</div>` +
+    `</div>` +
+    `<div class="cl-price">${money(line)}</div>` +
+  `</div>`;
+}
+function renderCartDrawer() {
+  const body = document.getElementById('cart-body');
+  if (!body) return;
+  document.getElementById('cart-ship').innerHTML = freeShipBarHTML(freeShipState());
+  const foot = document.getElementById('cart-foot');
+  const lines = Cart.all();
+  if (!lines.length) {
+    body.innerHTML = `<div class="cart-empty">Your cart is empty.</div>`;
+    foot.innerHTML = `<a class="btn block" href="index.html">Start shopping</a>`;
+    return;
+  }
+  body.innerHTML = lines.map(cartLineHTML).join('');
+  foot.innerHTML = `<div class="cart-subtotal"><span>Subtotal</span><span>${money(Cart.subtotal())}</span></div>` +
+    `<a class="btn block" href="checkout.html">Checkout</a>`;
+}
+document.addEventListener('cart:changed', function () { renderCartDrawer(); updateFreeshipMobile(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCart(); });
 
 /* =========================================================================
    SCHEDULE — delivery date / slot / fee logic shared by the product page and
