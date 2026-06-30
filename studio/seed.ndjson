@@ -4,7 +4,7 @@
 {"_id":"category-snacks","_type":"category","title":"Snacks","order":3}
 {"_id":"category-gift-sets","_type":"category","title":"Gift Sets","order":4}
 {"_id":"category-housebake-cookies","_type":"category","title":"Housebake Cookies","order":5}
-{"_id":"category-retro-snacks","_type":"category","title":"Retro Snacks","order":6}
+{"_id":"category-retro-snacks","_type":"category","title":"National Day Snacks","order":6}
 {"_id":"category-deepavali","_type":"category","title":"Deepavali","order":7}
 {"_id":"category-hari-raya","_type":"category","title":"Hari Raya","order":8}
 {"_id":"topping-pearls","_type":"topping","title":"Pearls","slug":{"_type":"slug","current":"pearls"},"price":0.5}

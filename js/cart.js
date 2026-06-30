@@ -58,6 +58,7 @@ const Cart = {
       lines.push({ key, productId, qty, size, addons: addons.slice(), sugar });
     }
     _writeCart(lines);
+    document.dispatchEvent(new CustomEvent('cart:added'));
   },
 
   setQty(key, qty) {

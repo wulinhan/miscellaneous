@@ -196,6 +196,7 @@ function renderCartDrawer() {
     `<a class="btn block" href="checkout.html">Checkout</a>`;
 }
 document.addEventListener('cart:changed', function () { renderCartDrawer(); updateFreeshipMobile(); });
+document.addEventListener('cart:added', function () { openCart(); }); // auto-open on add to cart
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCart(); });
 
 /* =========================================================================
