@@ -22,7 +22,7 @@ function renderChrome(active) {
       <nav class="main-nav" id="main-nav">
         <a href="index.html" class="${active === 'shop' ? 'active' : ''}">Shop</a>
         <a href="index.html?cat=Christmas%20Festive">Christmas Festive</a>
-        <a href="index.html?cat=Bubble%20Tea">Bubble Tea</a>
+        <a href="index.html?cat=Drinks">Drinks</a>
         <a href="index.html?cat=Sweets">Sweets</a>
         <a href="index.html?cat=Snacks">Snacks</a>
         <a href="index.html?cat=Gift%20Sets">Gift Sets</a>
@@ -42,7 +42,7 @@ function renderChrome(active) {
   <footer class="site-footer">
     <div class="wrap">
       <div>© ${new Date().getFullYear()} Sofnade — Crafted fresh since 2015.</div>
-      <div>Bubble tea · Sweets · Snacks · Gift sets · Delivered across Singapore</div>
+      <div>Drinks · Sweets · Snacks · Gift sets · Delivered across Singapore</div>
     </div>
   </footer>`;
 

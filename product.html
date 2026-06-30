@@ -9,7 +9,7 @@
   <title>Product — Sofnade</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=31">
+  <link rel="stylesheet" href="css/styles.css?v=32">
 </head>
 <body>
   <div id="header"></div>
@@ -29,12 +29,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=31"></script>
-  <script src="js/config.js?v=31"></script>
-  <script src="js/store-data.js?v=31"></script>
-  <script src="js/images.js?v=31"></script>
-  <script src="js/cart.js?v=31"></script>
-  <script src="js/common.js?v=31"></script>
+  <script src="data/products.js?v=32"></script>
+  <script src="js/config.js?v=32"></script>
+  <script src="js/store-data.js?v=32"></script>
+  <script src="js/images.js?v=32"></script>
+  <script src="js/cart.js?v=32"></script>
+  <script src="js/common.js?v=32"></script>
   <script>
     renderChrome();
 
@@ -62,13 +62,13 @@
       if (p.id === 'festive-drinks') return 'One sharing party bucket (1.5L) of your chosen festive drink, with serving cups, lids and wide straws for the table.';
       if (p.id === 'chocolate-gift-bag') return 'An assortment of our hand-finished chocolates and truffles, arranged in a kraft gift box, tied with a ribbon and finished with a personalised greeting card.';
       if (p.id === 'festive-gift-bag') return 'Sealed pouches of our Premium Mixed Nuts and Trail Mix, packed into a reusable printed festive tote, ready to gift.';
-      if (p.category === 'Bubble Tea') return `One freshly shaken ${p.title} (${size}), served over ice with a sealed dome lid and a wide boba straw. Any toppings you add are prepared fresh in store.`;
+      if (p.category === 'Drinks') return `One freshly shaken ${p.title} (${size}), served over ice with a sealed dome lid and a wide boba straw. Any toppings you add are prepared fresh in store.`;
       if (p.category === 'Snacks') return `${p.title} sealed fresh in a resealable ${size.toLowerCase()}, ready to snack on or share.`;
       return `${size} of our freshly made ${p.title}, arranged and packed in our signature kraft packaging.`;
     }
 
     function portionsText(p) {
-      if (p.category === 'Bubble Tea') {
+      if (p.category === 'Drinks') {
         if (p.id === 'festive-drinks') return 'The party bucket holds about 1.5L, enough to pour 4 to 6 cups. Built for sharing at gatherings.';
         return 'Regular is 500ml and Large is 700ml. Each cup serves one, so size up if you are extra thirsty.';
       }
@@ -81,7 +81,7 @@
     }
 
     function storageText(p) {
-      if (p.category === 'Bubble Tea') return 'Best enjoyed within 2 to 3 hours of pickup or delivery. Keep chilled and give it a gentle shake before sipping; pearls and toppings are at their best fresh.';
+      if (p.category === 'Drinks') return 'Best enjoyed within 2 to 3 hours of pickup or delivery. Keep chilled and give it a gentle shake before sipping; pearls and toppings are at their best fresh.';
       if (p.id === 'chocolate-truffles' || p.id === 'chocolate-gift-bag') return 'Store in a cool, dry place away from direct sunlight and enjoy within 2 weeks. Avoid the fridge, which can dull the shine and flavour of the chocolate.';
       if (p.category === 'Snacks' || p.id === 'festive-gift-bag') return 'Reseal the pack after opening and keep in a cool, dry place. Best enjoyed within 4 weeks.';
       return 'Keeps for up to 5 days in an airtight container at room temperature. A few seconds in a warm oven brings back that just-baked texture.';
@@ -153,7 +153,7 @@
       document.getElementById('crumb').innerHTML =
         `<a href="index.html">Shop</a> / <a href="index.html?cat=${encodeURIComponent(cat)}">${cat}</a> / ${p.title}`;
 
-      const isDrink = p.tags.includes('Bubble Tea');
+      const isDrink = p.tags.includes('Drinks');
 
       // Size selector (custom pills) only when there's a genuine choice of sizes.
       const sizeField = hasSizeChoice(p) ? `
