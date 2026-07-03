@@ -1,7 +1,7 @@
-// Best-effort fulfilment notifications for a PAID order: mirror it into a Notion
-// database (for staff) and email the customer a receipt via Resend. No SDKs —
-// plain fetch. Each channel no-ops when its env vars are missing, and onPaid()
-// never throws, so a notification failure can never fail the webhook/verify call.
+// Best-effort fulfilment notifications: mirror an order into a Notion database
+// (for staff) and email the customer via Resend. No SDKs — plain fetch. Each
+// channel no-ops when its env vars are missing, and the on* helpers never throw,
+// so a notification failure can never fail the webhook/verify/checkout call.
 
 function money(n, ccy) {
   return `${ccy || 'SGD'} ${Number(n || 0).toFixed(2)}`;
@@ -93,7 +93,7 @@ const GOLD = '#ffc629';
 const WA_GREEN = '#25d366';
 
 // Support WhatsApp number — digits only, no '+'. Configurable; defaults to the
-// Sofnade line. Used for the "Message us on WhatsApp" CTA in receipts.
+// Sofnade line. Used for the "Message us on WhatsApp" CTA in the emails.
 function supportWa() {
   return (process.env.SUPPORT_WHATSAPP || '6589309756').replace(/\D/g, '');
 }
@@ -107,9 +107,15 @@ function waHref(order) {
   return `https://wa.me/${supportWa()}?text=${encodeURIComponent(msg)}`;
 }
 
-// Branded, email-client-safe receipt: table layout + inline styles only (no
-// <style> blocks / flexbox / external CSS, which many clients strip).
-function receiptHtml(order) {
+function firstName(order) {
+  return escapeHtml(((order.customer && order.customer.name) || '').split(' ')[0] || 'there');
+}
+
+// Branded, email-client-safe order email: table layout + inline styles only (no
+// <style> blocks / flexbox / external CSS, which many clients strip). `opts`
+// swaps the badge/heading/intro/footer so the same layout serves both a paid
+// receipt and an unpaid "request received" confirmation.
+function orderEmailHtml(order, opts) {
   const q = order.quote || {};
   const ccy = q.currency || 'SGD';
   const c = order.customer || {};
@@ -161,11 +167,11 @@ function receiptHtml(order) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(27,35,48,.08);">
       <tr><td style="background:${NAVY};padding:24px 28px;">
         <span style="font:bold 22px Arial,sans-serif;color:#ffffff;letter-spacing:.5px;">Sofnade</span>
-        <span style="display:inline-block;margin-left:10px;font:bold 11px Arial,sans-serif;color:${NAVY};background:${GOLD};padding:3px 10px;border-radius:999px;">PAID</span>
+        <span style="display:inline-block;margin-left:10px;font:bold 11px Arial,sans-serif;color:${NAVY};background:${GOLD};padding:3px 10px;border-radius:999px;">${escapeHtml(opts.badge)}</span>
       </td></tr>
       <tr><td style="padding:28px;">
-        <h1 style="margin:0 0 6px;font:bold 20px Arial,sans-serif;color:#1b2330;">Thanks for your order, ${escapeHtml((c.name || '').split(' ')[0] || 'there')}!</h1>
-        <p style="margin:0 0 18px;font:14px/1.6 Arial,sans-serif;color:#6b7280;">Order <strong style="color:#1b2330;">${escapeHtml(order.id)}</strong> is confirmed and paid. Here is your summary.</p>
+        <h1 style="margin:0 0 6px;font:bold 20px Arial,sans-serif;color:#1b2330;">${opts.heading}</h1>
+        <p style="margin:0 0 18px;font:14px/1.6 Arial,sans-serif;color:#6b7280;">${opts.intro}</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemRows}</table>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-top:2px solid ${NAVY};padding-top:8px;">${totals}</table>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;background:#f7f8fb;border-radius:10px;">
@@ -181,7 +187,7 @@ function receiptHtml(order) {
         <p style="margin:6px 0 0;font:13px/1.5 Arial,sans-serif;color:#6b7280;text-align:center;">Questions about your order? Reach us anytime at ${supportWaPretty()}.</p>
       </td></tr>
       <tr><td style="background:#f7f8fb;padding:18px 28px;border-top:1px solid #e6e7ec;">
-        <p style="margin:0;font:12px/1.6 Arial,sans-serif;color:#9aa1ad;">Payment ref: ${escapeHtml(order.razorpay_payment_id || order.razorpay_order_id || '-')}<br>
+        <p style="margin:0;font:12px/1.6 Arial,sans-serif;color:#9aa1ad;">${opts.footerLine}<br>
         &copy; ${new Date().getFullYear()} Sofnade &middot; Crafted fresh &middot; Delivered across Singapore</p>
       </td></tr>
     </table>
@@ -190,16 +196,27 @@ function receiptHtml(order) {
   </body></html>`;
 }
 
+function receiptHtml(order) {
+  return orderEmailHtml(order, {
+    badge: 'PAID',
+    heading: `Thanks for your order, ${firstName(order)}!`,
+    intro: `Order <strong style="color:#1b2330;">${escapeHtml(order.id)}</strong> is confirmed and paid. Here is your summary.`,
+    footerLine: `Payment ref: ${escapeHtml(order.razorpay_payment_id || order.razorpay_order_id || '-')}`,
+  });
+}
+
+function requestHtml(order) {
+  return orderEmailHtml(order, {
+    badge: 'REQUEST RECEIVED',
+    heading: `Thank you, ${firstName(order)}!`,
+    intro: `We have received your order request <strong style="color:#1b2330;">${escapeHtml(order.id)}</strong>. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment. Here is a summary of your request.`,
+    footerLine: `Order ref: ${escapeHtml(order.id)}`,
+  });
+}
+
 // Plain-text alternative (improves deliverability and accessibility).
-function receiptText(order) {
-  const c = order.customer || {};
-  const lines = [
-    `Thanks for your order, ${c.name || ''}!`.trim(),
-    `Order ${order.id} is confirmed and paid.`,
-    '',
-    ...summaryLines(order),
-    '',
-  ];
+function orderEmailText(order, headingText, introText) {
+  const lines = [headingText, introText, '', ...summaryLines(order), ''];
   if (order.delivery_date) {
     lines.push(
       `${order.fulfilment === 'delivery' ? 'Delivery' : 'Pick-up'}: ${order.delivery_date}${order.slot_or_window ? ` (${order.slot_or_window})` : ''}`,
@@ -210,19 +227,25 @@ function receiptText(order) {
   lines.push('- Sofnade');
   return lines.join('\n');
 }
+function receiptText(order) {
+  const c = order.customer || {};
+  return orderEmailText(order, `Thanks for your order, ${c.name || ''}!`.trim(), `Order ${order.id} is confirmed and paid.`);
+}
+function requestText(order) {
+  const c = order.customer || {};
+  return orderEmailText(
+    order,
+    `Thank you, ${c.name || ''}!`.trim(),
+    `We have received your order request ${order.id}. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment.`,
+  );
+}
 
-async function sendReceipt(order) {
+async function sendEmail(order, subject, html, text) {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RECEIPT_FROM;
   const c = order.customer || {};
   if (!key || !from || !c.email) return; // not configured / no recipient
-  const payload = {
-    from,
-    to: [c.email],
-    subject: `Your Sofnade order ${order.id} is confirmed`,
-    html: receiptHtml(order),
-    text: receiptText(order),
-  };
+  const payload = { from, to: [c.email], subject, html, text };
   if (process.env.ORDER_NOTIFY_EMAIL) payload.bcc = [process.env.ORDER_NOTIFY_EMAIL];
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -231,16 +254,29 @@ async function sendReceipt(order) {
   });
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
 }
+async function sendReceipt(order) {
+  return sendEmail(order, `Your Sofnade order ${order.id} is confirmed`, receiptHtml(order), receiptText(order));
+}
+async function sendRequestEmail(order) {
+  return sendEmail(order, `We have received your Sofnade order ${order.id}`, requestHtml(order), requestText(order));
+}
 
 // Run both channels independently; never throws. Returns a small status array
 // so callers can log what happened.
-async function onPaid(order) {
-  const settled = await Promise.allSettled([mirrorToNotion(order), sendReceipt(order)]);
+async function settleChannels(tasks) {
+  const settled = await Promise.allSettled(tasks);
   const names = ['notion', 'resend'];
   return settled.map((r, i) => {
     if (r.status === 'rejected') console.error(`[notify] ${names[i]} failed:`, r.reason && r.reason.message);
     return { channel: names[i], ok: r.status === 'fulfilled' };
   });
 }
+async function onPaid(order) {
+  return settleChannels([mirrorToNotion(order), sendReceipt(order)]);
+}
+// Unpaid "Vendors@SG" flow: confirm the request was received (no payment taken).
+async function onOrderRequested(order) {
+  return settleChannels([mirrorToNotion(order), sendRequestEmail(order)]);
+}
 
-module.exports = { onPaid, mirrorToNotion, sendReceipt };
+module.exports = { onPaid, onOrderRequested, mirrorToNotion, sendReceipt, sendRequestEmail };

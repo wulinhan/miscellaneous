@@ -9,7 +9,7 @@
   <title>Checkout — Sofnade</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=34">
+  <link rel="stylesheet" href="css/styles.css?v=35">
 </head>
 <body>
   <div id="header"></div>
@@ -134,6 +134,9 @@
           </label>
 
           <button class="btn block" id="place-order" disabled>Place order</button>
+          <div class="pay-or"><span>or</span></div>
+          <button class="btn block btn-vendor" id="place-order-vendor" disabled>Vendors@SG</button>
+          <p class="vendor-note">Vendors@SG: submit your order request now and a Sofnade team member will follow up shortly to confirm and arrange payment.</p>
         </div>
       </aside>
     </div>
@@ -141,12 +144,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=34"></script>
-  <script src="js/config.js?v=34"></script>
-  <script src="js/store-data.js?v=34"></script>
-  <script src="js/images.js?v=34"></script>
-  <script src="js/cart.js?v=34"></script>
-  <script src="js/common.js?v=34"></script>
+  <script src="data/products.js?v=35"></script>
+  <script src="js/config.js?v=35"></script>
+  <script src="js/store-data.js?v=35"></script>
+  <script src="js/images.js?v=35"></script>
+  <script src="js/cart.js?v=35"></script>
+  <script src="js/common.js?v=35"></script>
   <script>
     renderChrome();
 
@@ -436,6 +439,8 @@
         && dateEl && dateEl.value
         && slotOk;
       document.getElementById('place-order').disabled = !ok;
+      const vb = document.getElementById('place-order-vendor');
+      if (vb) vb.disabled = !ok;
     }
 
     /* ---------- Wire up ---------- */
@@ -475,32 +480,38 @@
 
       // Render the success screen (used for real payment, test mode, and the
       // static-only demo host).
-      function showConfirmation(orderId) {
+      function showConfirmation(orderId, opts) {
+        opts = opts || {};
         const ds = document.getElementById('date-select');
         const date = ds.options[ds.selectedIndex].text;
         const name = detail('name').split(' ')[0];
         const hi = name ? `Thank you, ${name}!` : 'Thank you for your order!';
-        let when;
-        if (orderIsFresh()) {
-          const slot = Schedule.freshSlots().find(s => s.value === selectedSlot);
-          when = `during the <strong>${slot ? slot.label : selectedSlot}</strong> slot`;
-        } else if (specificTimeOn && specificTime) {
-          const t = Schedule.specificTimes().find(x => x.value === specificTime);
-          when = `at your preferred time of <strong>${t ? t.label : specificTime}</strong>`;
+        let line;
+        if (opts.vendors) {
+          line = `Your order request has been sent. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment. We appreciate you choosing Sofnade!`;
         } else {
-          when = `within our <strong>${SETTINGS.shelfWindowLabel || '9:00 AM – 5:00 PM'}</strong> window`;
+          let when;
+          if (orderIsFresh()) {
+            const slot = Schedule.freshSlots().find(s => s.value === selectedSlot);
+            when = `during the <strong>${slot ? slot.label : selectedSlot}</strong> slot`;
+          } else if (specificTimeOn && specificTime) {
+            const t = Schedule.specificTimes().find(x => x.value === specificTime);
+            when = `at your preferred time of <strong>${t ? t.label : specificTime}</strong>`;
+          } else {
+            when = `within our <strong>${SETTINGS.shelfWindowLabel || '9:00 AM – 5:00 PM'}</strong> window`;
+          }
+          line = deliveryMethod === 'pickup'
+            ? `You can collect your order on <strong>${date}</strong> ${when}.`
+            : `We will deliver to <strong>${detail('addr1')}${detail('postal') ? ', Singapore ' + detail('postal') : ''}</strong> on <strong>${date}</strong> ${when}.`;
         }
-        const line = deliveryMethod === 'pickup'
-          ? `You can collect your order on <strong>${date}</strong> ${when}.`
-          : `We will deliver to <strong>${detail('addr1')}${detail('postal') ? ', Singapore ' + detail('postal') : ''}</strong> on <strong>${date}</strong> ${when}.`;
         Cart.clear();
-        toast('Order placed! 🎉');
+        toast(opts.vendors ? 'Request sent! 🙌' : 'Order placed! 🎉');
         const waText = orderId
           ? `Hi Sofnade! I just placed order ${orderId} and have a question.`
           : 'Hi Sofnade! I just placed an order and have a question.';
         document.getElementById('checkout').innerHTML = `
           <div class="empty-state" style="grid-column:1/-1">
-            <div class="big">✅</div>
+            <div class="big">${opts.vendors ? '📩' : '✅'}</div>
             <h2>${hi}</h2>
             <p>${line}</p>
             <div class="confirm-actions">
@@ -590,6 +601,30 @@
         }
         if (json.payment && json.payment.configured) openRazorpay(json);
         else showConfirmation(json && json.orderId);  // test mode (no Razorpay keys): same confirmation
+      });
+
+      // Vendors@SG: create the order unpaid; a team member follows up.
+      document.getElementById('place-order-vendor').addEventListener('click', async () => {
+        const btn = document.getElementById('place-order-vendor');
+        btn.disabled = true; btn.textContent = 'Sending request…';
+        const reset = () => { btn.disabled = false; btn.textContent = 'Vendors@SG'; };
+        let res;
+        try {
+          res = await fetch('/api/checkout', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(Object.assign({}, checkoutPayload(), { paymentMethod: 'vendors_sg' }))
+          });
+        } catch (e) {
+          return showConfirmation(null, { vendors: true });   // no API reachable (static host)
+        }
+        if (res.status === 404) return showConfirmation(null, { vendors: true });
+        let json = null;
+        try { json = await res.json(); } catch { /* ignore */ }
+        if (!res.ok) {
+          toast((json && json.error) ? json.error : 'Could not send request. Please try again.');
+          return reset();
+        }
+        showConfirmation(json && json.orderId, { vendors: true });
       });
 
       updateScheduleLabels();
