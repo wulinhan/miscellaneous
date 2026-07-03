@@ -67,6 +67,7 @@ module.exports = async (req, res) => {
         slotOrWindow,
         quote,
         razorpayOrderId,
+        paymentMethod: method,
       });
     } catch (e) {
       console.error('[checkout] order persist failed:', e.message);
@@ -80,6 +81,7 @@ module.exports = async (req, res) => {
           id: orderId, status: 'created', customer, fulfilment, postal,
           delivery_date: date, slot_or_window: slotOrWindow,
           quote, amount_total: quote.total, currency: quote.currency,
+          payment_method: 'vendors_sg',
         });
       } catch (e) {
         console.error('[checkout] request notify failed:', e.message);

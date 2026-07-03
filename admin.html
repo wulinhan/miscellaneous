@@ -57,6 +57,10 @@
     .info b { color:#374151; font-weight:600; }
     .items { margin:6px 0; padding-left:18px; font-size:14px; }
     .totals { font-size:13px; color:var(--muted); margin-top:4px; }
+    /* Vendors@SG (unpaid request) marker */
+    .vsg-tag { display:inline-block; font-size:10px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; color:var(--navy); background:var(--gold,#ffc629); border-radius:999px; padding:2px 8px; vertical-align:middle; }
+    .vsg-note { background:#fff8e1; border:1px solid var(--gold,#ffc629); border-radius:10px; padding:10px 14px; margin:10px 0; font-size:13px; color:#1b2330; line-height:1.5; }
+    .vsg-note b { color:var(--navy); }
     /* Boxed payment summary — navy on a low-opacity navy wash */
     .paysum { background:rgba(22,34,74,0.06); border:1px solid rgba(22,34,74,0.16); border-radius:10px; padding:12px 14px; margin:10px 0; color:var(--navy); }
     .ps-h { font-weight:800; font-size:12px; letter-spacing:.03em; text-transform:uppercase; color:var(--navy); margin-bottom:8px; }
@@ -522,7 +526,7 @@
       return `
       <tr class="orow" data-row="${esc(o.id)}">
         <td class="c-chk"><input type="checkbox" class="card-check" ${SELECTED.has(o.id) ? 'checked' : ''} onclick="toggleSelect('${esc(o.id)}', this)" title="Select"></td>
-        <td><span class="id">${esc(o.id)}</span><div class="sub">${when(o.created_at)}</div></td>
+        <td><span class="id">${esc(o.id)}</span>${o.payment_method === 'vendors_sg' ? ' <span class="vsg-tag" title="Vendors@SG — created unpaid">Vendors@SG</span>' : ''}<div class="sub">${when(o.created_at)}</div></td>
         <td><span class="r-cust">${esc(c.name || '—')}</span>${c.business ? `<div class="sub">${esc(c.business)}</div>` : ''}</td>
         <td>${deliv}</td>
         <td><select class="status-sel" style="background-color:${sc}1f;color:${sc};border-color:${sc}66" onchange="quickStatus(this, '${esc(o.id)}')" title="Change status (saves instantly)">${statusOpts}</select></td>
@@ -561,9 +565,11 @@
             <div><b>Email:</b> ${esc(c.email||'—')}</div>
             <div><b>${o.fulfilment === 'delivery' ? 'Deliver to' : 'Fulfilment'}:</b> ${addr}</div>
             <div><b>When:</b> ${o.delivery_date ? esc(o.delivery_date) + (o.slot_or_window ? ' (' + esc(o.slot_or_window) + ')' : '') : '—'}</div>
+            <div><b>Payment:</b> ${o.payment_method === 'vendors_sg' ? 'Vendors@SG <span class="vsg-tag">unpaid</span>' : 'Card (Razorpay)'}</div>
             ${c.notes ? `<div><b>Customer note:</b> ${esc(c.notes)}</div>` : ''}
           </div>
           ${waBtn ? `<div style="margin:2px 0 10px">${waBtn}</div>` : ''}
+          ${o.payment_method === 'vendors_sg' ? `<div class="vsg-note"><b>Vendors@SG request — unpaid.</b> This order was placed via Vendors@SG and no payment has been taken. Follow up with the customer to confirm and arrange payment, then mark it Paid once settled.</div>` : ''}
           ${paymentSummary(o)}
           ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
           <div class="manage">

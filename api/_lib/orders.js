@@ -37,6 +37,7 @@ async function insertPending(record) {
     quote: q,
     amount_total: q.total ?? null,
     currency: q.currency || 'SGD',
+    payment_method: record.paymentMethod === 'vendors_sg' ? 'vendors_sg' : 'card',
     razorpay_order_id: record.razorpayOrderId || null,
     status_history: [{ status: 'created', at: new Date().toISOString(), by: 'system' }],
   };

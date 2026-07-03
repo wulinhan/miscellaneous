@@ -63,10 +63,15 @@ async function mirrorToNotion(order) {
     where,
     when,
     c.notes ? `Notes: ${c.notes}` : '',
+    order.payment_method === 'vendors_sg'
+      ? 'Payment: Vendors@SG - order created UNPAID. Follow up to confirm and arrange payment.'
+      : '',
     '',
     ...summaryLines(order),
     '',
-    `Razorpay: ${order.razorpay_order_id || ''} / ${order.razorpay_payment_id || ''}`,
+    order.payment_method === 'vendors_sg'
+      ? ''
+      : `Razorpay: ${order.razorpay_order_id || ''} / ${order.razorpay_payment_id || ''}`,
   ].filter((t) => t !== '');
   const children = text.map((t) => ({
     object: 'block',
@@ -179,6 +184,7 @@ function orderEmailHtml(order, opts) {
             <strong style="color:${NAVY};">${order.fulfilment === 'delivery' ? 'Delivery' : 'Pick-up'}</strong><br>${where}${when ? `<br>${when}` : ''}
           </td></tr>
         </table>
+        ${opts.infoBox || ''}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 6px;">
           <tr><td align="center">
             <a href="${waHref(order)}" style="display:inline-block;background:${WA_GREEN};color:#ffffff;font:bold 15px Arial,sans-serif;text-decoration:none;padding:14px 26px;border-radius:999px;">Message us on WhatsApp</a>
@@ -206,11 +212,17 @@ function receiptHtml(order) {
 }
 
 function requestHtml(order) {
+  const infoBox = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0 0;background:#fff8e1;border:1px solid ${GOLD};border-radius:10px;">
+          <tr><td style="padding:14px 16px;font:14px/1.5 Arial,sans-serif;color:#1b2330;">
+            <strong style="color:${NAVY};">Payment: Vendors@SG</strong><br>No payment has been taken yet. A Sofnade team member will reach out shortly to confirm your order and arrange payment.
+          </td></tr>
+        </table>`;
   return orderEmailHtml(order, {
     badge: 'REQUEST RECEIVED',
     heading: `Thank you, ${firstName(order)}!`,
-    intro: `We have received your order request <strong style="color:#1b2330;">${escapeHtml(order.id)}</strong>. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment. Here is a summary of your request.`,
-    footerLine: `Order ref: ${escapeHtml(order.id)}`,
+    intro: `We have received your Vendors@SG order request <strong style="color:#1b2330;">${escapeHtml(order.id)}</strong>. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment. Here is a summary of your request.`,
+    footerLine: `Order ref: ${escapeHtml(order.id)} &middot; Vendors@SG`,
+    infoBox,
   });
 }
 
@@ -236,7 +248,7 @@ function requestText(order) {
   return orderEmailText(
     order,
     `Thank you, ${c.name || ''}!`.trim(),
-    `We have received your order request ${order.id}. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment.`,
+    `We have received your Vendors@SG order request ${order.id}. No payment has been taken yet. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment.`,
   );
 }
 
