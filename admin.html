@@ -154,6 +154,8 @@
     .views { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
     .vbtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:8px; padding:7px 14px; font-weight:600; cursor:pointer; }
     .vbtn.cur { background:var(--navy); color:#fff; border-color:var(--navy); }
+    #arch-btn.cur { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .archive-mode { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:#eef1f8; border:1px solid #d7deec; color:#42506e; border-radius:12px; padding:11px 15px; margin-bottom:14px; font-size:14px; }
     .board { display:flex; gap:14px; overflow-x:auto; padding-bottom:10px; align-items:flex-start; }
     .bcol { flex:0 0 264px; width:264px; background:#eef1f7; border-radius:12px; padding:10px; }
     .bcol-h { display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:13px; color:var(--navy); padding:6px 8px; margin-bottom:8px; }
@@ -181,6 +183,7 @@
     .cardmenu-wrap { position:relative; display:inline-flex; align-items:center; }
     .cardmenu-btn { background:#eef1f8; color:var(--navy); border:none; border-radius:8px; width:34px; height:34px; font-size:18px; line-height:1; cursor:pointer; }
     .cardmenu { position:absolute; right:0; top:38px; z-index:20; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:6px; min-width:170px; display:flex; flex-direction:column; }
+    .cardmenu.menu-fixed { position:fixed; right:auto; top:0; left:0; z-index:1000; }
     .cardmenu .mi { background:none; border:none; text-align:left; padding:8px 10px; border-radius:7px; font:inherit; color:#1b2330; cursor:pointer; text-decoration:none; }
     .cardmenu .mi:hover { background:var(--bg); }
     .bulkbar { position:sticky; top:74px; z-index:6; display:flex; align-items:center; gap:10px; background:var(--navy); color:#fff; border-radius:10px; padding:8px 14px; margin-bottom:12px; flex-wrap:wrap; }
@@ -255,10 +258,15 @@
     <header>
       <h1>Sofnade Orders</h1>
       <input id="operator" class="op" placeholder="You (name)" title="Your name — recorded on status changes" oninput="saveOperator()" />
+      <button id="arch-btn" class="btn-ghost btn-sm" onclick="toggleArchivedView()" title="View archived orders">🗄 Archived</button>
       <button class="btn-ghost btn-sm" onclick="load()">Refresh</button>
       <button class="btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </header>
     <div class="wrap">
+      <div id="archive-mode" class="archive-mode hide">
+        <span>🗄 <b>Archived orders</b> — these are hidden from the active list.</span>
+        <button class="btn-light btn-sm" onclick="setArchiveView('active')">← Back to active orders</button>
+      </div>
       <div id="kpis" class="kpis"></div>
       <div class="views">
         <button data-view="list" class="vbtn cur" onclick="setView('list')">List</button>
@@ -843,7 +851,23 @@
       else { dueTodayOnly = false; const fs = document.getElementById('f-status'); fs.value = (fs.value === key) ? '' : key; }
       applyFilters();
     }
-    function setArchiveView(v) { archiveView = v; SELECTED.clear(); updateBulkBar(); applyFilters(); }
+    function setArchiveView(v) {
+      archiveView = v;
+      SELECTED.clear();
+      const sel = document.getElementById('f-archive'); if (sel) sel.value = v;
+      const banner = document.getElementById('archive-mode'); if (banner) banner.classList.toggle('hide', v !== 'archived');
+      const btn = document.getElementById('arch-btn');
+      if (btn) { btn.classList.toggle('cur', v === 'archived'); btn.textContent = v === 'archived' ? '↩ Active orders' : '🗄 Archived'; }
+      updateBulkBar();
+      applyFilters();
+    }
+    // Header shortcut: jump into (or out of) the archived-orders view.
+    function toggleArchivedView() {
+      const next = archiveView === 'archived' ? 'active' : 'archived';
+      if (view !== 'list') setView('list');
+      setArchiveView(next);
+      document.getElementById('list') && document.getElementById('list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     // ---- Sorting ------------------------------------------------------------
     function setSort(v) { sortKey = v; applyFilters(); }
@@ -938,11 +962,32 @@
     function exportSelected() { exportCsv(ALL.filter(o => SELECTED.has(o.id))); }
 
     // ---- Row overflow menu --------------------------------------------------
+    // The menu lives inside the orders table, whose wrapper clips overflow, so
+    // we position it fixed to the viewport on open — it floats over everything.
+    function closeAllCardMenus() {
+      document.querySelectorAll('.cardmenu').forEach(m => {
+        m.classList.add('hide'); m.classList.remove('menu-fixed');
+        m.style.top = ''; m.style.left = '';
+      });
+    }
     function toggleMenu(btn) {
       const menu = btn.nextElementSibling;
-      document.querySelectorAll('.cardmenu').forEach(m => { if (m !== menu) m.classList.add('hide'); });
-      menu.classList.toggle('hide');
+      const willShow = menu.classList.contains('hide');
+      closeAllCardMenus();
+      if (!willShow) return;
+      menu.classList.remove('hide');
+      menu.classList.add('menu-fixed');   // -> position:fixed (measure below)
+      const r = btn.getBoundingClientRect();
+      const mw = menu.offsetWidth, mh = menu.offsetHeight, pad = 8;
+      let left = Math.max(pad, r.right - mw);
+      let top = r.bottom + 6;
+      if (top + mh > window.innerHeight - pad) top = Math.max(pad, r.top - mh - 6); // flip up
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
     }
+    // Fixed menus don't follow the page — close them on any scroll/resize.
+    window.addEventListener('scroll', closeAllCardMenus, true);
+    window.addEventListener('resize', closeAllCardMenus);
     function toggleBbMenu(e) {
       const m = e.currentTarget.nextElementSibling;
       if (!m) return;
@@ -955,10 +1000,10 @@
       if (mi) {
         try { navigator.clipboard.writeText(mi.getAttribute('data-copy')); } catch (_) {}
         const t = mi.textContent; mi.textContent = 'Copied ✓'; setTimeout(() => { mi.textContent = t; }, 1100);
-        document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+        closeAllCardMenus();
         return;
       }
-      if (!e.target.closest('.cardmenu-wrap')) document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+      if (!e.target.closest('.cardmenu-wrap')) closeAllCardMenus();
       if (!e.target.closest('.bb-drop')) document.querySelectorAll('.bb-menu').forEach(m => m.classList.add('hide'));
     });
     document.addEventListener('keydown', (e) => {
@@ -1026,7 +1071,7 @@
 
     // ---- Archive / delete ---------------------------------------------------
     async function archiveOrder(id, archived) {
-      document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+      closeAllCardMenus();
       try {
         const { order } = await api('PATCH', '/orders', { id, archived });
         const idx = ALL.findIndex(o => o.id === id);
@@ -1046,7 +1091,7 @@
 
     let DELETE_ID = null;
     function askDelete(id) {
-      document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+      closeAllCardMenus();
       DELETE_ID = id;
       document.getElementById('del-id').textContent = id;
       const input = document.getElementById('del-input');
