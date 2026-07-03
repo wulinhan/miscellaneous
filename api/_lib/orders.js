@@ -90,15 +90,34 @@ async function markPaid(razorpayOrderId, paymentId) {
 
 // ---- Staff admin reads/writes ---------------------------------------------
 
-// Newest-first list, optionally filtered by status. Returns [] if unconfigured.
-async function listOrders({ status, limit = 200 } = {}) {
+// Newest-first list, optionally filtered by status. `archived` controls which
+// rows come back: 'no' (default, active only), 'only' (archived only), or 'all'.
+// Returns [] if unconfigured.
+async function listOrders({ status, limit = 200, archived = 'no' } = {}) {
   if (!isConfigured()) return [];
   const lim = Math.min(Number(limit) || 200, 500);
   let url = `${base()}?select=*&order=created_at.desc&limit=${lim}`;
   if (status) url += `&status=eq.${encodeURIComponent(status)}`;
+  if (archived === 'only') url += `&archived=is.true`;
+  else if (archived !== 'all') url += `&archived=is.false`;
   const res = await fetch(url, { headers: headers() });
   if (!res.ok) throw new Error(`Supabase list ${res.status}: ${await res.text()}`);
   return res.json();
+}
+
+// Permanently remove one order. Returns true if the row was deleted, false if
+// unconfigured / not found. Irreversible — the admin UI gates this behind a
+// typed confirmation.
+async function deleteOrder(id) {
+  if (!isConfigured() || !id) return false;
+  const url = `${base()}?id=eq.${encodeURIComponent(id)}`;
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: headers({ Prefer: 'return=representation' }),
+  });
+  if (!res.ok) throw new Error(`Supabase delete ${res.status}: ${await res.text()}`);
+  const rows = await res.json().catch(() => []);
+  return Array.isArray(rows) && rows.length > 0;
 }
 
 async function getOne(id) {
@@ -112,7 +131,7 @@ async function getOne(id) {
 // Update a whitelisted set of fields for one order. Returns the updated row, or
 // null if not found / unconfigured. Stamps updated_at, and appends to
 // status_history when the status actually changes (meta.by = who changed it).
-const EDITABLE = ['status', 'staff_notes', 'delivery_date', 'slot_or_window', 'fulfilment', 'preparer', 'driver'];
+const EDITABLE = ['status', 'staff_notes', 'delivery_date', 'slot_or_window', 'fulfilment', 'preparer', 'driver', 'archived'];
 async function updateOrder(id, patch, meta = {}) {
   if (!isConfigured() || !id) return null;
   const set = {};
@@ -178,4 +197,4 @@ async function addStaff(name) {
   return listStaff();
 }
 
-module.exports = { isConfigured, insertPending, markPaid, listOrders, updateOrder, listStaff, addStaff };
+module.exports = { isConfigured, insertPending, markPaid, listOrders, updateOrder, deleteOrder, listStaff, addStaff };

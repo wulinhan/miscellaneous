@@ -61,6 +61,27 @@
     .vsg-tag { display:inline-block; font-size:10px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; color:var(--navy); background:var(--gold,#ffc629); border-radius:999px; padding:2px 8px; vertical-align:middle; }
     .vsg-note { background:#fff8e1; border:1px solid var(--gold,#ffc629); border-radius:10px; padding:10px 14px; margin:10px 0; font-size:13px; color:#1b2330; line-height:1.5; }
     .vsg-note b { color:var(--navy); }
+    .arch-tag { display:inline-block; font-size:10px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; color:#5a6b8c; background:#eef1f8; border:1px solid #d7deec; border-radius:999px; padding:2px 8px; vertical-align:middle; }
+    .archived-banner { background:#eef1f8; border:1px solid #d7deec; color:#42506e; border-radius:10px; padding:9px 13px; margin:2px 0 10px; font-size:13px; font-weight:600; }
+    /* Row menu separator + destructive item */
+    .cardmenu .mi-sep { height:1px; background:var(--line); margin:5px 4px; }
+    .cardmenu .mi-danger { color:#b91c1c; }
+    .cardmenu .mi-danger:hover { background:#fdeaea; }
+    /* Danger zone in the drawer */
+    .danger-zone { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line); }
+    .btn-danger { background:#dc2626; color:#fff; border:none; border-radius:9px; cursor:pointer; font-weight:700; }
+    .btn-danger:hover { background:#b91c1c; }
+    .btn-danger:disabled { background:#e7a9a9; cursor:not-allowed; }
+    /* Typed-confirmation modal */
+    .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:60; }
+    .modal { background:#fff; border-radius:14px; padding:22px 22px 18px; width:100%; max-width:440px; box-shadow:0 20px 60px rgba(15,23,42,.3); }
+    .modal-h { margin:0 0 8px; font-size:18px; color:#1b2330; }
+    .modal-p { margin:0 0 14px; font-size:13.5px; line-height:1.55; color:#5a6b8c; }
+    .modal-p b { color:#1b2330; font-family:ui-monospace,monospace; }
+    .modal-lbl { display:block; font-size:12px; font-weight:700; color:#42506e; margin-bottom:5px; }
+    #del-input { width:100%; box-sizing:border-box; padding:10px 12px; border:1.5px solid var(--line); border-radius:9px; font:14px ui-monospace,monospace; }
+    #del-input:focus { outline:none; border-color:var(--navy); }
+    .modal-acts { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
     /* Boxed payment summary — navy on a low-opacity navy wash */
     .paysum { background:rgba(22,34,74,0.06); border:1px solid rgba(22,34,74,0.16); border-radius:10px; padding:12px 14px; margin:10px 0; color:var(--navy); }
     .ps-h { font-weight:800; font-size:12px; letter-spacing:.03em; text-transform:uppercase; color:var(--navy); margin-bottom:8px; }
@@ -283,6 +304,14 @@
             <input id="f-max" class="num" type="number" min="0" step="1" inputmode="decimal" oninput="applyFilters()" />
           </div>
           <div class="fg">
+            <label>Show</label>
+            <select id="f-archive" onchange="setArchiveView(this.value)">
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div class="fg">
             <label>Sort</label>
             <select id="sort" onchange="setSort(this.value)">
               <option value="new">Newest</option>
@@ -340,6 +369,7 @@
     let view = 'list'; // 'list' | 'status' | 'day'
     let sortKey = 'new';
     let dueTodayOnly = false;
+    let archiveView = 'active'; // 'active' | 'archived' | 'all'
     const SELECTED = new Set();
 
     function saveOperator() { localStorage.setItem('sofnade_operator', document.getElementById('operator').value || ''); }
@@ -526,7 +556,7 @@
       return `
       <tr class="orow" data-row="${esc(o.id)}">
         <td class="c-chk"><input type="checkbox" class="card-check" ${SELECTED.has(o.id) ? 'checked' : ''} onclick="toggleSelect('${esc(o.id)}', this)" title="Select"></td>
-        <td><span class="id">${esc(o.id)}</span>${o.payment_method === 'vendors_sg' ? ' <span class="vsg-tag" title="Vendors@SG — created unpaid">Vendors@SG</span>' : ''}<div class="sub">${when(o.created_at)}</div></td>
+        <td><span class="id">${esc(o.id)}</span>${o.payment_method === 'vendors_sg' ? ' <span class="vsg-tag" title="Vendors@SG — created unpaid">Vendors@SG</span>' : ''}${o.archived ? ' <span class="arch-tag" title="Archived">Archived</span>' : ''}<div class="sub">${when(o.created_at)}</div></td>
         <td><span class="r-cust">${esc(c.name || '—')}</span>${c.business ? `<div class="sub">${esc(c.business)}</div>` : ''}</td>
         <td>${deliv}</td>
         <td><select class="status-sel" style="background-color:${sc}1f;color:${sc};border-color:${sc}66" onchange="quickStatus(this, '${esc(o.id)}')" title="Change status (saves instantly)">${statusOpts}</select></td>
@@ -539,6 +569,9 @@
               ${c.phone ? `<button class="mi" data-copy="${esc(c.phone)}">Copy phone</button>` : ''}
               <button class="mi" data-copy="${esc(addr)}">Copy address</button>
               ${wa ? `<a class="mi" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : ''}
+              <div class="mi-sep"></div>
+              <button class="mi" onclick="archiveOrder('${esc(o.id)}', ${o.archived ? 'false' : 'true'})">${o.archived ? 'Unarchive' : 'Archive'}</button>
+              <button class="mi mi-danger" onclick="askDelete('${esc(o.id)}')">Delete…</button>
             </div>
           </div>
           <button class="open-btn" type="button" onclick="openDrawer('${esc(o.id)}')">Open</button>
@@ -558,6 +591,7 @@
       return `
       <div class="card-row">
         <div class="order-main">
+          ${o.archived ? `<div class="archived-banner">🗄 This order is archived. It is hidden from the active list.</div>` : ''}
           <div class="muted" style="font-size:13px">Placed ${when(o.created_at)}${o.updated_at ? ' · edited ' + when(o.updated_at) : ''}</div>
           <div class="info">
             <div><b>Customer:</b> ${esc(c.name||'—')}</div>
@@ -580,6 +614,10 @@
               <div class="ef who"><label>Driver</label><select data-driver="${esc(o.id)}" onchange="onStaffChange(this)">${staffOptions(o.driver)}</select></div>
               <div class="ef grow"><label>Staff notes</label><textarea data-notes="${esc(o.id)}" placeholder="e.g. called customer, packed, special request…">${esc(o.staff_notes)}</textarea></div>
               <div class="ef act"><button class="btn-gold btn-sm" onclick="save('${esc(o.id)}', this)">Save changes</button><span class="saved hide">Saved ✓</span></div>
+            </div>
+            <div class="danger-zone">
+              <button class="btn-light btn-sm" onclick="archiveOrder('${esc(o.id)}', ${o.archived ? 'false' : 'true'})">${o.archived ? '↩ Unarchive order' : '🗄 Archive order'}</button>
+              <button class="btn-danger btn-sm" onclick="askDelete('${esc(o.id)}')">Delete permanently…</button>
             </div>
           </div>
         </div>
@@ -787,7 +825,7 @@
     // ---- KPI strip ----------------------------------------------------------
     function renderKpis() {
       const today = todaySG();
-      const cnt = (f) => ALL.filter(f).length;
+      const cnt = (f) => ALL.filter(o => !o.archived && f(o)).length;
       const fsv = (document.getElementById('f-status') || {}).value || '';
       const tiles = [
         { key: 'due', label: 'Due today', n: cnt(o => o.delivery_date === today), color: '#1d4ed8', active: dueTodayOnly },
@@ -805,6 +843,7 @@
       else { dueTodayOnly = false; const fs = document.getElementById('f-status'); fs.value = (fs.value === key) ? '' : key; }
       applyFilters();
     }
+    function setArchiveView(v) { archiveView = v; SELECTED.clear(); updateBulkBar(); applyFilters(); }
 
     // ---- Sorting ------------------------------------------------------------
     function setSort(v) { sortKey = v; applyFilters(); }
@@ -938,6 +977,8 @@
       const max = parseFloat(document.getElementById('f-max').value);
 
       const filtered = ALL.filter(o => {
+        if (archiveView === 'active' && o.archived) return false;
+        if (archiveView === 'archived' && !o.archived) return false;
         if (st && o.status !== st) return false;
         if (dueTodayOnly && o.delivery_date !== todaySG()) return false;
         const d = sgDate(o.created_at);
@@ -983,10 +1024,68 @@
       } catch (e) { if (e.message !== 'unauthorized') { showToast('Could not save: ' + e.message, { type: 'err' }); btn.disabled = false; btn.textContent = old; } }
     }
 
+    // ---- Archive / delete ---------------------------------------------------
+    async function archiveOrder(id, archived) {
+      document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+      try {
+        const { order } = await api('PATCH', '/orders', { id, archived });
+        const idx = ALL.findIndex(o => o.id === id);
+        if (idx >= 0 && order) ALL[idx] = order;
+        // If we just archived an order while viewing "Active", it drops out of the
+        // list — close the drawer so we're not left staring at a hidden order.
+        if (DRAWER_ID === id && archived && archiveView === 'active') closeDrawer();
+        else if (DRAWER_ID === id && order) renderDrawerBody(order);
+        applyFilters();
+        showToast(archived ? 'Order archived' : 'Order unarchived', {
+          type: 'ok', actionLabel: 'Undo', onAction: () => archiveOrder(id, !archived),
+        });
+      } catch (e) {
+        if (e.message !== 'unauthorized') showToast('Could not update: ' + e.message, { type: 'err' });
+      }
+    }
+
+    let DELETE_ID = null;
+    function askDelete(id) {
+      document.querySelectorAll('.cardmenu').forEach(m => m.classList.add('hide'));
+      DELETE_ID = id;
+      document.getElementById('del-id').textContent = id;
+      const input = document.getElementById('del-input');
+      input.value = '';
+      document.getElementById('del-confirm').disabled = true;
+      document.getElementById('delete-modal').classList.remove('hide');
+      setTimeout(() => input.focus(), 50);
+    }
+    function onDeleteInput() {
+      const ok = document.getElementById('del-input').value.trim() === DELETE_ID;
+      document.getElementById('del-confirm').disabled = !ok;
+    }
+    function closeDeleteModal() {
+      DELETE_ID = null;
+      document.getElementById('delete-modal').classList.add('hide');
+    }
+    async function doDelete() {
+      const id = DELETE_ID;
+      if (!id) return;
+      const btn = document.getElementById('del-confirm');
+      btn.disabled = true; const old = btn.textContent; btn.textContent = 'Deleting…';
+      try {
+        await api('DELETE', '/orders', { id, confirm: id });
+        ALL = ALL.filter(o => o.id !== id);
+        SELECTED.delete(id);
+        if (DRAWER_ID === id) closeDrawer();
+        closeDeleteModal();
+        applyFilters();
+        showToast('Order deleted', { type: 'ok' });
+      } catch (e) {
+        btn.disabled = false; btn.textContent = old;
+        if (e.message !== 'unauthorized') showToast('Could not delete: ' + e.message, { type: 'err' });
+      }
+    }
+
     async function load(fromLogin) {
       try {
         const [ordersRes, staffRes] = await Promise.all([
-          api('GET', '/orders?limit=500'),
+          api('GET', '/orders?limit=500&archived=all'),
           api('GET', '/staff').catch(() => ({ staff: [] })),
         ]);
         ALL = ordersRes.orders || [];
@@ -1076,5 +1175,19 @@
     </div>
     <div class="drawer-body" id="drawer-body"></div>
   </aside>
+
+  <!-- Delete confirmation (type the order number to confirm) -->
+  <div id="delete-modal" class="modal-backdrop hide" onclick="if(event.target===this)closeDeleteModal()">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Delete order">
+      <h3 class="modal-h">Delete order permanently?</h3>
+      <p class="modal-p">This permanently deletes <b id="del-id"></b> and everything about it. This cannot be undone. To archive it instead (reversible), close this and choose Archive.</p>
+      <label class="modal-lbl">Type the order number to confirm</label>
+      <input id="del-input" type="text" autocomplete="off" spellcheck="false" oninput="onDeleteInput()" onkeydown="if(event.key==='Enter'&&!document.getElementById('del-confirm').disabled)doDelete()" placeholder="e.g. SOF-XXXX-XXXX" />
+      <div class="modal-acts">
+        <button class="btn-light btn-sm" type="button" onclick="closeDeleteModal()">Cancel</button>
+        <button id="del-confirm" class="btn-danger btn-sm" type="button" disabled onclick="doDelete()">Delete permanently</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

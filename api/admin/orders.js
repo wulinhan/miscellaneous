@@ -19,6 +19,7 @@ module.exports = async (req, res) => {
       const list = await orders.listOrders({
         status: url.searchParams.get('status') || undefined,
         limit: url.searchParams.get('limit') || undefined,
+        archived: url.searchParams.get('archived') || undefined,
       });
       return res.status(200).json({ orders: list });
     }
@@ -30,6 +31,20 @@ module.exports = async (req, res) => {
       const updated = await orders.updateOrder(body.id, body, { by });
       if (!updated) return res.status(404).json({ error: 'Order not found' });
       return res.status(200).json({ order: updated });
+    }
+
+    if (req.method === 'DELETE') {
+      // Permanent delete. The client must echo the order id in the body as a
+      // confirmation guard (matches the typed-confirmation UI).
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+      const id = body.id || new URL(req.url, 'http://localhost').searchParams.get('id');
+      if (!id) return res.status(400).json({ error: 'Missing order id' });
+      if (body.confirm !== undefined && body.confirm !== id) {
+        return res.status(400).json({ error: 'Confirmation does not match the order id' });
+      }
+      const deleted = await orders.deleteOrder(id);
+      if (!deleted) return res.status(404).json({ error: 'Order not found' });
+      return res.status(200).json({ deleted: true, id });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
