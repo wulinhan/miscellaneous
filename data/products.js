@@ -400,6 +400,34 @@ let SETTINGS = {
   surchargeFee: 15.00,
   surchargePrefixes: ['01','03','04','05','06','07','08','09','10','17','18','19','22','23','49','63'],
 
+  /* ---- Minimum order (merchandise subtotal) ---- */
+  minOrder: 20.00,
+
+  /* ---- Self-collection point ---- */
+  pickup: {
+    place: 'Food Xchange @ Admiralty',
+    address: '8A Admiralty Street, #03-12, Singapore 757437',
+    hours: '9:00 AM – 5:00 PM'
+  },
+
+  /* ---- Corporate Booking (unpaid order request) ---- */
+  corporate: {
+    label: 'Corporate Booking',
+    sub: 'Vendors@Gov / Sesami / Ariba / Coupa / Credit Terms (corporate customers only)',
+    notice: 'THIS ORDER IS NOT CONFIRMED UNTIL YOU RECEIVE AN OFFICIAL INVOICE'
+  },
+
+  /* ---- GST + seller details (used on invoices) ---- */
+  gst: { registered: true, rate: 9, regNo: '202314539M', inclusive: true },
+  seller: {
+    name: 'SOFNADE CATERING PTE. LTD.', uen: '202314539M',
+    address: '8A Admiralty Street, #03-12, Food Xchange @ Admiralty, Singapore 757437',
+    email: 'sales@sofnade.com', phone: '8930 9756'
+  },
+
+  /* ---- Calendar horizon ---- */
+  dateHorizonMonths: 6,
+
   /* Legacy two-slot config, kept for backward compatibility. */
   timeSlots: [
     { value: '9am–2pm', label: 'Morning',   sub: '9am – 2pm' },

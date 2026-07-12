@@ -29,6 +29,12 @@ module.exports = async (req, res) => {
 
     const store = await getStore();
     const quote = priceOrder(store, { lines, fulfilment, postal, code, specificTimeOn });
+
+    const minOrder = (store.SETTINGS && store.SETTINGS.minOrder) || 0;
+    if (quote.subtotal < minOrder) {
+      return res.status(400).json({ error: `Minimum order is $${minOrder.toFixed(2)}. Please add a little more to check out.` });
+    }
+
     const orderId =
       'SOF-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase();
 

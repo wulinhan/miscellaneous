@@ -133,10 +133,11 @@
             <span>I agree to the <a href="#" style="color:var(--accent)">Terms &amp; Conditions</a> and acknowledge the delivery and freshness policy. Orders cannot be changed within 48 hours of the chosen delivery date.</span>
           </label>
 
+          <div class="min-order-note" id="min-order-note" style="display:none"></div>
           <button class="btn block" id="place-order" disabled>Place order</button>
           <div class="pay-or"><span>or</span></div>
-          <button class="btn block btn-vendor" id="place-order-vendor" disabled>Vendors@SG</button>
-          <p class="vendor-note">Vendors@SG: submit your order request now and a Sofnade team member will follow up shortly to confirm and arrange payment.</p>
+          <button class="btn block btn-vendor" id="place-order-vendor" disabled>Corporate Booking</button>
+          <p class="vendor-note" id="vendor-note"></p>
         </div>
       </aside>
     </div>
@@ -407,8 +408,17 @@
       const pickup = deliveryMethod === 'pickup';
       document.getElementById('schedule-heading').textContent = pickup ? 'Pick-up date' : 'Delivery date';
       const word = pickup ? 'collection' : 'delivery';
-      document.getElementById('schedule-note').textContent =
-        `Order before ${Schedule.cutoffLabel()} for the earliest dates. The earliest ${word} is the 3rd business day; weekends and Singapore public holidays are not available.`;
+      const base = `Order before ${Schedule.cutoffLabel()} for the earliest dates. The earliest ${word} is the 3rd business day; weekends and Singapore public holidays are not available.`;
+      const noteEl = document.getElementById('schedule-note');
+      const pk = (typeof SETTINGS !== 'undefined' && SETTINGS.pickup) || {};
+      if (pickup) {
+        noteEl.innerHTML = base +
+          `<br><br><strong>Self-collection at ${pk.place || 'Food Xchange @ Admiralty'}</strong><br>` +
+          `${pk.address || '8A Admiralty Street, #03-12, Singapore 757437'}<br>` +
+          `Collection hours: ${pk.hours || '9:00 AM – 5:00 PM'}`;
+      } else {
+        noteEl.textContent = base;
+      }
       // The address is only required for islandwide delivery.
       document.querySelectorAll('.req-delivery').forEach(el => { el.style.display = pickup ? 'none' : 'inline'; });
     }
@@ -433,7 +443,19 @@
     function updatePlaceOrderState() {
       const dateEl = document.getElementById('date-select');
       const slotOk = !orderIsFresh() || !!selectedSlot;   // fresh orders must pick a slot
+      const minOrder = (typeof SETTINGS !== 'undefined' && SETTINGS.minOrder) || 0;
+      const belowMin = Cart.count() > 0 && Cart.subtotal() < minOrder;
+      const note = document.getElementById('min-order-note');
+      if (note) {
+        if (belowMin) {
+          note.innerHTML = `Minimum order is <strong>${money(minOrder)}</strong>. Add <strong>${money(minOrder - Cart.subtotal())}</strong> more to check out.`;
+          note.style.display = 'block';
+        } else {
+          note.style.display = 'none';
+        }
+      }
       const ok = Cart.count() > 0
+        && !belowMin
         && detailsValid()
         && document.getElementById('tnc-check').checked
         && dateEl && dateEl.value
@@ -450,6 +472,11 @@
       FREE_SHIP_THRESHOLD = SETTINGS.freeDeliveryThreshold;
       document.querySelector('[data-method="delivery"] small').textContent =
         `${money(SHIPPING_FEE)}, free over ${money(FREE_SHIP_THRESHOLD)}`;
+
+      // Corporate Booking subheader
+      const vnote = document.getElementById('vendor-note');
+      if (vnote) vnote.textContent = (SETTINGS.corporate && SETTINGS.corporate.sub) ||
+        'Vendors@Gov / Sesami / Ariba / Coupa / Credit Terms (corporate customers only)';
 
       // Date dropdown
       const dateSelect = document.getElementById('date-select');
@@ -488,7 +515,7 @@
         const hi = name ? `Thank you, ${name}!` : 'Thank you for your order!';
         let line;
         if (opts.vendors) {
-          line = `Your order request has been sent. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment. We appreciate you choosing Sofnade!`;
+          line = `Your order request has been received. A Sofnade team member will follow up shortly with an official invoice to confirm your order and arrange payment through your corporate procurement channel.`;
         } else {
           let when;
           if (orderIsFresh()) {
@@ -511,6 +538,7 @@
           : 'Hi Sofnade! I just placed an order and have a question.';
         document.getElementById('checkout').innerHTML = `
           <div class="empty-state" style="grid-column:1/-1">
+            ${opts.vendors ? `<div class="not-confirmed-banner">${(SETTINGS.corporate && SETTINGS.corporate.notice) || 'THIS ORDER IS NOT CONFIRMED UNTIL YOU RECEIVE AN OFFICIAL INVOICE'}</div>` : ''}
             <div class="big">${opts.vendors ? '📩' : '✅'}</div>
             <h2>${hi}</h2>
             <p>${line}</p>
@@ -607,7 +635,7 @@
       document.getElementById('place-order-vendor').addEventListener('click', async () => {
         const btn = document.getElementById('place-order-vendor');
         btn.disabled = true; btn.textContent = 'Sending request…';
-        const reset = () => { btn.disabled = false; btn.textContent = 'Vendors@SG'; };
+        const reset = () => { btn.disabled = false; btn.textContent = 'Corporate Booking'; };
         let res;
         try {
           res = await fetch('/api/checkout', {

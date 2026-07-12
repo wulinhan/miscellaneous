@@ -650,3 +650,14 @@ img { display: block; max-width: 100%; }
 /* ---------- Footer ---------- */
 .site-footer { background: var(--bg-soft); border-top: 1px solid var(--line); margin-top: 40px; }
 .site-footer .wrap { padding: 36px 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px; }
+
+/* Minimum-order note + Corporate Booking not-confirmed banner (checkout) */
+.min-order-note{
+  background:#fff8e1; border:1px solid #fecd08; color:#7a5a00;
+  border-radius:10px; padding:10px 14px; font-size:.9rem; margin:0 0 12px; line-height:1.4;
+}
+.not-confirmed-banner{
+  background:#fff4f4; border:1.5px solid #c0272d; color:#c0272d;
+  border-radius:8px; padding:12px 16px; font-weight:700; font-size:.95rem;
+  text-align:center; letter-spacing:.01em; margin:0 auto 18px; max-width:560px;
+}
