@@ -564,7 +564,7 @@
       return `
       <tr class="orow" data-row="${esc(o.id)}">
         <td class="c-chk"><input type="checkbox" class="card-check" ${SELECTED.has(o.id) ? 'checked' : ''} onclick="toggleSelect('${esc(o.id)}', this)" title="Select"></td>
-        <td><span class="id">${esc(o.id)}</span>${o.payment_method === 'vendors_sg' ? ' <span class="vsg-tag" title="Vendors@SG — created unpaid">Vendors@SG</span>' : ''}${o.archived ? ' <span class="arch-tag" title="Archived">Archived</span>' : ''}<div class="sub">${when(o.created_at)}</div></td>
+        <td><span class="id">${esc(o.id)}</span>${o.payment_method === 'vendors_sg' ? ' <span class="vsg-tag" title="Corporate Booking — created unpaid">Corporate Booking</span>' : ''}${o.archived ? ' <span class="arch-tag" title="Archived">Archived</span>' : ''}<div class="sub">${when(o.created_at)}</div></td>
         <td><span class="r-cust">${esc(c.name || '—')}</span>${c.business ? `<div class="sub">${esc(c.business)}</div>` : ''}</td>
         <td>${deliv}</td>
         <td><select class="status-sel" style="background-color:${sc}1f;color:${sc};border-color:${sc}66" onchange="quickStatus(this, '${esc(o.id)}')" title="Change status (saves instantly)">${statusOpts}</select></td>
@@ -607,11 +607,11 @@
             <div><b>Email:</b> ${esc(c.email||'—')}</div>
             <div><b>${o.fulfilment === 'delivery' ? 'Deliver to' : 'Fulfilment'}:</b> ${addr}</div>
             <div><b>When:</b> ${o.delivery_date ? esc(o.delivery_date) + (o.slot_or_window ? ' (' + esc(o.slot_or_window) + ')' : '') : '—'}</div>
-            <div><b>Payment:</b> ${o.payment_method === 'vendors_sg' ? 'Vendors@SG <span class="vsg-tag">unpaid</span>' : 'Card (Razorpay)'}</div>
+            <div><b>Payment:</b> ${o.payment_method === 'vendors_sg' ? 'Corporate Booking <span class="vsg-tag">unpaid</span>' : 'Card (Razorpay)'}</div>
             ${c.notes ? `<div><b>Customer note:</b> ${esc(c.notes)}</div>` : ''}
           </div>
           ${waBtn ? `<div style="margin:2px 0 10px">${waBtn}</div>` : ''}
-          ${o.payment_method === 'vendors_sg' ? `<div class="vsg-note"><b>Vendors@SG request — unpaid.</b> This order was placed via Vendors@SG and no payment has been taken. Follow up with the customer to confirm and arrange payment, then mark it Paid once settled.</div>` : ''}
+          ${o.payment_method === 'vendors_sg' ? `<div class="vsg-note"><b>Corporate Booking request — unpaid.</b> This order was placed via Corporate Booking and no payment has been taken. Follow up with the customer with an official invoice to confirm and arrange payment, then mark it Paid once settled.</div>` : ''}
           ${paymentSummary(o)}
           ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}
           <div class="manage">
