@@ -3,8 +3,22 @@
 // channel no-ops when its env vars are missing, and the on* helpers never throw,
 // so a notification failure can never fail the webhook/verify/checkout call.
 
+// Seller / GST / corporate details for the invoice (built-in defaults).
+const STORE = require('../../data/products.js');
+const CONF = (STORE && STORE.SETTINGS) || {};
+const SELLER = CONF.seller || { name: 'SOFNADE CATERING PTE. LTD.', uen: '202314539M', address: '', email: 'sales@sofnade.com', phone: '8930 9756' };
+const GSTCFG = CONF.gst || { registered: false, rate: 0, inclusive: true, regNo: '' };
+const CORP = CONF.corporate || { notice: 'THIS ORDER IS NOT CONFIRMED UNTIL YOU RECEIVE AN OFFICIAL INVOICE' };
+
 function money(n, ccy) {
   return `${ccy || 'SGD'} ${Number(n || 0).toFixed(2)}`;
+}
+
+// Inclusive-GST amount contained in a total.
+function gstAmountOf(total) {
+  return GSTCFG.registered && GSTCFG.inclusive
+    ? Math.round((Number(total || 0) * GSTCFG.rate) / (100 + GSTCFG.rate) * 100) / 100
+    : 0;
 }
 
 function summaryLines(order) {
@@ -64,7 +78,7 @@ async function mirrorToNotion(order) {
     when,
     c.notes ? `Notes: ${c.notes}` : '',
     order.payment_method === 'vendors_sg'
-      ? 'Payment: Vendors@SG - order created UNPAID. Follow up to confirm and arrange payment.'
+      ? 'Payment: Corporate Booking - order created UNPAID. Follow up with an official invoice to confirm and arrange payment.'
       : '',
     '',
     ...summaryLines(order),
@@ -151,6 +165,7 @@ function orderEmailHtml(order, opts) {
     q.surcharge ? totalRow('Transport surcharge', money(q.surcharge, ccy)) : '',
     q.specificTimeFee ? totalRow('Specific-time add-on', money(q.specificTimeFee, ccy)) : '',
     totalRow('Total', money(q.total, ccy), true),
+    GSTCFG.registered ? totalRow(`Inclusive of ${GSTCFG.rate}% GST`, money(gstAmountOf(q.total), ccy)) : '',
   ].join('');
 
   const where =
@@ -175,6 +190,7 @@ function orderEmailHtml(order, opts) {
         <span style="display:inline-block;margin-left:10px;font:bold 11px Arial,sans-serif;color:${NAVY};background:${GOLD};padding:3px 10px;border-radius:999px;">${escapeHtml(opts.badge)}</span>
       </td></tr>
       <tr><td style="padding:28px;">
+        ${opts.topBanner || ''}
         <h1 style="margin:0 0 6px;font:bold 20px Arial,sans-serif;color:#1b2330;">${opts.heading}</h1>
         <p style="margin:0 0 18px;font:14px/1.6 Arial,sans-serif;color:#6b7280;">${opts.intro}</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemRows}</table>
@@ -194,7 +210,9 @@ function orderEmailHtml(order, opts) {
       </td></tr>
       <tr><td style="background:#f7f8fb;padding:18px 28px;border-top:1px solid #e6e7ec;">
         <p style="margin:0;font:12px/1.6 Arial,sans-serif;color:#9aa1ad;">${opts.footerLine}<br>
-        &copy; ${new Date().getFullYear()} Sofnade &middot; Crafted fresh &middot; Delivered across Singapore</p>
+        ${escapeHtml(SELLER.name)} &middot; UEN ${escapeHtml(SELLER.uen || '')}${GSTCFG.registered ? ' &middot; GST Reg No ' + escapeHtml(GSTCFG.regNo || SELLER.uen || '') : ''}<br>
+        ${escapeHtml(SELLER.address || '')}<br>
+        &copy; ${new Date().getFullYear()} Sofnade &middot; MUIS Halal Certified &middot; SFA Licensed Central Kitchen</p>
       </td></tr>
     </table>
    </td></tr>
@@ -204,7 +222,7 @@ function orderEmailHtml(order, opts) {
 
 function receiptHtml(order) {
   return orderEmailHtml(order, {
-    badge: 'PAID',
+    badge: 'TAX INVOICE',
     heading: `Thanks for your order, ${firstName(order)}!`,
     intro: `Order <strong style="color:#1b2330;">${escapeHtml(order.id)}</strong> is confirmed and paid. Here is your summary.`,
     footerLine: `Payment ref: ${escapeHtml(order.razorpay_payment_id || order.razorpay_order_id || '-')}`,
@@ -212,16 +230,20 @@ function receiptHtml(order) {
 }
 
 function requestHtml(order) {
+  const topBanner = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;background:#fff4f4;border:1px solid #c0272d;border-radius:8px;">
+          <tr><td align="center" style="padding:12px 16px;font:bold 14px Arial,sans-serif;color:#c0272d;">${escapeHtml(CORP.notice || 'THIS ORDER IS NOT CONFIRMED UNTIL YOU RECEIVE AN OFFICIAL INVOICE')}</td></tr>
+        </table>`;
   const infoBox = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0 0;background:#fff8e1;border:1px solid ${GOLD};border-radius:10px;">
           <tr><td style="padding:14px 16px;font:14px/1.5 Arial,sans-serif;color:#1b2330;">
-            <strong style="color:${NAVY};">Payment: Vendors@SG</strong><br>No payment has been taken yet. A Sofnade team member will reach out shortly to confirm your order and arrange payment.
+            <strong style="color:${NAVY};">Payment: Corporate Booking</strong><br>Vendors@Gov / Sesami / Ariba / Coupa / Credit Terms. No payment has been taken yet &mdash; a Sofnade team member will follow up shortly with an official invoice to confirm your order.
           </td></tr>
         </table>`;
   return orderEmailHtml(order, {
-    badge: 'REQUEST RECEIVED',
+    badge: 'PROFORMA INVOICE',
+    topBanner,
     heading: `Thank you, ${firstName(order)}!`,
-    intro: `We have received your Vendors@SG order request <strong style="color:#1b2330;">${escapeHtml(order.id)}</strong>. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment. Here is a summary of your request.`,
-    footerLine: `Order ref: ${escapeHtml(order.id)} &middot; Vendors@SG`,
+    intro: `We have received your Corporate Booking order request <strong style="color:#1b2330;">${escapeHtml(order.id)}</strong>. A team member from Sofnade will be in touch shortly with an official invoice to confirm the details and arrange payment. This is a proforma summary of your request.`,
+    footerLine: `Order ref: ${escapeHtml(order.id)} &middot; Corporate Booking`,
     infoBox,
   });
 }
@@ -248,7 +270,7 @@ function requestText(order) {
   return orderEmailText(
     order,
     `Thank you, ${c.name || ''}!`.trim(),
-    `We have received your Vendors@SG order request ${order.id}. No payment has been taken yet. A team member from Sofnade will be in touch with you shortly to confirm the details and arrange payment.`,
+    `${CORP.notice || 'THIS ORDER IS NOT CONFIRMED UNTIL YOU RECEIVE AN OFFICIAL INVOICE'}\n\nWe have received your Corporate Booking order request ${order.id}. No payment has been taken yet. A Sofnade team member will follow up shortly with an official invoice to confirm the details and arrange payment.`,
   );
 }
 
@@ -270,7 +292,7 @@ async function sendReceipt(order) {
   return sendEmail(order, `Your Sofnade order ${order.id} is confirmed`, receiptHtml(order), receiptText(order));
 }
 async function sendRequestEmail(order) {
-  return sendEmail(order, `We have received your Sofnade order ${order.id}`, requestHtml(order), requestText(order));
+  return sendEmail(order, `Your Sofnade order ${order.id} — proforma invoice (payment to follow)`, requestHtml(order), requestText(order));
 }
 
 // Run both channels independently; never throws. Returns a small status array
