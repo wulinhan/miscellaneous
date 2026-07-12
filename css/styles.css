@@ -661,3 +661,17 @@ img { display: block; max-width: 100%; }
   border-radius:8px; padding:12px 16px; font-weight:700; font-size:.95rem;
   text-align:center; letter-spacing:.01em; margin:0 auto 18px; max-width:560px;
 }
+
+/* Delivery / pick-up calendar (checkout) */
+.calendar{ border:1px solid #e7e3da; border-radius:12px; padding:10px; background:#fff; max-width:340px; }
+.cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.cal-title{ font-weight:700; color:#204390; }
+.cal-nav{ width:32px; height:32px; border:1px solid #e7e3da; background:#fff; border-radius:8px; cursor:pointer; font-size:1.2rem; line-height:1; color:#204390; }
+.cal-nav:disabled{ opacity:.35; cursor:not-allowed; }
+.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-dow{ text-align:center; font-size:.72rem; color:#5a6275; font-weight:600; padding:4px 0; }
+.cal-cell{ aspect-ratio:1/1; border:none; background:#f3eee4; border-radius:8px; cursor:pointer; font-size:.9rem; color:#2c3242; padding:0; }
+.cal-cell.empty{ background:transparent; }
+.cal-cell.disabled{ background:transparent; color:#c9c4ba; cursor:not-allowed; }
+.cal-cell.selected{ background:#204390; color:#fff; font-weight:700; }
+.cal-cell:not(.disabled):not(.selected):hover{ background:#fecd08; }

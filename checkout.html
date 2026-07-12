@@ -83,8 +83,9 @@
             <h3 style="margin:24px 0 14px" id="schedule-heading">Delivery date</h3>
             <p class="card-desc" style="margin-top:0" id="schedule-note"></p>
             <div class="field">
-              <label for="date-select">Choose a date</label>
-              <select id="date-select"></select>
+              <label>Choose a date</label>
+              <input type="hidden" id="date-select">
+              <div class="calendar" id="calendar"></div>
             </div>
 
             <!-- Timed area: 30-min slot for fresh food, or window note + optional
@@ -172,6 +173,62 @@
     /* ---------- Delivery date options (4pm cut-off + 3rd business day) ---------- */
     function buildDateOptions() { return Schedule.dates(14); }
     function fmtDate(d) { return Schedule.formatDate(d); }
+
+    /* ---------- Delivery / pick-up calendar (6-month horizon) ---------- */
+    let calView = null;      // Date: first day of the displayed month
+    let selectedYmd = null;  // chosen date 'YYYY-MM-DD'
+
+    function calBounds() {
+      const earliest = Schedule.earliest(); earliest.setHours(0, 0, 0, 0);
+      const max = new Date(earliest);
+      max.setMonth(max.getMonth() + ((typeof SETTINGS !== 'undefined' && SETTINGS.dateHorizonMonths) || 6));
+      return { earliest, max };
+    }
+    function isSelectableDate(d) {
+      const { earliest, max } = calBounds();
+      const x = new Date(d); x.setHours(0, 0, 0, 0);
+      return x >= earliest && x <= max && Schedule.isBusinessDay(x);
+    }
+    function setSelectedDate(ymd) {
+      selectedYmd = ymd;
+      const el = document.getElementById('date-select');
+      if (el) el.value = ymd || '';
+      updatePlaceOrderState();
+    }
+    function renderCalendar() {
+      const host = document.getElementById('calendar');
+      if (!host) return;
+      const { earliest, max } = calBounds();
+      if (!calView) calView = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+      if (!selectedYmd) setSelectedDate(Schedule.ymd(earliest));
+
+      const y = calView.getFullYear(), m = calView.getMonth();
+      const title = calView.toLocaleDateString('en-SG', { month: 'long', year: 'numeric' });
+      const firstDow = new Date(y, m, 1).getDay();
+      const days = new Date(y, m + 1, 0).getDate();
+      const canPrev = new Date(y, m, 0) >= earliest;
+      const canNext = new Date(y, m + 1, 1) <= new Date(max.getFullYear(), max.getMonth(), 1);
+
+      let cells = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => `<div class="cal-dow">${d}</div>`).join('');
+      for (let i = 0; i < firstDow; i++) cells += '<div class="cal-cell empty"></div>';
+      for (let day = 1; day <= days; day++) {
+        const d = new Date(y, m, day), ymd = Schedule.ymd(d);
+        const ok = isSelectableDate(d), sel = ymd === selectedYmd;
+        cells += `<button type="button" class="cal-cell${ok ? '' : ' disabled'}${sel ? ' selected' : ''}" ${ok ? `data-ymd="${ymd}"` : 'disabled'}>${day}</button>`;
+      }
+      host.innerHTML =
+        `<div class="cal-head">
+           <button type="button" class="cal-nav" id="cal-prev" ${canPrev ? '' : 'disabled'} aria-label="Previous month">&lsaquo;</button>
+           <div class="cal-title">${title}</div>
+           <button type="button" class="cal-nav" id="cal-next" ${canNext ? '' : 'disabled'} aria-label="Next month">&rsaquo;</button>
+         </div>
+         <div class="cal-grid">${cells}</div>`;
+      const prev = document.getElementById('cal-prev'), next = document.getElementById('cal-next');
+      if (prev) prev.addEventListener('click', () => { if (canPrev) { calView = new Date(y, m - 1, 1); renderCalendar(); } });
+      if (next) next.addEventListener('click', () => { if (canNext) { calView = new Date(y, m + 1, 1); renderCalendar(); } });
+      host.querySelectorAll('.cal-cell[data-ymd]').forEach(b =>
+        b.addEventListener('click', () => { setSelectedDate(b.dataset.ymd); renderCalendar(); }));
+    }
 
     /* ---------- Cart rendering ---------- */
     function lineMeta(line) {
@@ -478,11 +535,9 @@
       if (vnote) vnote.textContent = (SETTINGS.corporate && SETTINGS.corporate.sub) ||
         'Vendors@Gov / Sesami / Ariba / Coupa / Credit Terms (corporate customers only)';
 
-      // Date dropdown
+      // Date calendar (6-month horizon; weekends & Singapore public holidays disabled)
       const dateSelect = document.getElementById('date-select');
-      dateSelect.innerHTML = buildDateOptions()
-        .map(d => `<option value="${Schedule.ymd(d)}">${fmtDate(d)}</option>`)
-        .join('');
+      renderCalendar();
 
       // Delivery method (self pick-up vs islandwide delivery)
       document.querySelectorAll('#methods .slot').forEach(s => {
@@ -510,7 +565,7 @@
       function showConfirmation(orderId, opts) {
         opts = opts || {};
         const ds = document.getElementById('date-select');
-        const date = ds.options[ds.selectedIndex].text;
+        const date = ds.value ? Schedule.formatDate(new Date(ds.value + 'T00:00:00')) : '';
         const name = detail('name').split(' ')[0];
         const hi = name ? `Thank you, ${name}!` : 'Thank you for your order!';
         let line;
