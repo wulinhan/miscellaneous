@@ -5,5 +5,7 @@ export default defineCliConfig({
   api: {
     projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'mkxfjwwf',
     dataset: 'production'
-  }
+  },
+  // Hosted Studio lives at https://sofnade.sanity.studio
+  studioHost: 'sofnade'
 });
