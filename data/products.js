@@ -255,10 +255,11 @@ let ADDONS = {
 /* Toppings: how many a customer may add to a drink. */
 const MAX_TOPPINGS = 2;
 
-/* Sugar levels offered on every drink (first is the default selection). */
+/* Sugar levels offered on every drink — a compulsory single-select; the first
+   entry (0%) is the default selection. */
 const SUGAR_LEVELS = [
-  '100% (Normal)', '75% (Slightly Less Sweet)', '50% (Less Sweet)',
-  '25% (Very Less Sweet)', '0% (Kosong)'
+  '0% (Kosong)', '25% (Very Less Sweet)', '50% (Less Sweet)',
+  '75% (Slightly Less Sweet)', '100% (Normal)'
 ];
 
 /* Sub-sections within a top-level category (drives the sub-navigation). */

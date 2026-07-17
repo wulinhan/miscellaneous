@@ -159,20 +159,34 @@ function closeCart() {
 }
 function cartInc(key) { const l = Cart.all().find(x => x.key === key); if (l) Cart.setQty(key, l.qty + 1); }
 function cartDec(key) { const l = Cart.all().find(x => x.key === key); if (l) Cart.setQty(key, l.qty - 1); }
+function cartQtySet(key, v) { Cart.setQty(key, Math.max(1, parseInt(v, 10) || 1)); }
 function cartRemove(key) { Cart.remove(key); }
+/* Every chosen option on one line: size · sugar level · toppings. */
+function cartLineMeta(l) {
+  const bits = [];
+  if (l.size) bits.push(l.size);
+  if (l.sugar) bits.push('Sugar ' + l.sugar);
+  (l.addons || []).forEach(id => {
+    const a = (typeof ADDONS !== 'undefined') && ADDONS[id];
+    if (a) bits.push(a.title);
+  });
+  return bits.join(' · ');
+}
 function cartLineHTML(l) {
   const p = (typeof getProduct === 'function') ? getProduct(l.productId) : null;
   const title = p ? p.title : l.productId;
   const img = (typeof productImage === 'function' && p) ? productImage(p, 0) : '';
   const line = Cart.unitPrice(l) * l.qty;
+  const meta = cartLineMeta(l);
   return `<div class="cart-line">` +
     `<img class="cl-img" src="${img}" alt="" loading="lazy">` +
     `<div class="cl-main">` +
       `<div class="cl-title">${title}</div>` +
-      (l.size ? `<div class="cl-sub">${l.size}</div>` : '') +
+      (meta ? `<div class="cl-sub">${meta}</div>` : '') +
       `<div class="cl-qty">` +
         `<button type="button" onclick="cartDec('${l.key}')" aria-label="Decrease">−</button>` +
-        `<span>${l.qty}</span>` +
+        `<input type="number" class="cl-qty-in" min="1" value="${l.qty}" aria-label="Quantity" ` +
+          `onchange="cartQtySet('${l.key}', this.value)">` +
         `<button type="button" onclick="cartInc('${l.key}')" aria-label="Increase">+</button>` +
         `<button type="button" class="cl-rm" onclick="cartRemove('${l.key}')">Remove</button>` +
       `</div>` +

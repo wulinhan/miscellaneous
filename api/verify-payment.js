@@ -19,11 +19,32 @@ module.exports = async (req, res) => {
     if (ok) {
       // Best-effort: never let bookkeeping/notification failures block the
       // customer's success screen. The webhook will retry the same work.
+      let order = null;
+      let dbFailed = false;
       try {
-        const order = await orders.markPaid(razorpay_order_id, razorpay_payment_id);
-        if (order) await notify.onPaid(order);
+        order = await orders.markPaid(razorpay_order_id, razorpay_payment_id);
       } catch (e) {
-        console.error('[verify-payment] record/notify failed:', e.message);
+        dbFailed = true;
+        console.error('[verify-payment] record failed:', e.message);
+      }
+      try {
+        if (order) {
+          await notify.onPaid(order);
+        } else if (body.order && body.order.id && (dbFailed || !orders.isConfigured())) {
+          // The order DB is down or unset, so there is no row to notify from —
+          // fall back to the checkout snapshot (its quote was priced by
+          // /api/checkout, and the signature check above proves the payment is
+          // genuine). Only on DB failure: a healthy-DB null means the webhook
+          // already handled this payment, and we must not email twice.
+          await notify.onPaid(Object.assign({}, body.order, {
+            status: 'paid',
+            payment_method: 'card',
+            razorpay_order_id,
+            razorpay_payment_id,
+          }));
+        }
+      } catch (e) {
+        console.error('[verify-payment] notify failed:', e.message);
       }
     }
     return res.status(ok ? 200 : 400).json({ ok });

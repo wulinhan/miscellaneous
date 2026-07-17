@@ -21,11 +21,21 @@ function gstAmountOf(total) {
     : 0;
 }
 
+// One line of "everything chosen" for an item: size · sugar level · toppings.
+function itemOptions(i) {
+  const bits = [];
+  if (i.size) bits.push(i.size);
+  if (i.sugar) bits.push(`Sugar ${i.sugar}`);
+  (i.addons || []).forEach((a) => bits.push(`+ ${a}`));
+  return bits.join(' · ');
+}
+
 function summaryLines(order) {
   const q = order.quote || {};
-  const lines = (q.items || []).map(
-    (i) => `- ${i.qty} x ${i.title} (${i.size}) = ${money(i.lineTotal, q.currency)}`,
-  );
+  const lines = (q.items || []).map((i) => {
+    const opts = itemOptions(i);
+    return `- ${i.qty} x ${i.title}${opts ? ` (${opts})` : ''} = ${money(i.lineTotal, q.currency)}`;
+  });
   lines.push('');
   lines.push(`Subtotal: ${money(q.subtotal, q.currency)}`);
   if (q.discount) lines.push(`Discount${q.discountCode ? ` (${q.discountCode})` : ''}: -${money(q.discount, q.currency)}`);
@@ -143,9 +153,10 @@ function orderEmailHtml(order, opts) {
     .map((i) => {
       const qty = Number(i.qty || 0);
       const unit = i.unitPrice != null ? Number(i.unitPrice) : (qty ? Number(i.lineTotal || 0) / qty : 0);
+      const opts = itemOptions(i);
       return `<tr>
         <td width="68%" style="width:68%;padding:10px 8px 10px 0;border-bottom:1px solid #e6e7ec;font:14px/1.4 Arial,sans-serif;color:#1b2330;vertical-align:top;">
-          <strong>${escapeHtml(i.title || '')}</strong>${i.size ? ` <span style="color:#6b7280;">(${escapeHtml(i.size)})</span>` : ''}<br>
+          <strong>${escapeHtml(i.title || '')}</strong>${opts ? `<br><span style="color:#6b7280;font-size:13px;">${escapeHtml(opts)}</span>` : ''}<br>
           <span style="color:#6b7280;font-size:13px;">${qty} &times; ${money(unit, ccy)}</span>
         </td>
         <td width="32%" align="right" style="width:32%;padding:10px 0;border-bottom:1px solid #e6e7ec;font:14px/1.4 Arial,sans-serif;color:#1b2330;text-align:right;vertical-align:top;white-space:nowrap;">${money(i.lineTotal, ccy)}</td>

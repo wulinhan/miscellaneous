@@ -9,7 +9,7 @@
   <title>Checkout — Sofnade</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=37">
+  <link rel="stylesheet" href="css/styles.css?v=38">
 </head>
 <body>
   <div id="header"></div>
@@ -128,6 +128,7 @@
             <span>Specific time delivery</span><span id="sum-specifictime">$0.00</span>
           </div>
           <div class="summary-row total"><span>Total</span><span id="sum-total">$0.00</span></div>
+          <div class="min-order-static" id="min-order-static" style="display:none"></div>
 
           <label class="tnc">
             <input type="checkbox" id="tnc-check">
@@ -146,12 +147,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=37"></script>
-  <script src="js/config.js?v=37"></script>
-  <script src="js/store-data.js?v=37"></script>
-  <script src="js/images.js?v=37"></script>
-  <script src="js/cart.js?v=37"></script>
-  <script src="js/common.js?v=37"></script>
+  <script src="data/products.js?v=38"></script>
+  <script src="js/config.js?v=38"></script>
+  <script src="js/store-data.js?v=38"></script>
+  <script src="js/images.js?v=38"></script>
+  <script src="js/cart.js?v=38"></script>
+  <script src="js/common.js?v=38"></script>
   <script>
     renderChrome();
 
@@ -530,6 +531,14 @@
       document.querySelector('[data-method="delivery"] small').textContent =
         `${money(SHIPPING_FEE)}, free over ${money(FREE_SHIP_THRESHOLD)}`;
 
+      // Always-visible minimum-order message; the dynamic "add $X more to
+      // check out" note still appears when the cart is below it.
+      const minStatic = document.getElementById('min-order-static');
+      if (minStatic && (SETTINGS.minOrder || 0) > 0) {
+        minStatic.innerHTML = `Minimum order value: <strong>${money(SETTINGS.minOrder)}</strong> (items subtotal, before delivery fees).`;
+        minStatic.style.display = 'block';
+      }
+
       // Corporate Booking subheader
       const vnote = document.getElementById('vendor-note');
       if (vnote) vnote.textContent = (SETTINGS.corporate && SETTINGS.corporate.sub) ||
@@ -607,7 +616,7 @@
 
       function checkoutPayload() {
         return {
-          lines: Cart.all().map(l => ({ productId: l.productId, size: l.size, qty: l.qty, addOns: l.addons || [] })),
+          lines: Cart.all().map(l => ({ productId: l.productId, size: l.size, qty: l.qty, addOns: l.addons || [], sugar: l.sugar || '' })),
           customer: {
             name: detail('name'), business: detail('business'), phone: detail('phone'),
             email: detail('email'), address1: detail('addr1'), address2: detail('addr2'),
@@ -639,10 +648,22 @@
             prefill: { name: detail('name'), email: detail('email'), contact: detail('phone') },
             handler: async (resp) => {
               // Verify the payment signature server-side before showing success.
+              // Include an order snapshot (server-priced quote from /api/checkout)
+              // so the receipt email can still be sent if the order DB is down.
               try {
                 const v = await fetch('/api/verify-payment', {
                   method: 'POST', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(resp)
+                  body: JSON.stringify(Object.assign({}, resp, {
+                    order: {
+                      id: json.orderId,
+                      customer: checkoutPayload().customer,
+                      fulfilment: deliveryMethod,
+                      postal: detail('postal'),
+                      delivery_date: json.schedule && json.schedule.date,
+                      slot_or_window: json.schedule && json.schedule.slotOrWindow,
+                      quote: json.quote
+                    }
+                  }))
                 });
                 const vj = await v.json().catch(() => ({}));
                 if (v.ok && vj.ok) showConfirmation(json.orderId);

@@ -84,10 +84,16 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
     const product = getProduct(l.productId);
     if (!product) throw new Error(`Unknown product "${l.productId}"`);
     const unit = unitPrice(l, product);
+    // Carry every chosen option so receipts/admin can show the full line.
+    const addonTitles = (l.addOns || l.addons || [])
+      .map((id) => (ADDONS[id] ? ADDONS[id].title : null))
+      .filter(Boolean);
     items.push({
       productId: l.productId,
       title: product.title,
       size: l.size,
+      sugar: l.sugar || '',
+      addons: addonTitles,
       qty: l.qty,
       unitPrice: unit,
       lineTotal: round2(unit * l.qty),
