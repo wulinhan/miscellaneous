@@ -14,6 +14,58 @@ function waUrl(text) {
   return `https://wa.me/${WHATSAPP_NUMBER}` + (text ? `?text=${encodeURIComponent(text)}` : '');
 }
 
+/* Make the floating WhatsApp button draggable (pointer + touch). Position is
+   pinned in px and remembered in localStorage. A real drag suppresses the
+   click, so moving it never opens WhatsApp; a plain tap still does. */
+function makeWaDraggable(el) {
+  const KEY = 'sofnade_wa_pos';
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  function place(x, y) {
+    const r = el.getBoundingClientRect();
+    const nx = clamp(x, 6, window.innerWidth - r.width - 6);
+    const ny = clamp(y, 6, window.innerHeight - r.height - 6);
+    el.style.left = nx + 'px';
+    el.style.top = ny + 'px';
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+    return { x: nx, y: ny };
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved && typeof saved.x === 'number') requestAnimationFrame(() => place(saved.x, saved.y));
+  } catch (_) {}
+
+  let dragging = false, moved = false, dx = 0, dy = 0;
+  el.addEventListener('pointerdown', (e) => {
+    dragging = true; moved = false;
+    const r = el.getBoundingClientRect();
+    dx = e.clientX - r.left; dy = e.clientY - r.top;
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    if (Math.abs(e.clientX - (el.getBoundingClientRect().left + dx)) > 4 ||
+        Math.abs(e.clientY - (el.getBoundingClientRect().top + dy)) > 4) moved = true;
+    if (moved) { e.preventDefault(); place(e.clientX - dx, e.clientY - dy); }
+  });
+  const end = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    if (moved) {
+      const r = el.getBoundingClientRect();
+      try { localStorage.setItem(KEY, JSON.stringify({ x: r.left, y: r.top })); } catch (_) {}
+    }
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+  // Cancel the navigation only when the button was actually dragged.
+  el.addEventListener('click', (e) => { if (moved) { e.preventDefault(); moved = false; } });
+  // Keep it on-screen if the viewport is resized/rotated.
+  window.addEventListener('resize', () => {
+    if (el.style.left) place(parseFloat(el.style.left), parseFloat(el.style.top));
+  });
+}
+
 function renderChrome(active) {
   const header = `
   <header class="site-header">
@@ -67,7 +119,9 @@ function renderChrome(active) {
     document.body.appendChild(t);
   }
 
-  // Floating "Chat with us" WhatsApp button, site-wide.
+  // Floating "Chat with us" WhatsApp button, site-wide. Draggable so it can be
+  // moved off whatever it overlaps (e.g. a product card's Add to Cart on mobile);
+  // its position is remembered per device.
   if (!document.querySelector('.wa-float')) {
     const wa = document.createElement('a');
     wa.className = 'wa-float';
@@ -77,6 +131,7 @@ function renderChrome(active) {
     wa.setAttribute('aria-label', 'Chat with us on WhatsApp');
     wa.innerHTML = `${WA_ICON}<span class="wa-float-label">Chat with us</span>`;
     document.body.appendChild(wa);
+    makeWaDraggable(wa);
   }
 
   // Cart drawer (slide-over sidebar) with free-delivery progress.

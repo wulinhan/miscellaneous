@@ -119,28 +119,12 @@ img { display: block; max-width: 100%; }
 
 /* ---------- Trust strips ---------- */
 .trust-strip { background: #fff; border-bottom: 1px solid var(--line); }
-.mini-strip { background: var(--bg-soft, #f7f8fb); border-top: 1px solid var(--line); margin-top: 40px; }
 .ts-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 18px 20px; }
 .ts-item { display: flex; align-items: center; gap: 11px; min-width: 0; }
 .ts-ic { font-size: 22px; flex: 0 0 auto; }
 .ts-item b { display: block; font-size: 13.5px; color: var(--ink); }
 .ts-item small { display: block; font-size: 12px; color: var(--muted); }
 
-/* ---------- Quick category chips ---------- */
-.chip-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 4px; }
-.chip {
-  background: #fff; border: 1px solid var(--line); border-radius: 999px;
-  padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 600;
-  color: var(--ink); cursor: pointer; transition: all .15s ease;
-}
-.chip:hover { border-color: var(--accent); color: var(--accent); }
-.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-.chip-best { color: #c0272d; }
-.chip-best.active { background: var(--accent); color: #fff; }
-
-/* "View all (N)" control in the listing head */
-.view-all { background: none; border: none; color: var(--accent); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; padding: 0; }
-.view-all:hover { text-decoration: underline; }
 
 /* ---------- Search bar ---------- */
 .searchbar {
@@ -294,13 +278,18 @@ img { display: block; max-width: 100%; }
 
 /* Hero/trust/chips responsiveness */
 @media (max-width: 860px) {
-  .hero .wrap { padding: 28px 20px 30px; }
-  .hero-grid { grid-template-columns: 1fr; gap: 20px; }
+  /* Mobile: the banner image becomes the hero background, under a faint white
+     wash so the copy stays readable over it. */
+  .hero { position: relative; overflow: hidden; }
+  .hero .wrap { padding: 30px 20px 34px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 0; }
   .hero h1 { font-size: 30px; }
   .hero p { font-size: 15px; margin-bottom: 16px; }
-  .hero-media img { aspect-ratio: 16/10; }
+  .hero-media { position: absolute; inset: 0; z-index: 0; margin: 0; }
+  .hero-media img { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+  .hero-media::after { content: ""; position: absolute; inset: 0; background: rgba(253, 249, 241, 0.82); }
+  .hero-copy { position: relative; z-index: 1; }
   .ts-grid { grid-template-columns: 1fr 1fr; gap: 10px 14px; padding: 14px 20px; }
-  .chip-row { display: none; }  /* the golden category ribbon covers this on mobile */
 }
 .btn {
   font: inherit; cursor: pointer; border: none; border-radius: 999px;
@@ -697,12 +686,15 @@ img { display: block; max-width: 100%; }
   background: #25d366; color: #fff; font-weight: 700; font-size: 15px;
   padding: 13px 18px; border-radius: 999px; text-decoration: none;
   box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: box-shadow 0.15s ease;
+  touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none;
 }
-.wa-float:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(37, 211, 102, 0.5); color: #fff; }
-.wa-float svg { flex: none; }
+.wa-float:active { cursor: grabbing; }
+.wa-float:hover { box-shadow: 0 12px 28px rgba(37, 211, 102, 0.5); color: #fff; }
+.wa-float svg { flex: none; pointer-events: none; }
 @media (max-width: 640px) {
-  .wa-float { padding: 14px; }
+  /* Sit higher so it clears product-card "Add to Cart" buttons; also draggable. */
+  .wa-float { padding: 14px; bottom: 84px; right: 14px; }
   .wa-float-label { display: none; }
 }
 

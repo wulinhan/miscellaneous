@@ -9,7 +9,7 @@
   <title>Sofnade — Drinks, Sweets, Snacks & Gift Sets</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=43">
+  <link rel="stylesheet" href="css/styles.css?v=44">
 </head>
 <body>
   <div id="header"></div>
@@ -48,8 +48,6 @@
              aria-label="Search products" autocomplete="off">
       <button id="search-clear" class="searchbar-clear" type="button" aria-label="Clear search" hidden>×</button>
     </div>
-    <!-- Quick category chips (desktop; mobile uses the golden ribbon) -->
-    <div class="chip-row" id="chip-row"></div>
   </div>
 
   <!-- Mobile only: how much more to free delivery, right above the menu ribbons -->
@@ -76,16 +74,6 @@
     </div>
   </div>
 
-  <!-- Bottom reassurance strip -->
-  <section class="mini-strip">
-    <div class="wrap ts-grid">
-      <div class="ts-item"><span class="ts-ic">⭐</span><div><b>Loved by Thousands</b><small>4.8★ on Google</small></div></div>
-      <div class="ts-item"><span class="ts-ic">🥣</span><div><b>Made with Quality Ingredients</b><small>No shortcuts</small></div></div>
-      <div class="ts-item"><span class="ts-ic">🎁</span><div><b>Beautifully Packed for Gifting</b><small>In our signature box</small></div></div>
-      <div class="ts-item"><span class="ts-ic">💬</span><div><b>Friendly Support</b><small>We're here to help</small></div></div>
-    </div>
-  </section>
-
   <div id="footer"></div>
 
   <!-- Desktop quick-view product modal -->
@@ -95,13 +83,13 @@
     <div class="pdp-modal-body" id="pdp-modal-body"></div>
   </div>
 
-  <script src="data/products.js?v=43"></script>
-  <script src="js/config.js?v=43"></script>
-  <script src="js/store-data.js?v=43"></script>
-  <script src="js/images.js?v=43"></script>
-  <script src="js/cart.js?v=43"></script>
-  <script src="js/common.js?v=43"></script>
-  <script src="js/pdp.js?v=43"></script>
+  <script src="data/products.js?v=44"></script>
+  <script src="js/config.js?v=44"></script>
+  <script src="js/store-data.js?v=44"></script>
+  <script src="js/images.js?v=44"></script>
+  <script src="js/cart.js?v=44"></script>
+  <script src="js/common.js?v=44"></script>
+  <script src="js/pdp.js?v=44"></script>
   <script>
     renderChrome('shop');
     const INDEX_TITLE = document.title;
@@ -237,22 +225,6 @@
         </article>`;
     }
 
-    // Quick category chips under the search bar (desktop).
-    const CHIP_ICONS = { 'Drinks': '🧋', 'Snacks': '🍿', 'Sweets': '🍬', 'Gift Sets': '🎁', 'Christmas Festive': '🎄', 'Housebake Cookies': '🍪', 'National Day Snacks': '🎉', 'Deepavali': '🪔', 'Hari Raya': '🌙' };
-    function renderChips() {
-      const host = document.getElementById('chip-row');
-      if (!host) return;
-      const curated = !searchQuery && !activeFilter && !activeSub && !showAll;
-      const chips = [
-        `<button class="chip chip-best ${curated ? 'active' : ''}" type="button" onclick="showBestsellers()">🔥 Bestsellers</button>`
-      ].concat(filterCategories().map(c =>
-        `<button class="chip ${activeFilter === c ? 'active' : ''}" type="button" data-chip="${c}">${CHIP_ICONS[c] ? CHIP_ICONS[c] + ' ' : ''}${c}</button>`));
-      host.innerHTML = chips.join('');
-      host.querySelectorAll('[data-chip]').forEach(b => b.addEventListener('click', () => {
-        activeFilter = b.dataset.chip; activeSub = null;
-        clearSearchUI(); updateUrl(); render();
-      }));
-    }
 
     // Match a product against every word in the query (across name, description,
     // category, sub-section and tags), so multi-word searches narrow results.
@@ -265,7 +237,6 @@
     function render() {
       renderSidebar();
       renderSubnav();
-      renderChips();
       let list;
       let viewAllLink = '';
       if (searchQuery) {
