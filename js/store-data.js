@@ -98,8 +98,22 @@
   }
 
   async function fetchFromSanity() {
+    const q = encodeURIComponent(QUERY);
+    // Prefer our same-origin proxy so the catalog loads on any domain. Sanity's
+    // CORS allow-list only covers specific origins, so a direct browser request
+    // from a custom domain (e.g. sofnade.com) gets a 403 and we'd fall back to
+    // the bundled demo catalog. The proxy runs server-side (no CORS) and returns
+    // the same Sanity result. If it's unavailable, try Sanity directly.
+    try {
+      const pres = await fetch(`/api/catalog?query=${q}`);
+      if (pres.ok) {
+        const pjson = await pres.json();
+        if (pjson && pjson.result) return mapStore(pjson.result);
+      }
+    } catch (e) { /* fall through to a direct request */ }
+
     const url = `https://${cfg.projectId}.apicdn.sanity.io/v${cfg.apiVersion}/data/query/${cfg.dataset}` +
-                `?query=${encodeURIComponent(QUERY)}`;
+                `?query=${q}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('Sanity HTTP ' + res.status);
     const json = await res.json();
