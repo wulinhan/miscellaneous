@@ -579,6 +579,7 @@
               ${c.phone ? `<button class="mi" data-copy="${esc(c.phone)}">Copy phone</button>` : ''}
               <button class="mi" data-copy="${esc(addr)}">Copy address</button>
               ${wa ? `<a class="mi" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : ''}
+              ${o.invoice_url ? `<a class="mi" href="${esc(o.invoice_url)}" target="_blank" rel="noopener">View invoice</a>` : ''}
               <div class="mi-sep"></div>
               <button class="mi" onclick="archiveOrder('${esc(o.id)}', ${o.archived ? 'false' : 'true'})">${o.archived ? 'Unarchive' : 'Archive'}</button>
               <button class="mi mi-danger" onclick="askDelete('${esc(o.id)}')">Delete…</button>
@@ -612,7 +613,10 @@
             <div><b>Payment:</b> ${o.payment_method === 'vendors_sg' ? 'Corporate Booking <span class="vsg-tag">unpaid</span>' : 'Card (Razorpay)'}</div>
             ${c.notes ? `<div><b>Customer note:</b> ${esc(c.notes)}</div>` : ''}
           </div>
-          ${waBtn ? `<div style="margin:2px 0 10px">${waBtn}</div>` : ''}
+          <div style="margin:2px 0 10px;display:flex;gap:8px;flex-wrap:wrap">
+            ${waBtn || ''}
+            ${o.invoice_url ? `<a class="btn-light btn-sm" style="text-decoration:none" href="${esc(o.invoice_url)}" target="_blank" rel="noopener">📄 View invoice</a>` : ''}
+          </div>
           ${o.payment_method === 'vendors_sg' ? `<div class="vsg-note"><b>Corporate Booking request — unpaid.</b> This order was placed via Corporate Booking and no payment has been taken. Follow up with the customer with an official invoice to confirm and arrange payment, then mark it Paid once settled.</div>` : ''}
           ${paymentSummary(o)}
           ${o.razorpay_payment_id ? `<div class="ref">Razorpay ${esc(o.razorpay_order_id)} / ${esc(o.razorpay_payment_id)}</div>` : ''}

@@ -128,6 +128,16 @@ async function getOne(id) {
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
+// Full order row (for the invoice). Returns null if not found / unconfigured.
+async function getOrder(id) {
+  if (!isConfigured() || !id) return null;
+  const url = `${base()}?id=eq.${encodeURIComponent(id)}&select=*&limit=1`;
+  const res = await fetch(url, { headers: headers() });
+  if (!res.ok) throw new Error(`Supabase get ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
 // Update a whitelisted set of fields for one order. Returns the updated row, or
 // null if not found / unconfigured. Stamps updated_at, and appends to
 // status_history when the status actually changes (meta.by = who changed it).
@@ -197,4 +207,4 @@ async function addStaff(name) {
   return listStaff();
 }
 
-module.exports = { isConfigured, insertPending, markPaid, listOrders, updateOrder, deleteOrder, listStaff, addStaff };
+module.exports = { isConfigured, insertPending, markPaid, listOrders, getOrder, updateOrder, deleteOrder, listStaff, addStaff };

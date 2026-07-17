@@ -4,6 +4,7 @@
 // the Supabase service key inside _lib/orders — it never reaches the browser.
 const { checkAdmin } = require('../_lib/admin-auth');
 const orders = require('../_lib/orders');
+const invoice = require('../_lib/invoice');
 
 module.exports = async (req, res) => {
   const auth = checkAdmin(req);
@@ -21,6 +22,8 @@ module.exports = async (req, res) => {
         limit: url.searchParams.get('limit') || undefined,
         archived: url.searchParams.get('archived') || undefined,
       });
+      // Tokenized customer-invoice link per order, for the "View invoice" action.
+      list.forEach((o) => { o.invoice_url = invoice.invoiceUrl(o.id); });
       return res.status(200).json({ orders: list });
     }
 

@@ -4,6 +4,7 @@
 // so a notification failure can never fail the webhook/verify/checkout call.
 
 // Seller / GST / corporate details for the invoice (built-in defaults).
+const invoice = require('./invoice');
 const STORE = require('../../data/products.js');
 const CONF = (STORE && STORE.SETTINGS) || {};
 const SELLER = CONF.seller || { name: 'SOFNADE CATERING PTE. LTD.', uen: '202314539M', address: '', email: 'sales@sofnade.com', phone: '8930 9756' };
@@ -214,6 +215,9 @@ function orderEmailHtml(order, opts) {
         ${opts.infoBox || ''}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 6px;">
           <tr><td align="center">
+            <a href="${invoice.invoiceUrl(order.id)}" style="display:inline-block;background:${NAVY};color:#ffffff;font:bold 15px Arial,sans-serif;text-decoration:none;padding:14px 26px;border-radius:999px;">Download invoice (PDF)</a>
+          </td></tr>
+          <tr><td align="center" style="padding-top:10px;">
             <a href="${waHref(order)}" style="display:inline-block;background:${WA_GREEN};color:#ffffff;font:bold 15px Arial,sans-serif;text-decoration:none;padding:14px 26px;border-radius:999px;">Message us on WhatsApp</a>
           </td></tr>
         </table>
@@ -268,6 +272,7 @@ function orderEmailText(order, headingText, introText) {
     );
     lines.push('');
   }
+  lines.push(`Download your invoice (PDF): ${invoice.invoiceUrl(order.id)}`);
   lines.push(`Questions? WhatsApp us at ${supportWaPretty()}: ${waHref(order)}`);
   lines.push('- Sofnade');
   return lines.join('\n');
