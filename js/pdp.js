@@ -378,11 +378,9 @@
     }
 
     function alsoCard(p) {
-      const cat = primaryCategory(p);
       return `
         <article class="card">
           <a class="card-media" href="/product/${p.id}" data-pslug="${p.id}">
-            <div class="card-tags">${cat ? `<span class="tag-chip cat">${cat}</span>` : ''}</div>
             <img src="${productImage(p, 0)}" alt="${p.title}" loading="lazy">
           </a>
           <div class="card-body">

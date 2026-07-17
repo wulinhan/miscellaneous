@@ -7,10 +7,19 @@
    photos (e.g. add-on toppings, which are only ever shown as text + emoji).
    ========================================================================= */
 
+/* Ask Sanity's image CDN for a right-sized, modern-format rendition instead of
+   the raw original: `w` caps the width (fit=max never upscales, so small
+   sources are unchanged), auto=format serves WebP/AVIF where supported. */
+function sanitySized(url, w) {
+  if (typeof url !== 'string' || url.indexOf('cdn.sanity.io/images/') === -1) return url;
+  return url + (url.indexOf('?') === -1 ? '?' : '&') + 'w=' + w + '&fit=max&auto=format&q=85';
+}
+
 function productImage(product, variant = 0) {
   // 1) CMS-provided image URLs, 2) bundled asset files, 3) SVG placeholder.
   if (product && Array.isArray(product.images) && product.images.length) {
-    return product.images[Math.min(Math.max(0, variant), product.images.length - 1)];
+    // ~800px covers 2x-DPR product cards and cart thumbs.
+    return sanitySized(product.images[Math.min(Math.max(0, variant), product.images.length - 1)], 800);
   }
   if (product && product.id && product.imageCount) {
     const n = Math.min(Math.max(0, variant), product.imageCount - 1) + 1;
@@ -21,7 +30,8 @@ function productImage(product, variant = 0) {
 
 function productGallery(product) {
   if (product && Array.isArray(product.images) && product.images.length) {
-    return product.images.slice();
+    // ~1400px covers the 2x-DPR gallery main image.
+    return product.images.map(u => sanitySized(u, 1400));
   }
   if (product && product.id && product.imageCount) {
     const out = [];

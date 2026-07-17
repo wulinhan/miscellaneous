@@ -312,11 +312,16 @@ let CATEGORIES = ['Drinks', 'Sweets', 'Snacks', 'Gift Sets', 'Christmas Festive'
 /* Order categories appear in the filter bar (Christmas Festive featured first). */
 let CATEGORY_BAR_ORDER = ['Christmas Festive', 'Drinks', 'Sweets', 'Snacks', 'Gift Sets', 'Housebake Cookies', 'National Day Snacks', 'Deepavali', 'Hari Raya'];
 
-/* The product's headline category for chips/breadcrumb: prefer a "real"
-   category over the seasonal Christmas Festive one. */
+/* Occasion categories (seasonal / festive) live in their own "Shop by
+   occasion" ribbon, separate from product types. The CMS overrides this via
+   the category "Occasion" toggle. */
+let OCCASIONS = ['Christmas Festive', 'National Day Snacks', 'Deepavali', 'Hari Raya'];
+
+/* The product's headline category for chips/breadcrumb: prefer a product-type
+   category over an occasion one. */
 function primaryCategory(product) {
   const cats = CATEGORIES.filter(c => product.tags.includes(c));
-  return cats.find(c => c !== 'Christmas Festive') || cats[0];
+  return cats.find(c => !OCCASIONS.includes(c)) || cats[0];
 }
 
 /* Every category a product belongs to, primary first. */
@@ -326,11 +331,19 @@ function productCategories(product) {
   return [primary, ...cats.filter(c => c !== primary)];
 }
 
-/* Categories present across the catalog, in bar order. */
+/* Product-type categories present across the catalog, in bar order —
+   occasions are excluded here and shown in their own ribbon. */
 function filterCategories() {
   const present = new Set();
   PRODUCTS.forEach(p => p.tags.forEach(t => present.add(t)));
-  return CATEGORY_BAR_ORDER.filter(c => present.has(c));
+  return CATEGORY_BAR_ORDER.filter(c => present.has(c) && !OCCASIONS.includes(c));
+}
+
+/* Occasion categories that actually have products, in bar order. */
+function occasionCategories() {
+  const present = new Set();
+  PRODUCTS.forEach(p => p.tags.forEach(t => present.add(t)));
+  return OCCASIONS.filter(c => present.has(c));
 }
 
 /* Helpers shared across pages */
@@ -461,6 +474,8 @@ function applyStore(store) {
     CATEGORIES = store.categories.slice();
     CATEGORY_BAR_ORDER = store.categories.slice();
   }
+  // CMS-driven occasion set (may be empty: no occasions defined yet).
+  if (Array.isArray(store.occasions)) OCCASIONS = store.occasions.slice();
   if (store.settings) SETTINGS = Object.assign({}, SETTINGS, store.settings);
 }
 

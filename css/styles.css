@@ -153,6 +153,12 @@ img { display: block; max-width: 100%; }
 .filter-btn:hover { background: var(--bg-soft); }
 .filter-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
 
+/* "Shop by occasion" — a labelled second group of category pills */
+.ob-label {
+  margin: 18px 0 4px; padding: 0 12px; font-size: 11px; font-weight: 800;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+}
+
 /* Mobile: categories become a horizontal scroll bar of pills on a golden band,
    sitting flush right under the hero. */
 @media (max-width: 860px) {
@@ -179,6 +185,9 @@ img { display: block; max-width: 100%; }
   }
   .filter-btn:hover { background: #fff; }
   .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  /* Occasion group joins the golden band: label sits tight above its row */
+  .ob-label { margin: 0; padding: 6px 20px 0; }
+  .filter-bar.ob-bar { padding-top: 6px; }
 }
 
 .listing-head {

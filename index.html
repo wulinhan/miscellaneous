@@ -9,7 +9,7 @@
   <title>Sofnade — Drinks, Sweets, Snacks & Gift Sets</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=38">
+  <link rel="stylesheet" href="css/styles.css?v=39">
 </head>
 <body>
   <div id="header"></div>
@@ -64,13 +64,13 @@
     <div class="pdp-modal-body" id="pdp-modal-body"></div>
   </div>
 
-  <script src="data/products.js?v=38"></script>
-  <script src="js/config.js?v=38"></script>
-  <script src="js/store-data.js?v=38"></script>
-  <script src="js/images.js?v=38"></script>
-  <script src="js/cart.js?v=38"></script>
-  <script src="js/common.js?v=38"></script>
-  <script src="js/pdp.js?v=38"></script>
+  <script src="data/products.js?v=39"></script>
+  <script src="js/config.js?v=39"></script>
+  <script src="js/store-data.js?v=39"></script>
+  <script src="js/images.js?v=39"></script>
+  <script src="js/cart.js?v=39"></script>
+  <script src="js/common.js?v=39"></script>
+  <script src="js/pdp.js?v=39"></script>
   <script>
     renderChrome('shop');
     const INDEX_TITLE = document.title;
@@ -105,9 +105,15 @@
       const pills = [mkBtn('', 'All')]
         .concat(filterCategories().map(c => mkBtn(c, c)))
         .join('');
+      // Occasions (CMS-flagged categories) get their own labelled ribbon.
+      const occ = (typeof occasionCategories === 'function') ? occasionCategories() : [];
+      const occBar = occ.length
+        ? `<div class="ob-label">Shop by occasion</div>
+           <div class="filter-bar ob-bar">${occ.map(c => mkBtn(c, c)).join('')}</div>`
+        : '';
       const host = document.getElementById('sidebar');
-      const prevScroll = (host.querySelector('.filter-bar') || {}).scrollLeft || 0;
-      host.innerHTML = `<div class="filter-bar">${pills}</div>`;
+      const prevScrolls = Array.from(host.querySelectorAll('.filter-bar')).map(b => b.scrollLeft);
+      host.innerHTML = `<div class="filter-bar">${pills}</div>${occBar}`;
 
       document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -119,9 +125,8 @@
         });
       });
 
-      // Keep the ribbon exactly where the user left it (no auto-scroll/displace).
-      const bar = host.querySelector('.filter-bar');
-      if (bar) bar.scrollLeft = prevScroll;
+      // Keep the ribbons exactly where the user left them (no auto-scroll/displace).
+      host.querySelectorAll('.filter-bar').forEach((bar, i) => { bar.scrollLeft = prevScrolls[i] || 0; });
     }
 
     // Sub-navigation (dropdown on desktop, scroll row on mobile) for categories
@@ -156,13 +161,9 @@
     }
 
     function productCard(p) {
-      // Show only the headline category (cross tags stay internal).
-      const cat = primaryCategory(p);
-      const chips = cat ? `<span class="tag-chip cat">${cat}</span>` : '';
       return `
         <article class="card">
           <a class="card-media" href="/product/${p.id}" data-pslug="${p.id}">
-            <div class="card-tags">${chips}</div>
             <img src="${productImage(p, 0)}" alt="${p.title}" loading="lazy">
           </a>
           <div class="card-body">

@@ -26,7 +26,7 @@
       brandName, heroTitle, heroSubtitle, deliveryFee, freeDeliveryThreshold,
       pickupEnabled, leadBusinessDays, timeSlots[]{value, label, sub}
     },
-    "categories": *[_type == "category"] | order(order asc){ "title": title },
+    "categories": *[_type == "category"] | order(order asc){ "title": title, "hidden": hidden == true, "isOccasion": isOccasion == true },
     "toppings": *[_type == "topping"]{ "id": slug.current, title, price },
     "discounts": *[_type == "discountCode"]{ "code": upper(code), type, value, label },
     "products": *[_type == "product"] | order(order asc){
@@ -42,7 +42,12 @@
   }`;
 
   function mapStore(data) {
-    const categories = (data.categories || []).map(c => c.title).filter(Boolean);
+    const allCats = (data.categories || []).filter(c => c && c.title);
+    const hiddenCats = new Set(allCats.filter(c => c.hidden).map(c => c.title));
+    // Visible categories (occasions included) drive chips/breadcrumbs; the
+    // occasion subset feeds the separate "Shop by occasion" ribbon.
+    const categories = allCats.filter(c => !c.hidden).map(c => c.title);
+    const occasions = allCats.filter(c => !c.hidden && c.isOccasion).map(c => c.title);
 
     const addons = {};
     (data.toppings || []).forEach(t => { if (t.id) addons[t.id] = { id: t.id, title: t.title, price: t.price || 0 }; });
@@ -54,9 +59,12 @@
 
     const products = (data.products || []).map(p => {
       // tags drive filtering and must contain the product's category names,
-      // ordered with the primary category first.
-      const cats = (p.categories || []).filter(Boolean);
-      const primary = p.primary || cats[0];
+      // ordered with the primary category first. Hidden categories are dropped;
+      // a product whose every category is hidden disappears from the store.
+      const rawCats = (p.categories || []).filter(Boolean);
+      const cats = rawCats.filter(c => !hiddenCats.has(c));
+      if (rawCats.length && !cats.length) return null;
+      const primary = (p.primary && !hiddenCats.has(p.primary)) ? p.primary : cats[0];
       const tags = primary ? [primary].concat(cats.filter(c => c !== primary)) : cats;
       const sizes = (p.sizes && p.sizes.length) ? p.sizes : [{ label: 'One size', price: 0 }];
       const images = (p.images || []).map(imageUrl).filter(Boolean);
@@ -82,7 +90,7 @@
       if (images.length) mapped.images = images;
       else if (builtin && builtin.imageCount) mapped.imageCount = builtin.imageCount;
       return mapped;
-    });
+    }).filter(Boolean);
 
     const settings = {};
     const s = data.settings || {};
@@ -94,7 +102,7 @@
     if (typeof s.leadBusinessDays === 'number') settings.leadBusinessDays = s.leadBusinessDays;
     if (Array.isArray(s.timeSlots) && s.timeSlots.length) settings.timeSlots = s.timeSlots;
 
-    return { products, addons, discountCodes, categories, settings };
+    return { products, addons, discountCodes, categories, occasions, settings };
   }
 
   async function fetchFromSanity() {
