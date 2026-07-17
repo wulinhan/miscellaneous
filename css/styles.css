@@ -51,10 +51,33 @@ img { display: block; max-width: 100%; }
 }
 .brand { display: flex; align-items: center; }
 .brand img { height: 34px; width: auto; display: block; }
-.main-nav { display: flex; gap: 22px; margin-left: 18px; }
+.main-nav { display: flex; align-items: center; gap: 22px; margin-left: 18px; }
 .main-nav a { color: rgba(255, 255, 255, 0.82); font-weight: 500; font-size: 15px; }
 .main-nav a:hover, .main-nav a.active { color: #fff; }
 .header-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+/* "More" dropdown (desktop) — overflow categories/occasions */
+.nav-more { position: relative; display: inline-flex; }
+.nav-more-btn {
+  background: none; border: none; cursor: pointer; padding: 0;
+  color: rgba(255, 255, 255, 0.82); font: inherit; font-weight: 500; font-size: 15px;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.nav-more-btn:hover, .nav-more.open .nav-more-btn { color: #fff; }
+.nav-more-caret { font-size: 11px; transition: transform 0.15s ease; }
+.nav-more.open .nav-more-caret { transform: rotate(180deg); }
+.nav-more-menu {
+  position: absolute; top: 100%; left: 0; margin-top: 14px;
+  display: none; flex-direction: column; gap: 2px;
+  background: #fff; border-radius: 12px; box-shadow: var(--shadow);
+  padding: 8px; min-width: 190px; z-index: 60;
+}
+.nav-more.open .nav-more-menu { display: flex; }
+.nav-more-menu a {
+  color: var(--ink); padding: 9px 12px; border-radius: 8px;
+  font-size: 14px; font-weight: 500; white-space: nowrap;
+}
+.nav-more-menu a:hover { background: var(--bg-soft); color: var(--accent); }
 
 /* Hamburger (hidden on desktop) */
 .nav-toggle {
@@ -76,6 +99,11 @@ img { display: block; max-width: 100%; }
   .main-nav.open { display: flex; }
   .main-nav a { padding: 13px 0; font-size: 16px; border-bottom: 1px solid rgba(255,255,255,.12); }
   .main-nav a:last-child { border-bottom: none; }
+  /* No "More" dropdown on mobile — every item lists inline in the panel. */
+  .nav-more, .nav-more-menu { display: contents; }
+  .nav-more-btn { display: none; }
+  .main-nav .nav-more-menu a { color: rgba(255,255,255,.82); background: none; }
+  .main-nav .nav-more-menu a:hover { color: #fff; }
   /* Shrink the hero so the first row of products is visible sooner */
   .hero .wrap { padding: 26px 20px; }
   .hero h1 { font-size: 28px; margin: 0 0 8px; }

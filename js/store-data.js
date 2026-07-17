@@ -141,13 +141,16 @@
   }
 
   window.loadStore = async function loadStore() {
-    if (!configured) return;                 // use the built-in catalog as-is
-    try {
-      const store = await fetchFromSanity();
-      if (store.products && store.products.length) applyStore(store);
-    } catch (e) {
-      console.warn('[Sofnade] Falling back to built-in catalog:', e.message);
+    if (configured) {
+      try {
+        const store = await fetchFromSanity();
+        if (store.products && store.products.length) applyStore(store);
+      } catch (e) {
+        console.warn('[Sofnade] Falling back to built-in catalog:', e.message);
+      }
     }
+    // Let the shared chrome rebuild the nav from the now-current categories.
+    try { document.dispatchEvent(new CustomEvent('store:loaded')); } catch (_) {}
   };
 
   /* Rescue lookup for the product page: fetch ONE product by slug straight

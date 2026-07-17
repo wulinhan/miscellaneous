@@ -14,6 +14,60 @@ function waUrl(text) {
   return `https://wa.me/${WHATSAPP_NUMBER}` + (text ? `?text=${encodeURIComponent(text)}` : '');
 }
 
+/* ---- Dynamic top nav: every category + occasion, first 5 in full and the
+   rest under a "More" dropdown (desktop). Built from the loaded catalog so it
+   updates when the CMS categories change (see the 'store:loaded' refresh). */
+let _chromeActive = null;
+const NAV_TOP = 5;
+function navCategoryList() {
+  const cats = (typeof filterCategories === 'function') ? filterCategories() : [];
+  const occ = (typeof occasionCategories === 'function') ? occasionCategories() : [];
+  const out = [], seen = new Set();
+  cats.concat(occ).forEach(c => { if (c && !seen.has(c)) { seen.add(c); out.push(c); } });
+  return out;
+}
+function navLinkHTML(label, active) {
+  if (label === 'Shop') return `<a href="index.html" class="${active === 'shop' ? 'active' : ''}">Shop</a>`;
+  return `<a href="index.html?cat=${encodeURIComponent(label)}">${escapeHtmlAttr(label)}</a>`;
+}
+function escapeHtmlAttr(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+function navInnerHTML(active) {
+  const cats = navCategoryList();
+  const visible = cats.slice(0, NAV_TOP);
+  const rest = cats.slice(NAV_TOP);
+  let h = navLinkHTML('Shop', active) + visible.map(c => navLinkHTML(c)).join('');
+  if (rest.length) {
+    h += `<div class="nav-more">`
+      + `<button type="button" class="nav-more-btn" aria-haspopup="true" aria-expanded="false">More <span class="nav-more-caret">▾</span></button>`
+      + `<div class="nav-more-menu">${rest.map(c => navLinkHTML(c)).join('')}</div>`
+      + `</div>`;
+  }
+  return h;
+}
+function wireNavMore() {
+  const nav = document.getElementById('main-nav');
+  if (!nav) return;
+  const more = nav.querySelector('.nav-more');
+  const btn = nav.querySelector('.nav-more-btn');
+  if (btn && more) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = more.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+}
+// Rebuild the nav after the catalog loads (categories may differ from bundled).
+window.refreshChromeNav = function () {
+  const nav = document.getElementById('main-nav');
+  if (!nav) return;
+  nav.innerHTML = navInnerHTML(_chromeActive);
+  wireNavMore();
+};
+document.addEventListener('store:loaded', () => { if (window.refreshChromeNav) window.refreshChromeNav(); });
+
 /* Make the floating WhatsApp button draggable (pointer + touch). Position is
    pinned in px and remembered in localStorage. A real drag suppresses the
    click, so moving it never opens WhatsApp; a plain tap still does. */
@@ -67,18 +121,12 @@ function makeWaDraggable(el) {
 }
 
 function renderChrome(active) {
+  _chromeActive = active;
   const header = `
   <header class="site-header">
     <div class="wrap">
       <a class="brand" href="https://sofnade.com"><img src="assets/logo/Sofnade%20logo%20white.png" alt="Sofnade"></a>
-      <nav class="main-nav" id="main-nav">
-        <a href="index.html" class="${active === 'shop' ? 'active' : ''}">Shop</a>
-        <a href="index.html?cat=Christmas%20Festive">Christmas Festive</a>
-        <a href="index.html?cat=Drinks">Drinks</a>
-        <a href="index.html?cat=Sweets">Sweets</a>
-        <a href="index.html?cat=Snacks">Snacks</a>
-        <a href="index.html?cat=Gift%20Sets">Gift Sets</a>
-      </nav>
+      <nav class="main-nav" id="main-nav">${navInnerHTML(active)}</nav>
       <div class="header-actions">
         <a class="cart-link" href="checkout.html" onclick="openCart(); return false;">
           Cart <span class="cart-badge" data-cart-count>0</span>
@@ -112,6 +160,16 @@ function renderChrome(active) {
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
   }
+  wireNavMore();
+  // Close the "More" dropdown when clicking elsewhere.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.nav-more')) {
+      document.querySelectorAll('.nav-more.open').forEach(m => {
+        m.classList.remove('open');
+        const b = m.querySelector('.nav-more-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+      });
+    }
+  });
 
   if (!document.querySelector('.toast')) {
     const t = document.createElement('div');
