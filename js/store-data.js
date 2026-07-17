@@ -41,6 +41,42 @@
     }
   }`;
 
+  /* Map one raw CMS product into the storefront shape. tags carry the product's
+     category names, primary first. Categories in `hiddenCats` are dropped; a
+     product whose every category is hidden returns null (off the store). */
+  function mapProduct(p, hiddenCats) {
+    if (!p || !p.id) return null;
+    const rawCats = (p.categories || []).filter(Boolean);
+    const cats = rawCats.filter(c => !hiddenCats.has(c));
+    if (rawCats.length && !cats.length) return null;
+    const primary = (p.primary && !hiddenCats.has(p.primary)) ? p.primary : cats[0];
+    const tags = primary ? [primary].concat(cats.filter(c => c !== primary)) : cats;
+    const sizes = (p.sizes && p.sizes.length) ? p.sizes : [{ label: 'One size', price: 0 }];
+    const images = (p.images || []).map(imageUrl).filter(Boolean);
+    // If no CMS photos yet, reuse a bundled photo when the id matches.
+    const builtin = (typeof PRODUCTS !== 'undefined') ? PRODUCTS.find(x => x.id === p.id) : null;
+    const mapped = {
+      id: p.id,
+      title: p.title,
+      unit: p.unit || '',
+      shortDesc: p.shortDesc || '',
+      longDesc: p.longDesc || p.shortDesc || '',
+      tags: tags,
+      // Sub-section (e.g. "Fusion Teas") drives the sub-category filter. Use the
+      // CMS value if set, else fall back to the bundled product's section so the
+      // sub-filters keep working until sections are managed in the CMS.
+      section: p.section || (builtin ? builtin.section : undefined),
+      sizes: sizes,
+      price: sizes[0].price,
+      upsell: (p.upsell || []).filter(Boolean),
+      alsoBought: (p.alsoBought || []).filter(Boolean),
+      allergens: p.allergens || []
+    };
+    if (images.length) mapped.images = images;
+    else if (builtin && builtin.imageCount) mapped.imageCount = builtin.imageCount;
+    return mapped;
+  }
+
   function mapStore(data) {
     const allCats = (data.categories || []).filter(c => c && c.title);
     const hiddenCats = new Set(allCats.filter(c => c.hidden).map(c => c.title));
@@ -57,40 +93,7 @@
       if (d.code) discountCodes[d.code] = { type: d.type, value: d.value, label: d.label };
     });
 
-    const products = (data.products || []).map(p => {
-      // tags drive filtering and must contain the product's category names,
-      // ordered with the primary category first. Hidden categories are dropped;
-      // a product whose every category is hidden disappears from the store.
-      const rawCats = (p.categories || []).filter(Boolean);
-      const cats = rawCats.filter(c => !hiddenCats.has(c));
-      if (rawCats.length && !cats.length) return null;
-      const primary = (p.primary && !hiddenCats.has(p.primary)) ? p.primary : cats[0];
-      const tags = primary ? [primary].concat(cats.filter(c => c !== primary)) : cats;
-      const sizes = (p.sizes && p.sizes.length) ? p.sizes : [{ label: 'One size', price: 0 }];
-      const images = (p.images || []).map(imageUrl).filter(Boolean);
-      // If no CMS photos yet, reuse a bundled photo when the id matches.
-      const builtin = (typeof PRODUCTS !== 'undefined') ? PRODUCTS.find(x => x.id === p.id) : null;
-      const mapped = {
-        id: p.id,
-        title: p.title,
-        unit: p.unit || '',
-        shortDesc: p.shortDesc || '',
-        longDesc: p.longDesc || p.shortDesc || '',
-        tags: tags,
-        // Sub-section (e.g. "Fusion Teas") drives the sub-category filter. Use the
-        // CMS value if set, else fall back to the bundled product's section so the
-        // sub-filters keep working until sections are managed in the CMS.
-        section: p.section || (builtin ? builtin.section : undefined),
-        sizes: sizes,
-        price: sizes[0].price,
-        upsell: (p.upsell || []).filter(Boolean),
-        alsoBought: (p.alsoBought || []).filter(Boolean),
-        allergens: p.allergens || []
-      };
-      if (images.length) mapped.images = images;
-      else if (builtin && builtin.imageCount) mapped.imageCount = builtin.imageCount;
-      return mapped;
-    }).filter(Boolean);
+    const products = (data.products || []).map(p => mapProduct(p, hiddenCats)).filter(Boolean);
 
     const settings = {};
     const s = data.settings || {};
@@ -112,13 +115,18 @@
     // from a custom domain (e.g. sofnade.com) gets a 403 and we'd fall back to
     // the bundled demo catalog. The proxy runs server-side (no CORS) and returns
     // the same Sanity result. If it's unavailable, try Sanity directly.
-    try {
-      const pres = await fetch(`/api/catalog?query=${q}`);
-      if (pres.ok) {
-        const pjson = await pres.json();
-        if (pjson && pjson.result) return mapStore(pjson.result);
-      }
-    } catch (e) { /* fall through to a direct request */ }
+    // Two attempts through the proxy (a transient hiccup shouldn't demote the
+    // whole page to the bundled catalog), then a direct request as a last try.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const pres = await fetch(`/api/catalog?query=${q}`);
+        if (pres.ok) {
+          const pjson = await pres.json();
+          if (pjson && pjson.result) return mapStore(pjson.result);
+        }
+      } catch (e) { /* retry, then fall through to a direct request */ }
+      if (!attempt) await new Promise(r => setTimeout(r, 400));
+    }
 
     const url = `https://${cfg.projectId}.apicdn.sanity.io/v${cfg.apiVersion}/data/query/${cfg.dataset}` +
                 `?query=${q}`;
@@ -135,6 +143,43 @@
       if (store.products && store.products.length) applyStore(store);
     } catch (e) {
       console.warn('[Sofnade] Falling back to built-in catalog:', e.message);
+    }
+  };
+
+  /* Rescue lookup for the product page: fetch ONE product by slug straight
+     from the CMS (via the same-origin proxy). Covers any case where the slug
+     is missing from whatever catalog this page ended up with — new products,
+     renamed slugs, or a partial load. Returns the mapped product or null. */
+  window.fetchProductBySlug = async function fetchProductBySlug(slug) {
+    if (!configured || !slug) return null;
+    const groq = `{
+      "cats": *[_type == "category"]{ "title": title, "hidden": hidden == true },
+      "p": *[_type == "product" && slug.current == ${JSON.stringify(String(slug))}][0]{
+        "id": slug.current, title, unit, shortDesc, longDesc, section,
+        "categories": categories[]->title,
+        "primary": primaryCategory->title,
+        sizes[]{label, price},
+        "upsell": toppings[]->slug.current,
+        "alsoBought": alsoBought[]->slug.current,
+        allergens,
+        "images": images[].asset._ref
+      }
+    }`;
+    try {
+      const res = await fetch(`/api/catalog?query=${encodeURIComponent(groq)}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      const r = (json && json.result) || {};
+      if (!r.p) return null;
+      const hiddenCats = new Set((r.cats || []).filter(c => c && c.hidden).map(c => c.title));
+      const mapped = mapProduct(r.p, hiddenCats);
+      // Register it so the cart, upsells and modal resolve it from now on.
+      if (mapped && typeof PRODUCTS !== 'undefined' && !PRODUCTS.some(x => x.id === mapped.id)) {
+        PRODUCTS.push(mapped);
+      }
+      return mapped;
+    } catch (e) {
+      return null;
     }
   };
 })();
