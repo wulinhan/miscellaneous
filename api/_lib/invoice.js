@@ -142,7 +142,7 @@ function invoiceHtml(order) {
   table.items th { background: ${NAVY}; color: #fff; font-size: 11.5px; padding: 8px 9px; text-align: left; }
   table.items th.num, table.items td.num { text-align: right; white-space: nowrap; }
   table.items td { border: 1px solid #d9dce6; padding: 9px; vertical-align: top; font-size: 12.5px; }
-  table.items td.desc { width: 52%; }
+  table.items td.desc { width: 52%; overflow-wrap: break-word; }
   .totals { width: 320px; margin-left: auto; margin-top: 10px; font-size: 12.5px; }
   .totals .row { display: flex; justify-content: space-between; padding: 3px 0; }
   .totals .strong { font-weight: 800; font-size: 14px; border-top: 2px solid ${NAVY}; margin-top: 6px; padding-top: 8px; }
@@ -155,10 +155,31 @@ function invoiceHtml(order) {
   .foot { display: flex; justify-content: space-between; gap: 14px; border-top: 1px solid #d9dce6; margin-top: 22px; padding-top: 12px; font-size: 11.5px; color: #5a6b8c; flex-wrap: wrap; }
   .dl { position: fixed; top: 16px; right: 16px; background: ${NAVY}; color: #fff; border: none; font: bold 14px Arial; padding: 12px 20px; border-radius: 999px; cursor: pointer; box-shadow: 0 6px 18px rgba(27,35,48,.25); }
   .dl:hover { background: #16224a; }
+  .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Phone layout: stack the header blocks, tighten padding, and let the item
+     table scroll sideways inside the sheet instead of overflowing it. */
+  @media (max-width: 640px) {
+    .sheet { margin: 0; padding: 18px 14px 20px; box-shadow: none; }
+    .top { flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 20px; }
+    .top > div { text-align: left !important; }
+    h1 { text-align: left; font-size: 19px; }
+    .logo img { height: 44px; }
+    .meta { flex-direction: column; gap: 16px; margin-bottom: 20px; }
+    table.items { min-width: 560px; }
+    table.items td.desc { min-width: 200px; }
+    .totals { width: 100%; }
+    .pay .cols { flex-direction: column; gap: 12px; }
+    .dl { top: auto; bottom: 16px; right: 16px; }
+    .foot { flex-direction: column; gap: 4px; }
+  }
   @media print {
     body { background: #fff; }
     .sheet { margin: 0; max-width: none; box-shadow: none; padding: 18px 8px; }
     .dl { display: none; }
+    .tablewrap { overflow: visible; }
+    table.items { min-width: 0; }
+    .top { flex-direction: row; }
+    .meta { flex-direction: row; }
   }
   @page { size: A4; margin: 12mm; }
 </style></head><body>
@@ -194,6 +215,7 @@ function invoiceHtml(order) {
     </div>
   </div>
 
+  <div class="tablewrap">
   <table class="items">
     <thead><tr>
       <th>Description</th><th class="num">Quantity</th><th class="num">Unit Price</th>
@@ -205,6 +227,7 @@ function invoiceHtml(order) {
       ${feeRows}
     </tbody>
   </table>
+  </div>
 
   <div class="totals">
     ${q.discount ? `<div class="row"><span>Total Discount${q.discountCode ? ` (${esc(q.discountCode)})` : ''}</span><span>-${fmt(q.discount)}</span></div>` : ''}
