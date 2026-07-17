@@ -31,6 +31,7 @@
     "discounts": *[_type == "discountCode"]{ "code": upper(code), type, value, label },
     "products": *[_type == "product"] | order(order asc){
       "id": slug.current, title, unit, shortDesc, longDesc, section,
+      "bestseller": bestseller == true,
       "categories": categories[]->title,
       "primary": primaryCategory->title,
       sizes[]{label, price},
@@ -58,6 +59,7 @@
     const mapped = {
       id: p.id,
       title: p.title,
+      bestseller: p.bestseller === true,
       unit: p.unit || '',
       shortDesc: p.shortDesc || '',
       longDesc: p.longDesc || p.shortDesc || '',

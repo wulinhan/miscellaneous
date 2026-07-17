@@ -95,14 +95,53 @@ img { display: block; max-width: 100%; }
 }
 .cart-badge.is-empty { background: rgba(31, 58, 138, 0.35); color: #fff; }
 
-/* ---------- Hero ---------- */
+/* ---------- Hero (split: copy + product imagery) ---------- */
 .hero {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  color: #fff;
+  background: linear-gradient(135deg, #fdf9f1, #f4efe6);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
 }
-.hero .wrap { padding: 56px 20px; }
-.hero h1 { font-size: 40px; line-height: 1.1; margin: 0 0 12px; letter-spacing: -0.03em; }
-.hero p { font-size: 18px; max-width: 560px; opacity: 0.9; margin: 0; }
+.hero .wrap { padding: 46px 20px; }
+.hero-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 36px; align-items: center; }
+.hero-eyebrow { color: #b3541e; font-weight: 800; font-size: 13px; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 10px; }
+.hero h1 { font-size: 42px; line-height: 1.08; margin: 0 0 14px; letter-spacing: -0.03em; color: var(--accent); }
+.hero p { font-size: 17px; max-width: 520px; color: #4a5568; margin: 0 0 22px; }
+.hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.btn.hero-cta { background: var(--gold); color: var(--accent); font-weight: 800; padding: 13px 24px; }
+.btn.hero-cta:hover { background: #f5bd1f; }
+.btn.ghost.hero-cta-alt { border: 1.5px solid var(--accent); color: var(--accent); padding: 12px 22px; background: #fff; }
+.hero-trustline { font-size: 12.5px; color: #6b7280; font-weight: 600; }
+.hero-media { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.hero-media img {
+  width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(27, 35, 48, .12); background: #fff;
+}
+.hero-media img:first-child { transform: translateY(12px); }
+
+/* ---------- Trust strips ---------- */
+.trust-strip { background: #fff; border-bottom: 1px solid var(--line); }
+.mini-strip { background: var(--bg-soft, #f7f8fb); border-top: 1px solid var(--line); margin-top: 40px; }
+.ts-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 18px 20px; }
+.ts-item { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.ts-ic { font-size: 22px; flex: 0 0 auto; }
+.ts-item b { display: block; font-size: 13.5px; color: var(--ink); }
+.ts-item small { display: block; font-size: 12px; color: var(--muted); }
+
+/* ---------- Quick category chips ---------- */
+.chip-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 4px; }
+.chip {
+  background: #fff; border: 1px solid var(--line); border-radius: 999px;
+  padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 600;
+  color: var(--ink); cursor: pointer; transition: all .15s ease;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip-best { color: #c0272d; }
+.chip-best.active { background: var(--accent); color: #fff; }
+
+/* "View all (N)" control in the listing head */
+.view-all { background: none; border: none; color: var(--accent); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; padding: 0; }
+.view-all:hover { text-decoration: underline; }
 
 /* ---------- Search bar ---------- */
 .searchbar {
@@ -229,6 +268,17 @@ img { display: block; max-width: 100%; }
 .price { font-weight: 700; font-size: 16px; }
 .price .from { color: var(--muted); font-weight: 500; font-size: 12px; }
 
+/* Bestseller badge + clearer price + full-width gold CTA */
+.best-badge {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  background: var(--gold); color: var(--accent); font-size: 11px; font-weight: 800;
+  letter-spacing: .02em; padding: 4px 10px; border-radius: 999px; box-shadow: var(--shadow-sm);
+}
+.card-price { font-size: 17px; color: var(--ink); margin: 0 0 12px; }
+.card-price b { font-size: 18px; color: var(--accent); }
+.card-price .from { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+.btn.card-cta { width: 100%; padding: 11px 12px; font-size: 14px; }
+
 /* Tighter cards for the two-column mobile grid */
 @media (max-width: 560px) {
   .card-body { padding: 12px; }
@@ -237,6 +287,22 @@ img { display: block; max-width: 100%; }
   .card-foot { flex-direction: column; align-items: stretch; gap: 8px; }
   .card-foot .btn.ghost { text-align: center; padding: 8px 12px; }
   .tag-chip { font-size: 10px; padding: 2px 7px; }
+  .card-price { font-size: 14px; margin-bottom: 8px; }
+  .card-price b { font-size: 15px; }
+  .btn.card-cta { padding: 9px 10px; font-size: 12.5px; }
+  .best-badge { font-size: 9.5px; padding: 3px 8px; }
+}
+
+/* Hero/trust/chips responsiveness */
+@media (max-width: 860px) {
+  .hero .wrap { padding: 28px 20px 30px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 20px; }
+  .hero h1 { font-size: 30px; }
+  .hero p { font-size: 15px; margin-bottom: 16px; }
+  .hero-media { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hero-media img:first-child { transform: none; }
+  .ts-grid { grid-template-columns: 1fr 1fr; gap: 10px 14px; padding: 14px 20px; }
+  .chip-row { display: none; }  /* the golden category ribbon covers this on mobile */
 }
 .btn {
   font: inherit; cursor: pointer; border: none; border-radius: 999px;

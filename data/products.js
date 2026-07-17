@@ -346,6 +346,18 @@ function occasionCategories() {
   return OCCASIONS.filter(c => present.has(c));
 }
 
+/* Bestsellers for the homepage "Popular Right Now" section: CMS-flagged
+   products first; if none are flagged, fall back to a curated id list. */
+const BESTSELLER_FALLBACK_IDS = [
+  'lychee-mint-tea', 'mango-green-tea', 'iced-lemon-tea', 'chocolate-chip-cookies',
+  'chocolate-gift-bag', 'festive-gift-bag', 'iced-gems', 'kueh-bangkit'
+];
+function bestsellerProducts() {
+  const flagged = PRODUCTS.filter(p => p.bestseller === true);
+  if (flagged.length) return flagged;
+  return BESTSELLER_FALLBACK_IDS.map(id => PRODUCTS.find(p => p.id === id)).filter(Boolean);
+}
+
 /* Helpers shared across pages */
 function getProduct(id) {
   return PRODUCTS.find(p => p.id === id) || (ADDONS[id] ? ADDONS[id] : null);
@@ -385,7 +397,7 @@ function tagCount(tag) {
    ========================================================================= */
 let SETTINGS = {
   brandName: 'Sofnade',
-  heroTitle: 'Crafted fresh.\nSince 2015.',
+  heroTitle: 'Freshly made treats\nfor every occasion.',
   heroSubtitle: 'Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.',
 
   /* ---- Delivery fees ---- */

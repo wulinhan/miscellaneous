@@ -13,6 +13,10 @@ export default defineType({
     defineField({ name: 'order', title: 'Display order', type: 'number',
       description: 'Lower numbers show first in the listing.' }),
     defineField({
+      name: 'bestseller', title: 'Bestseller', type: 'boolean', initialValue: false,
+      description: 'Featured in the "Popular Right Now" section on the homepage, with a Bestseller badge on the card.'
+    }),
+    defineField({
       name: 'images', title: 'Photos', type: 'array',
       of: [{ type: 'image', options: { hotspot: true } }],
       description: 'First photo is used on the card. Add more for the gallery.'

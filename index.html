@@ -9,15 +9,37 @@
   <title>Sofnade — Drinks, Sweets, Snacks & Gift Sets</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=40">
+  <link rel="stylesheet" href="css/styles.css?v=41">
 </head>
 <body>
   <div id="header"></div>
 
-  <section class="hero">
-    <div class="wrap">
-      <h1 id="hero-title">Crafted fresh.<br>Since 2015.</h1>
-      <p id="hero-subtitle">Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.</p>
+  <section class="hero hero-split">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <div class="hero-eyebrow">Crafted fresh. Since 2015.</div>
+        <h1 id="hero-title">Freshly made treats<br>for every occasion.</h1>
+        <p id="hero-subtitle">Hand-shaken bubble tea, freshly baked sweets, wholesome snacks and giftable sets, delivered across Singapore.</p>
+        <div class="hero-ctas">
+          <button class="btn hero-cta" type="button" onclick="showBestsellers()">Shop Bestsellers ›</button>
+          <a class="btn ghost hero-cta-alt" href="index.html?cat=Gift%20Sets">Browse Gift Sets</a>
+        </div>
+        <div class="hero-trustline">MUIS Halal Certified &nbsp;·&nbsp; Islandwide Delivery &nbsp;·&nbsp; Serving Singapore Since 2015</div>
+      </div>
+      <div class="hero-media" aria-hidden="true">
+        <img src="assets/miscellaneous-images/bubble-tea-bottle.webp" alt="" loading="eager">
+        <img src="assets/miscellaneous-images/snack-packets.webp" alt="" loading="eager">
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust strip -->
+  <section class="trust-strip">
+    <div class="wrap ts-grid">
+      <div class="ts-item"><span class="ts-ic">☪</span><div><b>MUIS Halal Certified</b><small>Certified &amp; trusted</small></div></div>
+      <div class="ts-item"><span class="ts-ic">🌿</span><div><b>Freshly Prepared</b><small>Made in small batches</small></div></div>
+      <div class="ts-item"><span class="ts-ic">🚚</span><div><b>Islandwide Delivery</b><small>Fast &amp; reliable</small></div></div>
+      <div class="ts-item"><span class="ts-ic">🤝</span><div><b>Corporate &amp; Bulk Orders</b><small>For businesses &amp; events</small></div></div>
     </div>
   </section>
 
@@ -29,6 +51,8 @@
              aria-label="Search products" autocomplete="off">
       <button id="search-clear" class="searchbar-clear" type="button" aria-label="Clear search" hidden>×</button>
     </div>
+    <!-- Quick category chips (desktop; mobile uses the golden ribbon) -->
+    <div class="chip-row" id="chip-row"></div>
   </div>
 
   <!-- Mobile only: how much more to free delivery, right above the menu ribbons -->
@@ -55,6 +79,16 @@
     </div>
   </div>
 
+  <!-- Bottom reassurance strip -->
+  <section class="mini-strip">
+    <div class="wrap ts-grid">
+      <div class="ts-item"><span class="ts-ic">⭐</span><div><b>Loved by Thousands</b><small>4.8★ on Google</small></div></div>
+      <div class="ts-item"><span class="ts-ic">🥣</span><div><b>Made with Quality Ingredients</b><small>No shortcuts</small></div></div>
+      <div class="ts-item"><span class="ts-ic">🎁</span><div><b>Beautifully Packed for Gifting</b><small>In our signature box</small></div></div>
+      <div class="ts-item"><span class="ts-ic">💬</span><div><b>Friendly Support</b><small>We're here to help</small></div></div>
+    </div>
+  </section>
+
   <div id="footer"></div>
 
   <!-- Desktop quick-view product modal -->
@@ -64,13 +98,13 @@
     <div class="pdp-modal-body" id="pdp-modal-body"></div>
   </div>
 
-  <script src="data/products.js?v=40"></script>
-  <script src="js/config.js?v=40"></script>
-  <script src="js/store-data.js?v=40"></script>
-  <script src="js/images.js?v=40"></script>
-  <script src="js/cart.js?v=40"></script>
-  <script src="js/common.js?v=40"></script>
-  <script src="js/pdp.js?v=40"></script>
+  <script src="data/products.js?v=41"></script>
+  <script src="js/config.js?v=41"></script>
+  <script src="js/store-data.js?v=41"></script>
+  <script src="js/images.js?v=41"></script>
+  <script src="js/cart.js?v=41"></script>
+  <script src="js/common.js?v=41"></script>
+  <script src="js/pdp.js?v=41"></script>
   <script>
     renderChrome('shop');
     const INDEX_TITLE = document.title;
@@ -79,12 +113,23 @@
     let activeFilter = param('cat'); // null = All
     let activeSub = param('sub');    // sub-section within a category (e.g. Milk Teas)
     let searchQuery = (param('q') || '').trim(); // free-text product search
+    // Default landing view is the curated "Popular Right Now" set; "View all"
+    // (or the sidebar "All" pill) expands to the full catalog.
+    let showAll = param('all') === '1';
+
+    function showBestsellers() {
+      activeFilter = null; activeSub = null; showAll = false;
+      clearSearchUI(); updateUrl(); render();
+      const grid = document.getElementById('grid');
+      if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     function updateUrl() {
       const url = new URL(location);
       activeFilter ? url.searchParams.set('cat', activeFilter) : url.searchParams.delete('cat');
       activeSub ? url.searchParams.set('sub', activeSub) : url.searchParams.delete('sub');
       searchQuery ? url.searchParams.set('q', searchQuery) : url.searchParams.delete('q');
+      showAll ? url.searchParams.set('all', '1') : url.searchParams.delete('all');
       history.replaceState({}, '', url);
     }
 
@@ -119,6 +164,7 @@
         btn.addEventListener('click', () => {
           activeFilter = btn.dataset.filter || null;
           activeSub = null;            // reset sub-section when the category changes
+          if (!activeFilter) showAll = true;   // "All" means the full catalog
           clearSearchUI();             // a category pick starts a fresh browse
           updateUrl();
           render();
@@ -160,21 +206,55 @@
       if (row) row.scrollLeft = prevScroll;
     }
 
+    // A product needs the options screen when there is any choice to make:
+    // multiple sizes, a sugar level (drinks), or toppings.
+    function needsOptions(p) {
+      return hasSizeChoice(p) || (p.tags || []).includes('Drinks') || (p.upsell || []).length > 0;
+    }
+    function cardAdd(id) {
+      const p = getProduct(id);
+      if (!p) return;
+      Cart.add(p.id, 1, (p.sizes && p.sizes[0]) ? p.sizes[0].label : '', [], '');
+    }
+    function cardOptions(id) {
+      if (window.matchMedia('(min-width: 861px)').matches) openProductModal(id, true);
+      else location.href = '/product/' + id;
+    }
+
     function productCard(p) {
+      const cta = needsOptions(p)
+        ? `<button class="btn card-cta" type="button" onclick="cardOptions('${p.id}')">Choose Options</button>`
+        : `<button class="btn card-cta" type="button" onclick="cardAdd('${p.id}')">🛒 Add to Cart</button>`;
       return `
         <article class="card">
           <a class="card-media" href="/product/${p.id}" data-pslug="${p.id}">
+            ${p.bestseller ? '<span class="best-badge">Bestseller</span>' : ''}
             <img src="${productImage(p, 0)}" alt="${p.title}" loading="lazy">
           </a>
           <div class="card-body">
             <h3><a href="/product/${p.id}" data-pslug="${p.id}">${p.title}</a></h3>
             <p class="card-desc">${p.shortDesc}</p>
-            <div class="card-foot">
-              <span class="price">${hasSizeChoice(p) ? '<span class="from">from </span>' : ''}${money(p.price)}<span class="from"> / ${p.unit}</span></span>
-              <a class="btn ghost" href="/product/${p.id}" data-pslug="${p.id}">View</a>
-            </div>
+            <div class="card-price">${hasSizeChoice(p) ? '<span class="from">from </span>' : ''}<b>${money(p.price)}</b><span class="from"> / ${p.unit}</span></div>
+            ${cta}
           </div>
         </article>`;
+    }
+
+    // Quick category chips under the search bar (desktop).
+    const CHIP_ICONS = { 'Drinks': '🧋', 'Snacks': '🍿', 'Sweets': '🍬', 'Gift Sets': '🎁', 'Christmas Festive': '🎄', 'Housebake Cookies': '🍪', 'National Day Snacks': '🎉', 'Deepavali': '🪔', 'Hari Raya': '🌙' };
+    function renderChips() {
+      const host = document.getElementById('chip-row');
+      if (!host) return;
+      const curated = !searchQuery && !activeFilter && !activeSub && !showAll;
+      const chips = [
+        `<button class="chip chip-best ${curated ? 'active' : ''}" type="button" onclick="showBestsellers()">🔥 Bestsellers</button>`
+      ].concat(filterCategories().map(c =>
+        `<button class="chip ${activeFilter === c ? 'active' : ''}" type="button" data-chip="${c}">${CHIP_ICONS[c] ? CHIP_ICONS[c] + ' ' : ''}${c}</button>`));
+      host.innerHTML = chips.join('');
+      host.querySelectorAll('[data-chip]').forEach(b => b.addEventListener('click', () => {
+        activeFilter = b.dataset.chip; activeSub = null;
+        clearSearchUI(); updateUrl(); render();
+      }));
     }
 
     // Match a product against every word in the query (across name, description,
@@ -188,18 +268,25 @@
     function render() {
       renderSidebar();
       renderSubnav();
+      renderChips();
       let list;
+      let viewAllLink = '';
       if (searchQuery) {
         // Search spans the whole catalog, regardless of the active category.
         const terms = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
         list = PRODUCTS.filter(p => matchesSearch(p, terms));
         document.getElementById('listing-title').textContent = `Results for “${searchQuery}”`;
+      } else if (!activeFilter && !activeSub && !showAll && bestsellerProducts().length) {
+        // Curated landing view: a handful of bestsellers, not all 90+ items.
+        list = bestsellerProducts();
+        document.getElementById('listing-title').textContent = 'Popular Right Now';
+        viewAllLink = `<button class="view-all" type="button" onclick="showAll = true; updateUrl(); render();">View all (${PRODUCTS.length}) ›</button>`;
       } else {
         list = activeFilter ? PRODUCTS.filter(p => p.tags.includes(activeFilter)) : PRODUCTS;
         if (activeSub) list = list.filter(p => p.section === activeSub);
         document.getElementById('listing-title').textContent = activeSub || activeFilter || 'All Products';
       }
-      document.getElementById('listing-count').textContent =
+      document.getElementById('listing-count').innerHTML = viewAllLink ||
         `${list.length} ${list.length === 1 ? 'item' : 'items'}`;
       document.getElementById('grid').innerHTML = list.map(productCard).join('');
       const empty = document.getElementById('empty');
