@@ -259,6 +259,7 @@
       <h1>Sofnade Orders</h1>
       <input id="operator" class="op" placeholder="You (name)" title="Your name — recorded on status changes" oninput="saveOperator()" />
       <button id="arch-btn" class="btn-ghost btn-sm" onclick="toggleArchivedView()" title="View archived orders">🗄 Archived</button>
+      <button id="xero-btn" class="btn-ghost btn-sm" onclick="xeroBackfill(this)" title="Sync all orders to Xero (idempotent)">⇄ Xero</button>
       <button class="btn-ghost btn-sm" onclick="load()">Refresh</button>
       <button class="btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </header>
@@ -580,6 +581,7 @@
               <button class="mi" data-copy="${esc(addr)}">Copy address</button>
               ${wa ? `<a class="mi" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">WhatsApp customer</a>` : ''}
               ${o.invoice_url ? `<a class="mi" href="${esc(o.invoice_url)}" target="_blank" rel="noopener">View invoice</a>` : ''}
+              <button class="mi" onclick="xeroSyncOne('${esc(o.id)}')">Sync to Xero</button>
               <div class="mi-sep"></div>
               <button class="mi" onclick="archiveOrder('${esc(o.id)}', ${o.archived ? 'false' : 'true'})">${o.archived ? 'Unarchive' : 'Archive'}</button>
               <button class="mi mi-danger" onclick="askDelete('${esc(o.id)}')">Delete…</button>
@@ -1073,6 +1075,28 @@
         renderKpis();
         showToast('Order updated', { type: 'ok' });
       } catch (e) { if (e.message !== 'unauthorized') { showToast('Could not save: ' + e.message, { type: 'err' }); btn.disabled = false; btn.textContent = old; } }
+    }
+
+    // ---- Xero sync ----------------------------------------------------------
+    async function xeroSyncOne(id) {
+      closeAllCardMenus();
+      showToast('Syncing ' + id + ' to Xero…', { duration: 2000 });
+      try {
+        const { result } = await api('POST', '/xero-sync', { id });
+        showToast(result || 'Synced to Xero', { type: 'ok' });
+      } catch (e) {
+        if (e.message !== 'unauthorized') showToast('Xero sync failed: ' + e.message, { type: 'err', duration: 6000 });
+      }
+    }
+    async function xeroBackfill(btn) {
+      btn.disabled = true; const old = btn.textContent; btn.textContent = '⇄ Syncing…';
+      try {
+        const r = await api('POST', '/xero-sync', { backfill: true });
+        showToast(`Xero backfill: ${r.synced} synced, ${r.failed} failed`, { type: r.failed ? 'err' : 'ok', duration: 6000 });
+        if (r.failed) console.warn('[xero backfill]', r.results.filter(x => !x.ok));
+      } catch (e) {
+        if (e.message !== 'unauthorized') showToast('Xero backfill failed: ' + e.message, { type: 'err', duration: 6000 });
+      } finally { btn.disabled = false; btn.textContent = old; }
     }
 
     // ---- Archive / delete ---------------------------------------------------

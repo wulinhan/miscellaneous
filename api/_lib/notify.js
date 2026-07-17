@@ -5,6 +5,7 @@
 
 // Seller / GST / corporate details for the invoice (built-in defaults).
 const invoice = require('./invoice');
+const xero = require('./xero');
 const STORE = require('../../data/products.js');
 const CONF = (STORE && STORE.SETTINGS) || {};
 const SELLER = CONF.seller || { name: 'SOFNADE CATERING PTE. LTD.', uen: '202314539M', address: '', email: 'sales@sofnade.com', phone: '8930 9756' };
@@ -313,20 +314,26 @@ async function sendRequestEmail(order) {
 
 // Run both channels independently; never throws. Returns a small status array
 // so callers can log what happened.
-async function settleChannels(tasks) {
+async function settleChannels(tasks, names) {
   const settled = await Promise.allSettled(tasks);
-  const names = ['notion', 'resend'];
   return settled.map((r, i) => {
     if (r.status === 'rejected') console.error(`[notify] ${names[i]} failed:`, r.reason && r.reason.message);
     return { channel: names[i], ok: r.status === 'fulfilled' };
   });
 }
 async function onPaid(order) {
-  return settleChannels([mirrorToNotion(order), sendReceipt(order)]);
+  return settleChannels(
+    [mirrorToNotion(order), sendReceipt(order), xero.onPaid(order)],
+    ['notion', 'resend', 'xero'],
+  );
 }
-// Unpaid "Vendors@SG" flow: confirm the request was received (no payment taken).
+// Unpaid "Corporate Booking" flow: confirm the request was received (no payment
+// taken); Xero gets an awaiting-payment invoice.
 async function onOrderRequested(order) {
-  return settleChannels([mirrorToNotion(order), sendRequestEmail(order)]);
+  return settleChannels(
+    [mirrorToNotion(order), sendRequestEmail(order), xero.onRequested(order)],
+    ['notion', 'resend', 'xero'],
+  );
 }
 
 module.exports = { onPaid, onOrderRequested, mirrorToNotion, sendReceipt, sendRequestEmail };
