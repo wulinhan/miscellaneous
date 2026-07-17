@@ -106,11 +106,25 @@ function BulkImagesTool() {
           </Stack>
         </Card>
 
-        <TextInput
-          placeholder="Search products or categories…"
-          value={search}
-          onChange={(e) => setSearch(e.currentTarget.value)}
-        />
+        <Flex gap={2} align="center">
+          <Box flex={1}>
+            <TextInput
+              placeholder="Search products or categories…"
+              value={search}
+              onChange={(e) => setSearch(e.currentTarget.value)}
+            />
+          </Box>
+          <Button
+            text={`Select all (${shown.length})`}
+            mode="ghost"
+            disabled={!shown.length}
+            onClick={() => setSelected((prev) => {
+              const next = new Set(prev);
+              shown.forEach((p) => next.add(p._id));
+              return next;
+            })}
+          />
+        </Flex>
 
         <Card padding={2} radius={2} border style={{ maxHeight: 420, overflow: 'auto' }}>
           <Stack space={1}>
