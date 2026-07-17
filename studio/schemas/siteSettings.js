@@ -10,6 +10,8 @@ export default defineType({
     defineField({ name: 'heroTitle', title: 'Hero heading', type: 'text', rows: 2,
       description: 'Shown on the home banner. Use a line break for two lines.' }),
     defineField({ name: 'heroSubtitle', title: 'Hero subtext', type: 'text', rows: 3 }),
+    defineField({ name: 'heroImage', title: 'Hero banner image', type: 'image', options: { hotspot: true },
+      description: 'The large image shown on the home banner (right side). Landscape works best.' }),
     defineField({ name: 'deliveryFee', title: 'Islandwide delivery fee ($)', type: 'number' }),
     defineField({ name: 'freeDeliveryThreshold', title: 'Free delivery over ($)', type: 'number' }),
     defineField({ name: 'pickupEnabled', title: 'Offer free self pick-up', type: 'boolean', initialValue: true }),

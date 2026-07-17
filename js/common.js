@@ -18,7 +18,7 @@ function renderChrome(active) {
   const header = `
   <header class="site-header">
     <div class="wrap">
-      <a class="brand" href="https://sofnade.com"><img src="assets/logo/Sofnade%20logo.png" alt="Sofnade"></a>
+      <a class="brand" href="https://sofnade.com"><img src="assets/logo/Sofnade%20logo%20white.png" alt="Sofnade"></a>
       <nav class="main-nav" id="main-nav">
         <a href="index.html" class="${active === 'shop' ? 'active' : ''}">Shop</a>
         <a href="index.html?cat=Christmas%20Festive">Christmas Festive</a>

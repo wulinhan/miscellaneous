@@ -42,26 +42,26 @@ img { display: block; max-width: 100%; }
 /* ---------- Header ---------- */
 .site-header {
   position: sticky; top: 0; z-index: 50;
-  background: #ffffff;
-  border-bottom: 1px solid var(--line);
+  background: var(--accent);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 .site-header .wrap {
   display: flex; align-items: center; gap: 24px;
   height: 68px;
 }
 .brand { display: flex; align-items: center; }
-.brand img { height: 36px; width: auto; display: block; }
+.brand img { height: 34px; width: auto; display: block; }
 .main-nav { display: flex; gap: 22px; margin-left: 18px; }
-.main-nav a { color: var(--muted); font-weight: 500; font-size: 15px; }
-.main-nav a:hover, .main-nav a.active { color: var(--ink); }
+.main-nav a { color: rgba(255, 255, 255, 0.82); font-weight: 500; font-size: 15px; }
+.main-nav a:hover, .main-nav a.active { color: #fff; }
 .header-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 
 /* Hamburger (hidden on desktop) */
 .nav-toggle {
   display: none; border: none; background: none; cursor: pointer; padding: 6px;
-  color: var(--ink); border-radius: 8px;
+  color: #fff; border-radius: 8px;
 }
-.nav-toggle:hover { background: var(--bg-soft); }
+.nav-toggle:hover { background: rgba(255, 255, 255, 0.14); }
 .nav-toggle svg { width: 26px; height: 26px; display: block; }
 
 @media (max-width: 768px) {
@@ -70,11 +70,11 @@ img { display: block; max-width: 100%; }
   .main-nav {
     display: none; position: absolute; top: 100%; left: 0; right: 0;
     flex-direction: column; gap: 0; margin: 0;
-    background: #fff; border-bottom: 1px solid var(--line); box-shadow: var(--shadow);
+    background: var(--accent); border-bottom: 1px solid rgba(255,255,255,.12); box-shadow: var(--shadow);
     padding: 6px 20px 12px;
   }
   .main-nav.open { display: flex; }
-  .main-nav a { padding: 13px 0; font-size: 16px; border-bottom: 1px solid var(--line); }
+  .main-nav a { padding: 13px 0; font-size: 16px; border-bottom: 1px solid rgba(255,255,255,.12); }
   .main-nav a:last-child { border-bottom: none; }
   /* Shrink the hero so the first row of products is visible sooner */
   .hero .wrap { padding: 26px 20px; }

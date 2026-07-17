@@ -23,7 +23,8 @@
   /* GROQ query: pull everything the storefront needs in one request. */
   const QUERY = `{
     "settings": *[_type == "siteSettings"][0]{
-      brandName, heroTitle, heroSubtitle, deliveryFee, freeDeliveryThreshold,
+      brandName, heroTitle, heroSubtitle, "heroImage": heroImage.asset._ref,
+      deliveryFee, freeDeliveryThreshold,
       pickupEnabled, leadBusinessDays, timeSlots[]{value, label, sub}
     },
     "categories": *[_type == "category"] | order(order asc){ "title": title, "hidden": hidden == true, "isOccasion": isOccasion == true },
@@ -102,6 +103,7 @@
     ['brandName', 'heroTitle', 'heroSubtitle', 'pickupEnabled'].forEach(k => {
       if (s[k] !== undefined && s[k] !== null) settings[k] = s[k];
     });
+    if (s.heroImage) { const u = imageUrl(s.heroImage); if (u) settings.heroImage = u; }
     if (typeof s.deliveryFee === 'number') settings.deliveryFee = s.deliveryFee;
     if (typeof s.freeDeliveryThreshold === 'number') settings.freeDeliveryThreshold = s.freeDeliveryThreshold;
     if (typeof s.leadBusinessDays === 'number') settings.leadBusinessDays = s.leadBusinessDays;
