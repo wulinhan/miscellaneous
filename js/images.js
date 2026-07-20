@@ -23,7 +23,7 @@ function productImage(product, variant = 0) {
   }
   if (product && product.id && product.imageCount) {
     const n = Math.min(Math.max(0, variant), product.imageCount - 1) + 1;
-    return `assets/${product.id}/${product.id}-${n}.jpg`;
+    return `/assets/${product.id}/${product.id}-${n}.jpg`;
   }
   return placeholderImage(product, variant);
 }
@@ -36,7 +36,7 @@ function productGallery(product) {
   if (product && product.id && product.imageCount) {
     const out = [];
     for (let i = 1; i <= product.imageCount; i++) {
-      out.push(`assets/${product.id}/${product.id}-${i}.jpg`);
+      out.push(`/assets/${product.id}/${product.id}-${i}.jpg`);
     }
     return out;
   }

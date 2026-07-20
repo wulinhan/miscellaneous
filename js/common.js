@@ -27,8 +27,8 @@ function navCategoryList() {
   return out;
 }
 function navLinkHTML(label, active) {
-  if (label === 'Shop') return `<a href="index.html" class="${active === 'shop' ? 'active' : ''}">Shop</a>`;
-  return `<a href="index.html?cat=${encodeURIComponent(label)}">${escapeHtmlAttr(label)}</a>`;
+  if (label === 'Shop') return `<a href="/" class="${active === 'shop' ? 'active' : ''}">Shop</a>`;
+  return `<a href="/?cat=${encodeURIComponent(label)}">${escapeHtmlAttr(label)}</a>`;
 }
 function escapeHtmlAttr(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -125,10 +125,10 @@ function renderChrome(active) {
   const header = `
   <header class="site-header">
     <div class="wrap">
-      <a class="brand" href="https://sofnade.com"><img src="assets/logo/Sofnade%20logo%20white.png" alt="Sofnade"></a>
+      <a class="brand" href="https://sofnade.com"><img src="/assets/logo/Sofnade%20logo%20white.png" alt="Sofnade"></a>
       <nav class="main-nav" id="main-nav">${navInnerHTML(active)}</nav>
       <div class="header-actions">
-        <a class="cart-link" href="checkout.html" onclick="openCart(); return false;">
+        <a class="cart-link" href="/checkout" onclick="openCart(); return false;">
           Cart <span class="cart-badge" data-cart-count>0</span>
         </a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
@@ -315,12 +315,12 @@ function renderCartDrawer() {
   const lines = Cart.all();
   if (!lines.length) {
     body.innerHTML = `<div class="cart-empty">Your cart is empty.</div>`;
-    foot.innerHTML = `<a class="btn block" href="index.html">Start shopping</a>`;
+    foot.innerHTML = `<a class="btn block" href="/">Start shopping</a>`;
     return;
   }
   body.innerHTML = lines.map(cartLineHTML).join('');
   foot.innerHTML = `<div class="cart-subtotal"><span>Subtotal</span><span>${money(Cart.subtotal())}</span></div>` +
-    `<a class="btn block" href="checkout.html">Checkout</a>`;
+    `<a class="btn block" href="/checkout">Checkout</a>`;
 }
 document.addEventListener('cart:changed', function () { renderCartDrawer(); updateFreeshipMobile(); });
 document.addEventListener('cart:added', function () { openCart(); }); // auto-open on add to cart

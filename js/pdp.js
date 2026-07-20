@@ -117,7 +117,7 @@
       const freshItem = isFreshProduct(p);
 
       document.getElementById('crumb').innerHTML =
-        `<a href="index.html">Shop</a> / <a href="index.html?cat=${encodeURIComponent(cat)}">${cat}</a> / ${p.title}`;
+        `<a href="/">Shop</a> / <a href="/?cat=${encodeURIComponent(cat)}">${cat}</a> / ${p.title}`;
 
       const isDrink = p.tags.includes('Drinks');
 
