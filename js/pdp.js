@@ -174,7 +174,7 @@
           <div class="pdp-info">
             <div class="pdp-labels">${labels}</div>
             <h1>${p.title}</h1>
-            <div class="pdp-price"><span id="pdp-price">${money(fromPrice)}</span> <span class="from" style="font-size:14px;color:var(--muted);font-weight:500">/ ${p.unit}</span></div>
+            <div class="pdp-price"><span id="pdp-price">${money(fromPrice)}</span> <span class="from" style="font-size:14px;color:var(--muted);font-weight:500">/ <span id="pdp-unit">${p.unit}</span></span></div>
             <p class="pdp-desc">${p.longDesc}</p>
 
             ${sizeField}
@@ -320,9 +320,21 @@
     function wireOptions(p) {
       const qtyInput = document.getElementById('qty-input');
       const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+      // The displayed unit follows the chosen size: "Petite Pack (45g)" -> pack,
+      // "Bottle (150g)" -> bottle, "Regular cup (500ml)" -> cup. Falls back to
+      // the product's own unit when the size label doesn't name a container
+      // (e.g. "One size", "Pack of 4").
+      const unitForSize = (label) => {
+        const clean = String(label || '').replace(/\(.*?\)/g, '').trim().toLowerCase();
+        if (!clean || clean === 'one size') return p.unit || '';
+        const last = clean.split(/\s+/).pop();
+        if (/^\d+$/.test(last)) return p.unit || '';
+        return last === 'packet' ? 'pack' : last;
+      };
       const updatePrice = () => {
         setText('pdp-price', money(sizePrice(p, selectedSize(p))));
         setText('mini-price', money(sizePrice(p, selectedSize(p))));
+        setText('pdp-unit', unitForSize(selectedSize(p)));
         const total = currentUnitPrice(p) * Math.max(1, +qtyInput.value || 1);
         setText('add-price', money(total));   // may be absent mid-animation
         setText('sticky-price', money(total));
