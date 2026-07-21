@@ -149,8 +149,8 @@ function invoiceHtml(order) {
   .thanks { margin: 26px 0 18px; font-weight: 700; }
   .pay { border-top: 2px solid ${NAVY}; padding-top: 12px; margin-top: 26px; }
   .pay h4 { margin: 0 0 8px; color: #c0272d; font-size: 12.5px; }
-  .pay .cols { display: flex; gap: 26px; flex-wrap: wrap; font-size: 11.5px; }
-  .pay .cols > div { flex: 1 1 200px; }
+  /* Grid, not flex: prints reliably in every engine (Safari/iOS included) */
+  .pay .cols { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 26px; font-size: 11.5px; }
   .pay b { color: ${NAVY}; }
   .foot { display: flex; justify-content: space-between; gap: 14px; border-top: 1px solid #d9dce6; margin-top: 22px; padding-top: 12px; font-size: 11.5px; color: #5a6b8c; flex-wrap: wrap; }
   .dl { position: fixed; top: 16px; right: 16px; background: ${NAVY}; color: #fff; border: none; font: bold 14px Arial; padding: 12px 20px; border-radius: 999px; cursor: pointer; box-shadow: 0 6px 18px rgba(27,35,48,.25); }
@@ -168,7 +168,7 @@ function invoiceHtml(order) {
     table.items { min-width: 560px; }
     table.items td.desc { min-width: 200px; }
     .totals { width: 100%; }
-    .pay .cols { flex-direction: column; gap: 12px; }
+    .pay .cols { grid-template-columns: 1fr; gap: 12px; }
     .dl { top: auto; bottom: 16px; right: 16px; }
     .foot { flex-direction: column; gap: 4px; }
   }
@@ -180,6 +180,9 @@ function invoiceHtml(order) {
     table.items { min-width: 0; }
     .top { flex-direction: row; }
     .meta { flex-direction: row; }
+    /* Keep whole blocks together across page breaks */
+    table.items tr, .totals, .thanks, .pay, .foot { break-inside: avoid; page-break-inside: avoid; }
+    .pay .cols { display: grid !important; grid-template-columns: repeat(2, 1fr); }
   }
   @page { size: A4; margin: 12mm; }
 </style></head><body>

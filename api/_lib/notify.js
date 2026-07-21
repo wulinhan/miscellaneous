@@ -296,14 +296,54 @@ async function sendEmail(order, subject, html, text) {
   const from = process.env.RECEIPT_FROM;
   const c = order.customer || {};
   if (!key || !from || !c.email) return; // not configured / no recipient
+  // (No BCC here: the team gets its own dedicated order email, see sendOpsEmail.)
   const payload = { from, to: [c.email], subject, html, text };
-  if (process.env.ORDER_NOTIFY_EMAIL) payload.bcc = [process.env.ORDER_NOTIFY_EMAIL];
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
+}
+
+// Internal order notification for the team — fires for every order (paid card
+// orders and Corporate Booking requests) to ORDER_NOTIFY_EMAIL, defaulting to
+// sales@sofnade.com. Plain, staff-focused summary with the invoice link.
+async function sendOpsEmail(order, kind) {
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.RECEIPT_FROM;
+  const to = process.env.ORDER_NOTIFY_EMAIL || 'sales@sofnade.com';
+  if (!key || !from || !to) return; // not configured
+  const c = order.customer || {};
+  const q = order.quote || {};
+  const paid = kind === 'paid';
+  const where = order.fulfilment === 'delivery'
+    ? `Deliver to: ${[c.address1, c.address2, order.postal].filter(Boolean).join(', ')}`
+    : 'Self pick-up';
+  const lines = [
+    `${paid ? 'PAID order' : 'CORPORATE BOOKING request (unpaid)'} ${order.id}`,
+    '',
+    `Customer: ${c.name || ''}${c.business ? ` (${c.business})` : ''}`,
+    `Phone: ${c.phone || '-'} | Email: ${c.email || '-'}`,
+    where,
+    `When: ${order.delivery_date || '-'}${order.slot_or_window ? ` (${order.slot_or_window})` : ''}`,
+    c.notes ? `Customer note: ${c.notes}` : '',
+    '',
+    ...summaryLines(order),
+    '',
+    paid ? `Payment ref: ${order.razorpay_payment_id || order.razorpay_order_id || '-'}` : 'No payment taken yet — follow up with an official invoice.',
+    `Invoice: ${invoice.invoiceUrl(order.id)}`,
+    `Dashboard: ${invoice.baseUrl()}/admin`,
+  ].filter((l) => l !== '');
+  const subject = paid
+    ? `[Order] ${order.id} paid — ${money(q.total != null ? q.total : order.amount_total, q.currency)}`
+    : `[Corporate] ${order.id} request — ${money(q.total != null ? q.total : order.amount_total, q.currency)}`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from, to: [to], subject, text: lines.join('\n') }),
+  });
+  if (!res.ok) throw new Error(`Resend ops ${res.status}: ${await res.text()}`);
 }
 async function sendReceipt(order) {
   return sendEmail(order, `Your Sofnade order ${order.id} is confirmed`, receiptHtml(order), receiptText(order));
@@ -323,16 +363,16 @@ async function settleChannels(tasks, names) {
 }
 async function onPaid(order) {
   return settleChannels(
-    [mirrorToNotion(order), sendReceipt(order), xero.onPaid(order)],
-    ['notion', 'resend', 'xero'],
+    [mirrorToNotion(order), sendReceipt(order), sendOpsEmail(order, 'paid'), xero.onPaid(order)],
+    ['notion', 'resend', 'ops', 'xero'],
   );
 }
 // Unpaid "Corporate Booking" flow: confirm the request was received (no payment
 // taken); Xero gets an awaiting-payment invoice.
 async function onOrderRequested(order) {
   return settleChannels(
-    [mirrorToNotion(order), sendRequestEmail(order), xero.onRequested(order)],
-    ['notion', 'resend', 'xero'],
+    [mirrorToNotion(order), sendRequestEmail(order), sendOpsEmail(order, 'requested'), xero.onRequested(order)],
+    ['notion', 'resend', 'ops', 'xero'],
   );
 }
 
