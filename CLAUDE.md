@@ -48,6 +48,8 @@ Only after the user approves the proposed plan, create **"BEV Work"** events on 
 
 After the calendar events are created, draft a short, friendly message the user can send to the BEV team summarising when they'll be working that week. Use natural language (e.g. "morning", "afternoon", "most of the day") rather than exact times. Follow this format:
 
+> **Unavailability note:** For each day, also mention (in natural language) any windows within the working day when the user is unavailable — e.g. IWPT events (remember the 30-minute buffer before and after) or other personal blockers. Don't name the personal event itself, just flag the gap.
+
 ---
 Hey morning team, here's when I'll be working this week:
 
