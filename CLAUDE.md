@@ -29,6 +29,8 @@ Apply these rules strictly when proposing BEV Work blocks:
 | **Friday** | Available after lunch only (start ≥ 12:00pm); capped at **2 hours maximum** total |
 | **IWPT events** | Any event labelled `IWPT` on either calendar is off-limits — do not schedule BEV blocks during these times, including the **30 minutes before and after** each IWPT event |
 
+> **Reconciling with existing blocks:** If "BEV Work" blocks already exist on `linhan@allincreatives.com` for the week (e.g. from an earlier run, and possibly since edited or removed by the user), recompute remaining hours from the calendar's *current* state rather than the original proposal, then reallocate any shortfall using the front-load order. Overriding a day-specific cap (e.g. Tuesday afternoons, the Friday 2-hour cap) to cover a shortfall requires explicit user confirmation before creating the new blocks — don't apply it silently.
+
 ## Step 4 — Output Summary Table
 
 Output a table with the following columns:
