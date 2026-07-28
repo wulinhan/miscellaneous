@@ -40,7 +40,7 @@
       "upsell": toppings[]->slug.current,
       "alsoBought": alsoBought[]->slug.current,
       allergens,
-      "images": images[]{ "ref": asset._ref, flavours, flavour }
+      "images": images[]{ "ref": asset._ref, flavours, sizes, flavour }
     }
   }`;
 
@@ -64,7 +64,11 @@
       return (im && im.flavour) ? [im.flavour] : [];   // pre-migration shape
     };
     const photos = (p.images || [])
-      .map(im => ({ url: imageUrl(im && im.ref), flavours: photoFlavours(im) }))
+      .map(im => ({
+        url: imageUrl(im && im.ref),
+        flavours: photoFlavours(im),
+        sizes: Array.isArray(im && im.sizes) ? im.sizes.filter(Boolean) : []
+      }))
       .filter(im => im.url);
     const images = photos.map(im => im.url);
     const flavours = (p.flavours || [])
@@ -90,10 +94,12 @@
       alsoBought: (p.alsoBought || []).filter(Boolean),
       allergens: p.allergens || []
     };
-    if (flavours.length) {
-      mapped.flavours = flavours;
-      mapped.imageFlavours = photos.map(im => im.flavours);
-    }
+    if (flavours.length) mapped.flavours = flavours;
+    // Photo tags ride alongside the photos so the gallery can follow whichever
+    // option the customer picks. Kept separate from `flavours` because a
+    // product can tag photos by size without having flavours at all.
+    if (photos.some(im => im.flavours.length)) mapped.imageFlavours = photos.map(im => im.flavours);
+    if (photos.some(im => im.sizes.length)) mapped.imageSizes = photos.map(im => im.sizes);
     if (images.length) mapped.images = images;
     else if (builtin && builtin.imageCount) mapped.imageCount = builtin.imageCount;
     return mapped;
@@ -190,7 +196,7 @@
         "upsell": toppings[]->slug.current,
         "alsoBought": alsoBought[]->slug.current,
         allergens,
-        "images": images[]{ "ref": asset._ref, flavours, flavour }
+        "images": images[]{ "ref": asset._ref, flavours, sizes, flavour }
       }
     }`;
     try {

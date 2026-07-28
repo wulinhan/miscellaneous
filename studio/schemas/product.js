@@ -1,5 +1,5 @@
 import { defineType, defineField } from 'sanity';
-import { FlavourTagInput } from '../components/flavour-tag-input';
+import { FlavourTagInput, SizeTagInput } from '../components/flavour-tag-input';
 
 export default defineType({
   name: 'product',
@@ -30,11 +30,17 @@ export default defineType({
           of: [{ type: 'string' }],
           components: { input: FlavourTagInput },
           description: 'The gallery jumps to this photo when one of the ticked flavours is picked. Tick several if the photo suits more than one. Leave empty for a photo that suits every flavour (e.g. the bottle shot).'
+        }, {
+          name: 'sizes', title: 'Sizes this photo shows', type: 'array',
+          of: [{ type: 'string' }],
+          components: { input: SizeTagInput },
+          description: 'The gallery jumps to this photo when one of the ticked sizes is picked. Use it for packaging shots, e.g. the Nostalgic Tin.'
         }],
         preview: {
-          select: { media: 'asset', flavours: 'flavours' },
-          prepare({ media, flavours }) {
-            return { media, title: (flavours || []).join(', ') || 'Any flavour' };
+          select: { media: 'asset', flavours: 'flavours', sizes: 'sizes' },
+          prepare({ media, flavours, sizes }) {
+            const tags = [...(flavours || []), ...(sizes || [])];
+            return { media, title: tags.join(', ') || 'Any option' };
           }
         }
       }],

@@ -407,24 +407,35 @@
         });
       });
 
-      // Picking a flavour brings its photo to the front of the gallery. A
-      // flavour we have no photo of falls back to the first untagged photo (the
-      // shared bottle shot) rather than showing a different flavour's drink.
-      const tags = p.imageFlavours || [];
-      const imageFor = (label) => {
-        const exact = tags.findIndex(list => (list || []).includes(label));
-        return exact >= 0 ? exact : tags.findIndex(list => !(list || []).length);
-      };
-      if (tags.length) {
-        document.querySelectorAll('#flavour-pills .opt-pill').forEach(pill => {
+      // Picking an option brings its photo to the front of the gallery: a
+      // flavour shows that drink, a size shows that packaging (e.g. the tin).
+      // Flavours fall back to the first untagged photo — the shared bottle shot
+      // — rather than showing a different flavour's drink. Sizes have no such
+      // fallback: an untagged photo says nothing about the packaging, so an
+      // untagged size just leaves the gallery where it is.
+      const wireGalleryTo = (group, attr, tagLists, fallback) => {
+        if (!tagLists || !tagLists.length) return null;
+        const indexOf = (label) => {
+          const exact = tagLists.findIndex(list => (list || []).includes(label));
+          if (exact >= 0) return exact;
+          return fallback ? tagLists.findIndex(list => !(list || []).length) : -1;
+        };
+        document.querySelectorAll(`${group} .opt-pill`).forEach(pill => {
           pill.addEventListener('click', () => {
             if (pill.classList.contains('sold-out')) return;
-            const i = imageFor(pill.dataset.flavour);
+            const i = indexOf(pill.dataset[attr]);
             if (i >= 0) showGalleryImage(i);
           });
         });
-        // Open on the photo for the flavour that starts selected.
-        const start = imageFor(selectedFlavour(p));
+        return indexOf;
+      };
+
+      const flavourIndex = wireGalleryTo('#flavour-pills', 'flavour', p.imageFlavours, true);
+      wireGalleryTo('#size-pills', 'size', p.imageSizes, false);
+
+      // Open on the photo for the flavour that starts selected.
+      if (flavourIndex) {
+        const start = flavourIndex(selectedFlavour(p));
         if (start > 0) showGalleryImage(start);
       }
       // Topping pills: multi-select toggle, capped at MAX_TOPPINGS
