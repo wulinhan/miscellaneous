@@ -26,11 +26,17 @@ export default defineType({
       of: [{
         type: 'image', options: { hotspot: true },
         fields: [{
-          name: 'flavour', title: 'Flavour shown in this photo', type: 'string',
+          name: 'flavours', title: 'Flavours this photo represents', type: 'array',
+          of: [{ type: 'string' }],
           components: { input: FlavourTagInput },
-          description: 'Tag the photo with a flavour and the gallery jumps to it when that flavour is picked. Leave blank for photos that suit every flavour (e.g. the bottle shot).'
+          description: 'The gallery jumps to this photo when one of the ticked flavours is picked. Tick several if the photo suits more than one. Leave empty for a photo that suits every flavour (e.g. the bottle shot).'
         }],
-        preview: { select: { media: 'asset', title: 'flavour' } }
+        preview: {
+          select: { media: 'asset', flavours: 'flavours' },
+          prepare({ media, flavours }) {
+            return { media, title: (flavours || []).join(', ') || 'Any flavour' };
+          }
+        }
       }],
       description: 'First photo is used on the card. Add more for the gallery.'
     }),

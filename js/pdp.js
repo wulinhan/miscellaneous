@@ -412,8 +412,8 @@
       // shared bottle shot) rather than showing a different flavour's drink.
       const tags = p.imageFlavours || [];
       const imageFor = (label) => {
-        const exact = tags.indexOf(label);
-        return exact >= 0 ? exact : tags.findIndex(t => !t);
+        const exact = tags.findIndex(list => (list || []).includes(label));
+        return exact >= 0 ? exact : tags.findIndex(list => !(list || []).length);
       };
       if (tags.length) {
         document.querySelectorAll('#flavour-pills .opt-pill').forEach(pill => {

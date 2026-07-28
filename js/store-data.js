@@ -40,7 +40,7 @@
       "upsell": toppings[]->slug.current,
       "alsoBought": alsoBought[]->slug.current,
       allergens,
-      "images": images[]{ "ref": asset._ref, flavour }
+      "images": images[]{ "ref": asset._ref, flavours, flavour }
     }
   }`;
 
@@ -56,10 +56,15 @@
     const primary = (p.primary && !hiddenCats.has(p.primary)) ? p.primary : cats[0];
     const tags = primary ? [primary].concat(cats.filter(c => c !== primary)) : cats;
     const sizes = (p.sizes && p.sizes.length) ? p.sizes : [{ label: 'One size', price: 0 }];
-    // Photos keep their CMS order; the flavour tag of each one is kept in a
-    // parallel array so the gallery can jump to the photo for a chosen flavour.
+    // Photos keep their CMS order; the flavours each one represents are kept in
+    // a parallel array so the gallery can jump to the photo for a chosen
+    // flavour. One photo may cover several flavours; none means "suits any".
+    const photoFlavours = (im) => {
+      if (Array.isArray(im && im.flavours)) return im.flavours.filter(Boolean);
+      return (im && im.flavour) ? [im.flavour] : [];   // pre-migration shape
+    };
     const photos = (p.images || [])
-      .map(im => ({ url: imageUrl(im && im.ref), flavour: (im && im.flavour) || '' }))
+      .map(im => ({ url: imageUrl(im && im.ref), flavours: photoFlavours(im) }))
       .filter(im => im.url);
     const images = photos.map(im => im.url);
     const flavours = (p.flavours || [])
@@ -87,7 +92,7 @@
     };
     if (flavours.length) {
       mapped.flavours = flavours;
-      mapped.imageFlavours = photos.map(im => im.flavour);
+      mapped.imageFlavours = photos.map(im => im.flavours);
     }
     if (images.length) mapped.images = images;
     else if (builtin && builtin.imageCount) mapped.imageCount = builtin.imageCount;
@@ -185,7 +190,7 @@
         "upsell": toppings[]->slug.current,
         "alsoBought": alsoBought[]->slug.current,
         allergens,
-        "images": images[]{ "ref": asset._ref, flavour }
+        "images": images[]{ "ref": asset._ref, flavours, flavour }
       }
     }`;
     try {

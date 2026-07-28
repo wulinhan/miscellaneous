@@ -1,13 +1,16 @@
-// Dropdown used on each gallery photo to tag it with one of the product's own
-// flavours. Reading the flavour list off the document (rather than a free-text
-// field) keeps the tag and the option list from drifting apart — a photo can
-// only ever point at a flavour that actually exists on the product.
+// Tick-list used on each gallery photo to say which flavours it represents.
+// Reading the options off the document (rather than free text) keeps the tags
+// and the flavour list from drifting apart — a photo can only ever point at a
+// flavour that actually exists on the product. One photo can cover several
+// flavours, so a new flavour can borrow a photo that already looks right
+// instead of falling back to the generic bottle shot.
 import React, { useCallback, useMemo } from 'react';
 import { set, unset, useFormValue } from 'sanity';
-import { Select, Stack, Text } from '@sanity/ui';
+import { Box, Card, Checkbox, Flex, Stack, Text } from '@sanity/ui';
 
 export function FlavourTagInput(props) {
-  const { value, onChange, elementProps } = props;
+  const { value, onChange } = props;
+  const selected = useMemo(() => (Array.isArray(value) ? value : []), [value]);
 
   // Flavours live at the document root; images are nested, so read from there.
   const flavours = useFormValue(['flavours']) || [];
@@ -16,12 +19,14 @@ export function FlavourTagInput(props) {
     [flavours],
   );
 
-  const handleChange = useCallback(
-    (event) => {
-      const next = event.currentTarget.value;
-      onChange(next ? set(next) : unset());
+  const toggle = useCallback(
+    (label) => {
+      const next = selected.includes(label)
+        ? selected.filter((x) => x !== label)
+        : [...selected, label];
+      onChange(next.length ? set(next) : unset());
     },
-    [onChange],
+    [onChange, selected],
   );
 
   if (!labels.length) {
@@ -32,24 +37,38 @@ export function FlavourTagInput(props) {
     );
   }
 
-  // A tag left over from a renamed/deleted flavour still needs to be shown so
-  // the editor can see and correct it, rather than silently reading as "none".
-  const orphaned = value && !labels.includes(value);
+  // Tags left over from a renamed or deleted flavour still need to be visible
+  // so the editor can clear them, rather than silently doing nothing.
+  const orphaned = selected.filter((s) => !labels.includes(s));
 
   return (
-    <Stack space={2}>
-      <Select {...elementProps} value={value || ''} onChange={handleChange}>
-        <option value="">— No flavour (shown for all) —</option>
-        {labels.map((label) => (
-          <option key={label} value={label}>
-            {label}
-          </option>
-        ))}
-        {orphaned && <option value={value}>{value} (no longer a flavour)</option>}
-      </Select>
-      {orphaned && (
+    <Stack space={3}>
+      <Card padding={3} radius={2} border>
+        <Stack space={3}>
+          {labels.map((label) => (
+            <Flex key={label} align="center" gap={3}>
+              <Checkbox
+                id={`fl-${label}`}
+                checked={selected.includes(label)}
+                onChange={() => toggle(label)}
+              />
+              <Box flex={1}>
+                <Text size={1} as="label" htmlFor={`fl-${label}`}>
+                  {label}
+                </Text>
+              </Box>
+            </Flex>
+          ))}
+        </Stack>
+      </Card>
+      {orphaned.length > 0 && (
         <Text size={1} style={{ color: 'var(--card-badge-critical-fg-color)' }}>
-          “{value}” is not one of this product’s flavours. Pick another, or clear it.
+          Not flavours of this product any more: {orphaned.join(', ')}. Untick to clear.
+        </Text>
+      )}
+      {!selected.length && (
+        <Text size={1} muted>
+          Untagged: shown for any flavour that has no photo of its own.
         </Text>
       )}
     </Stack>
