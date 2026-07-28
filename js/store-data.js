@@ -32,7 +32,7 @@
     "discounts": *[_type == "discountCode"]{ "code": upper(code), type, value, label },
     "products": *[_type == "product"] | order(order asc){
       "id": slug.current, title, unit, shortDesc, longDesc, section,
-      "bestseller": bestseller == true,
+      "bestseller": bestseller == true, "hidden": hidden == true,
       "categories": categories[]->title,
       "primary": primaryCategory->title,
       sizes[]{label, price},
@@ -49,6 +49,7 @@
      product whose every category is hidden returns null (off the store). */
   function mapProduct(p, hiddenCats) {
     if (!p || !p.id) return null;
+    if (p.hidden === true) return null;   // retired listing: off the store
     const rawCats = (p.categories || []).filter(Boolean);
     const cats = rawCats.filter(c => !hiddenCats.has(c));
     if (rawCats.length && !cats.length) return null;
@@ -176,6 +177,7 @@
       "cats": *[_type == "category"]{ "title": title, "hidden": hidden == true },
       "p": *[_type == "product" && slug.current == ${JSON.stringify(String(slug))}][0]{
         "id": slug.current, title, unit, shortDesc, longDesc, section,
+        "hidden": hidden == true,
         "categories": categories[]->title,
         "primary": primaryCategory->title,
         sizes[]{label, price},

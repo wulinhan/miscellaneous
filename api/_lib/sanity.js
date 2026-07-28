@@ -15,7 +15,7 @@ const QUERY = `{
   "toppings": *[_type == "topping"]{ "id": slug.current, title, price },
   "discounts": *[_type == "discountCode"]{ "code": upper(code), type, value, label },
   "products": *[_type == "product"]{
-    "id": slug.current, title, unit, allergens,
+    "id": slug.current, title, unit, allergens, "hidden": hidden == true,
     "categories": categories[]->title, "primary": primaryCategory->title,
     sizes[]{label, price},
     flavours[]{label, priceDelta, "soldOut": soldOut == true}
@@ -33,7 +33,7 @@ function mapStore(data) {
     if (d.code) discountCodes[d.code] = { type: d.type, value: d.value, label: d.label };
   });
 
-  const products = (data.products || []).map((p) => {
+  const products = (data.products || []).filter((p) => p.hidden !== true).map((p) => {
     const cats = (p.categories || []).filter(Boolean);
     const primary = p.primary || cats[0];
     const tags = primary ? [primary].concat(cats.filter((c) => c !== primary)) : cats;

@@ -14,6 +14,10 @@ export default defineType({
     defineField({ name: 'order', title: 'Display order', type: 'number',
       description: 'Lower numbers show first in the listing.' }),
     defineField({
+      name: 'hidden', title: 'Hide from the shop', type: 'boolean', initialValue: false,
+      description: 'Takes the product off the storefront and stops it being ordered, without deleting it. Use this to retire a listing you may want back.'
+    }),
+    defineField({
       name: 'bestseller', title: 'Bestseller', type: 'boolean', initialValue: false,
       description: 'Featured in the "Popular Right Now" section on the homepage, with a Bestseller badge on the card.'
     }),

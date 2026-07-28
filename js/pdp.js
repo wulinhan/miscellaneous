@@ -407,19 +407,24 @@
         });
       });
 
-      // Picking a flavour brings its photo to the front of the gallery. Photos
-      // with no tag (the shared bottle shot) are left where they are.
+      // Picking a flavour brings its photo to the front of the gallery. A
+      // flavour we have no photo of falls back to the first untagged photo (the
+      // shared bottle shot) rather than showing a different flavour's drink.
       const tags = p.imageFlavours || [];
+      const imageFor = (label) => {
+        const exact = tags.indexOf(label);
+        return exact >= 0 ? exact : tags.findIndex(t => !t);
+      };
       if (tags.length) {
         document.querySelectorAll('#flavour-pills .opt-pill').forEach(pill => {
           pill.addEventListener('click', () => {
             if (pill.classList.contains('sold-out')) return;
-            const i = tags.indexOf(pill.dataset.flavour);
+            const i = imageFor(pill.dataset.flavour);
             if (i >= 0) showGalleryImage(i);
           });
         });
         // Open on the photo for the flavour that starts selected.
-        const start = tags.indexOf(selectedFlavour(p));
+        const start = imageFor(selectedFlavour(p));
         if (start > 0) showGalleryImage(start);
       }
       // Topping pills: multi-select toggle, capped at MAX_TOPPINGS
