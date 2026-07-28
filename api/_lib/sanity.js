@@ -17,7 +17,8 @@ const QUERY = `{
   "products": *[_type == "product"]{
     "id": slug.current, title, unit, allergens,
     "categories": categories[]->title, "primary": primaryCategory->title,
-    sizes[]{label, price}
+    sizes[]{label, price},
+    flavours[]{label, priceDelta, "soldOut": soldOut == true}
   }
 }`;
 
@@ -43,6 +44,7 @@ function mapStore(data) {
       unit: p.unit || '',
       tags,
       sizes,
+      flavours: (p.flavours || []).filter((f) => f && f.label),
       price: sizes[0].price,
       allergens: p.allergens || [],
     };

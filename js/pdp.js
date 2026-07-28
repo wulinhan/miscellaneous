@@ -130,6 +130,22 @@
               </div>
             </div>` : '';
 
+      // Flavour — one listing can carry a whole menu section, so this is the
+      // first choice on the page. Sold-out flavours stay visible but unpickable.
+      const flavours = productFlavours(p);
+      const firstPickable = flavours.findIndex(f => !f.soldOut);
+      const flavourField = flavours.length ? `
+            <div class="field">
+              <label>Flavour</label>
+              <div class="opt-pills" id="flavour-pills">
+                ${flavours.map((f, i) => {
+                  const extra = f.priceDelta > 0 ? ` <small>+${money(f.priceDelta)}</small>` : '';
+                  const cls = f.soldOut ? 'opt-pill sold-out' : `opt-pill ${i === firstPickable ? 'active' : ''}`;
+                  return `<button type="button" class="${cls}" data-flavour="${f.label}"${f.soldOut ? ' disabled aria-disabled="true"' : ''}>${f.label}${f.soldOut ? ' <small>sold out</small>' : extra}</button>`;
+                }).join('')}
+              </div>
+            </div>` : '';
+
       // Sugar level (drinks only) — single-select, first option active by default.
       const sugarField = (isDrink && typeof SUGAR_LEVELS !== 'undefined') ? `
             <div class="field">
@@ -176,6 +192,8 @@
             <h1>${p.title}</h1>
             <div class="pdp-price"><span id="pdp-price">${money(fromPrice)}</span> <span class="from" style="font-size:14px;color:var(--muted);font-weight:500">/ <span id="pdp-unit">${p.unit}</span></span></div>
             <p class="pdp-desc">${p.longDesc}</p>
+
+            ${flavourField}
 
             ${sizeField}
 
@@ -271,14 +289,23 @@
       obs.observe(gallery);
     }
 
-    function wireGallery(gallery) {
+    // Photos for the product currently on screen, so picking a flavour can
+    // bring its photo forward.
+    let _gallery = [];
+
+    function showGalleryImage(i) {
       const mainImg = document.getElementById('gallery-main-img');
+      if (!mainImg || !_gallery[i]) return;
+      mainImg.src = _gallery[i];
+      document.querySelectorAll('#gallery-thumbs button').forEach(b => {
+        b.classList.toggle('active', +b.dataset.i === i);
+      });
+    }
+
+    function wireGallery(gallery) {
+      _gallery = gallery;
       document.querySelectorAll('#gallery-thumbs button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('#gallery-thumbs button').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          mainImg.src = gallery[+btn.dataset.i];
-        });
+        btn.addEventListener('click', () => showGalleryImage(+btn.dataset.i));
       });
     }
 
@@ -296,8 +323,20 @@
       return active ? active.dataset.sugar : '';
     }
 
+    function selectedFlavour(p) {
+      const active = document.querySelector('#flavour-pills .opt-pill.active');
+      if (active) return active.dataset.flavour;
+      const first = productFlavours(p).find(f => !f.soldOut);
+      return first ? first.label : '';
+    }
+
+    // Size + flavour make up the headline price; toppings are added on top.
+    function basePrice(p) {
+      return sizePrice(p, selectedSize(p)) + flavourDelta(p, selectedFlavour(p));
+    }
+
     function currentUnitPrice(p) {
-      let price = sizePrice(p, selectedSize(p));
+      let price = basePrice(p);
       selectedAddons().forEach(id => { if (ADDONS[id]) price += ADDONS[id].price; });
       return price;
     }
@@ -332,8 +371,8 @@
         return last === 'packet' ? 'pack' : last;
       };
       const updatePrice = () => {
-        setText('pdp-price', money(sizePrice(p, selectedSize(p))));
-        setText('mini-price', money(sizePrice(p, selectedSize(p))));
+        setText('pdp-price', money(basePrice(p)));
+        setText('mini-price', money(basePrice(p)));
         setText('pdp-unit', unitForSize(selectedSize(p)));
         const total = currentUnitPrice(p) * Math.max(1, +qtyInput.value || 1);
         setText('add-price', money(total));   // may be absent mid-animation
@@ -342,7 +381,7 @@
 
       const addToCart = (btn) => {
         const qty = Math.max(1, +qtyInput.value || 1);
-        Cart.add(p.id, qty, selectedSize(p), selectedAddons(), selectedSugar());
+        Cart.add(p.id, qty, selectedSize(p), selectedAddons(), selectedSugar(), selectedFlavour(p));
         qtyInput.value = 1;               // reset quantity after adding
         updatePrice();                    // reflect reset before the flash
         flashAdded(btn);
@@ -356,16 +395,33 @@
       });
       qtyInput.addEventListener('input', updatePrice);
 
-      // Size + sugar pills: single-select within their group
-      ['#size-pills', '#sugar-pills'].forEach(group => {
+      // Size, sugar + flavour pills: single-select within their group
+      ['#size-pills', '#sugar-pills', '#flavour-pills'].forEach(group => {
         document.querySelectorAll(`${group} .opt-pill`).forEach(pill => {
           pill.addEventListener('click', () => {
+            if (pill.classList.contains('sold-out')) return;
             document.querySelectorAll(`${group} .opt-pill`).forEach(b => b.classList.remove('active'));
             pill.classList.add('active');
             updatePrice();
           });
         });
       });
+
+      // Picking a flavour brings its photo to the front of the gallery. Photos
+      // with no tag (the shared bottle shot) are left where they are.
+      const tags = p.imageFlavours || [];
+      if (tags.length) {
+        document.querySelectorAll('#flavour-pills .opt-pill').forEach(pill => {
+          pill.addEventListener('click', () => {
+            if (pill.classList.contains('sold-out')) return;
+            const i = tags.indexOf(pill.dataset.flavour);
+            if (i >= 0) showGalleryImage(i);
+          });
+        });
+        // Open on the photo for the flavour that starts selected.
+        const start = tags.indexOf(selectedFlavour(p));
+        if (start > 0) showGalleryImage(start);
+      }
       // Topping pills: multi-select toggle, capped at MAX_TOPPINGS
       const maxTop = (typeof MAX_TOPPINGS !== 'undefined') ? MAX_TOPPINGS : 2;
       const toppingPills = Array.from(document.querySelectorAll('#topping-pills .opt-pill'));

@@ -534,8 +534,8 @@
       const row = (l, r, cls) => `<div class="ps-row ${cls || ''}"><span>${l}</span><span class="r">${r}</span></div>`;
       const items = (q.items || []).map(i => {
         const unit = i.unitPrice != null ? i.unitPrice : (i.qty ? i.lineTotal / i.qty : 0);
-        // Every chosen option: size · sugar level · toppings
-        const opts = [i.size, i.sugar ? 'Sugar ' + i.sugar : null].concat(i.addons || []).filter(Boolean).join(' · ');
+        // Every chosen option: flavour · size · sugar level · toppings
+        const opts = [i.flavour, i.size, i.sugar ? 'Sugar ' + i.sugar : null].concat(i.addons || []).filter(Boolean).join(' · ');
         return `<div class="ps-row ps-item"><span class="nm"><span class="t">${esc(i.title)}${opts ? ` <span class="sub">${esc(opts)}</span>` : ''}</span><span class="calc">${i.qty} × ${money(unit, ccy)}</span></span><span class="r">${money(i.lineTotal, ccy)}</span></div>`;
       }).join('');
       const fees = [row('Subtotal', money(q.subtotal, ccy))];

@@ -82,6 +82,7 @@ const ymd = (iso) => (iso ? String(iso) : new Date().toISOString()).slice(0, 10)
 
 function lineDescription(i) {
   const bits = [];
+  if (i.flavour) bits.push(i.flavour);
   if (i.size) bits.push(i.size);
   if (i.sugar) bits.push(`Sugar ${i.sugar}`);
   (i.addons || []).forEach((a) => bits.push(`+ ${a}`));

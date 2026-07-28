@@ -63,10 +63,11 @@ function fmtDate(iso) {
   return d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' });
 }
 
-// One item row: title bold, every chosen option (size / sugar / toppings) as
-// description lines beneath it — mirroring the sample's descriptive cells.
+// One item row: title bold, every chosen option (flavour / size / sugar /
+// toppings) as description lines beneath it — mirroring the sample's cells.
 function itemRow(i) {
   const descLines = [];
+  if (i.flavour) descLines.push('Flavour: ' + esc(i.flavour));
   if (i.size) descLines.push('Size: ' + esc(i.size));
   if (i.sugar) descLines.push('Sweetness: ' + esc(i.sugar));
   (i.addons || []).forEach((a) => descLines.push('Topping: ' + esc(a)));

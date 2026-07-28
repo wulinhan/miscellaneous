@@ -20,8 +20,11 @@ function _writeCart(lines) {
   document.dispatchEvent(new CustomEvent('cart:changed'));
 }
 
-function _lineKey(productId, size, addons, sugar) {
-  return [productId, size || '', sugar || '', (addons || []).slice().sort().join(',')].join('|');
+function _lineKey(productId, size, addons, sugar, flavour) {
+  // The flavour is appended only when there is one, so keys for flavourless
+  // products stay byte-identical to the ones already in customers' carts.
+  const base = [productId, size || '', sugar || '', (addons || []).slice().sort().join(',')].join('|');
+  return flavour ? base + '|' + flavour : base;
 }
 
 const Cart = {
@@ -33,10 +36,11 @@ const Cart = {
     return _readCart().reduce((n, l) => n + l.qty, 0);
   },
 
-  /* unit price for a line = size price + sum of add-on prices */
+  /* unit price for a line = size price + flavour surcharge + add-on prices */
   unitPrice(line) {
     const product = getProduct(line.productId);
     let price = product ? sizePrice(product, line.size) : 0;
+    if (product) price += flavourDelta(product, line.flavour);
     (line.addons || []).forEach(id => {
       const a = ADDONS[id];
       if (a) price += a.price;
@@ -48,14 +52,14 @@ const Cart = {
     return _readCart().reduce((sum, l) => sum + this.unitPrice(l) * l.qty, 0);
   },
 
-  add(productId, qty = 1, size = '', addons = [], sugar = '') {
+  add(productId, qty = 1, size = '', addons = [], sugar = '', flavour = '') {
     const lines = _readCart();
-    const key = _lineKey(productId, size, addons, sugar);
+    const key = _lineKey(productId, size, addons, sugar, flavour);
     const existing = lines.find(l => l.key === key);
     if (existing) {
       existing.qty += qty;
     } else {
-      lines.push({ key, productId, qty, size, addons: addons.slice(), sugar });
+      lines.push({ key, productId, qty, size, addons: addons.slice(), sugar, flavour });
     }
     _writeCart(lines);
     document.dispatchEvent(new CustomEvent('cart:added'));

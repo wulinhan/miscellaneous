@@ -36,10 +36,11 @@
       "categories": categories[]->title,
       "primary": primaryCategory->title,
       sizes[]{label, price},
+      flavours[]{label, priceDelta, "soldOut": soldOut == true},
       "upsell": toppings[]->slug.current,
       "alsoBought": alsoBought[]->slug.current,
       allergens,
-      "images": images[].asset._ref
+      "images": images[]{ "ref": asset._ref, flavour }
     }
   }`;
 
@@ -54,7 +55,15 @@
     const primary = (p.primary && !hiddenCats.has(p.primary)) ? p.primary : cats[0];
     const tags = primary ? [primary].concat(cats.filter(c => c !== primary)) : cats;
     const sizes = (p.sizes && p.sizes.length) ? p.sizes : [{ label: 'One size', price: 0 }];
-    const images = (p.images || []).map(imageUrl).filter(Boolean);
+    // Photos keep their CMS order; the flavour tag of each one is kept in a
+    // parallel array so the gallery can jump to the photo for a chosen flavour.
+    const photos = (p.images || [])
+      .map(im => ({ url: imageUrl(im && im.ref), flavour: (im && im.flavour) || '' }))
+      .filter(im => im.url);
+    const images = photos.map(im => im.url);
+    const flavours = (p.flavours || [])
+      .filter(f => f && f.label)
+      .map(f => ({ label: f.label, priceDelta: +f.priceDelta || 0, soldOut: f.soldOut === true }));
     // If no CMS photos yet, reuse a bundled photo when the id matches.
     const builtin = (typeof PRODUCTS !== 'undefined') ? PRODUCTS.find(x => x.id === p.id) : null;
     const mapped = {
@@ -75,6 +84,10 @@
       alsoBought: (p.alsoBought || []).filter(Boolean),
       allergens: p.allergens || []
     };
+    if (flavours.length) {
+      mapped.flavours = flavours;
+      mapped.imageFlavours = photos.map(im => im.flavour);
+    }
     if (images.length) mapped.images = images;
     else if (builtin && builtin.imageCount) mapped.imageCount = builtin.imageCount;
     return mapped;
@@ -166,10 +179,11 @@
         "categories": categories[]->title,
         "primary": primaryCategory->title,
         sizes[]{label, price},
+        flavours[]{label, priceDelta, "soldOut": soldOut == true},
         "upsell": toppings[]->slug.current,
         "alsoBought": alsoBought[]->slug.current,
         allergens,
-        "images": images[].asset._ref
+        "images": images[]{ "ref": asset._ref, flavour }
       }
     }`;
     try {

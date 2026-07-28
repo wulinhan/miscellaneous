@@ -378,6 +378,24 @@ function hasSizeChoice(product) {
   return !!(product && product.sizes && product.sizes.length > 1);
 }
 
+/* Flavours let one listing cover a whole menu section (e.g. every milk tea).
+   The chosen flavour can carry a surcharge on top of the size price. */
+function productFlavours(product) {
+  return (product && Array.isArray(product.flavours)) ? product.flavours : [];
+}
+
+function hasFlavourChoice(product) {
+  return productFlavours(product).length > 0;
+}
+
+/* Surcharge for a flavour label; 0 when the product has no flavours or the
+   label is unknown (so a stale cart line can never inflate a price). */
+function flavourDelta(product, label) {
+  if (!label) return 0;
+  const f = productFlavours(product).find(x => x.label === label);
+  return f ? (+f.priceDelta || 0) : 0;
+}
+
 function allTags() {
   const categoryOrder = ['Drinks', 'Sweets', 'Snacks', 'Gift Sets'];
   const crossOrder = ['Best Seller', 'New', 'Vegan', 'Bundle'];

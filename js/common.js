@@ -277,6 +277,7 @@ function cartRemove(key) { Cart.remove(key); }
 /* Every chosen option on one line: size · sugar level · toppings. */
 function cartLineMeta(l) {
   const bits = [];
+  if (l.flavour) bits.push(l.flavour);
   if (l.size) bits.push(l.size);
   if (l.sugar) bits.push('Sugar ' + l.sugar);
   (l.addons || []).forEach(id => {

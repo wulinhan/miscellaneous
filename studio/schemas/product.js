@@ -1,4 +1,5 @@
 import { defineType, defineField } from 'sanity';
+import { FlavourTagInput } from '../components/flavour-tag-input';
 
 export default defineType({
   name: 'product',
@@ -18,7 +19,15 @@ export default defineType({
     }),
     defineField({
       name: 'images', title: 'Photos', type: 'array',
-      of: [{ type: 'image', options: { hotspot: true } }],
+      of: [{
+        type: 'image', options: { hotspot: true },
+        fields: [{
+          name: 'flavour', title: 'Flavour shown in this photo', type: 'string',
+          components: { input: FlavourTagInput },
+          description: 'Tag the photo with a flavour and the gallery jumps to it when that flavour is picked. Leave blank for photos that suit every flavour (e.g. the bottle shot).'
+        }],
+        preview: { select: { media: 'asset', title: 'flavour' } }
+      }],
       description: 'First photo is used on the card. Add more for the gallery.'
     }),
     defineField({ name: 'shortDesc', title: 'Short description (card)', type: 'text', rows: 2 }),
@@ -32,6 +41,29 @@ export default defineType({
         { name: 'price', title: 'Price ($)', type: 'number' }
       ], preview: { select: { title: 'label', subtitle: 'price' } } }],
       description: 'Add one size for fixed-price items, or several (e.g. Regular / Large).'
+    }),
+    defineField({
+      name: 'flavours', title: 'Flavours', type: 'array',
+      of: [{
+        type: 'object',
+        fields: [
+          { name: 'label', title: 'Flavour', type: 'string', validation: r => r.required() },
+          { name: 'priceDelta', title: 'Extra charge ($)', type: 'number', initialValue: 0,
+            description: 'Added to the size price when this flavour is chosen. Leave at 0 for the standard flavours.' },
+          { name: 'soldOut', title: 'Sold out', type: 'boolean', initialValue: false,
+            description: 'Keeps the flavour on the menu but stops it being ordered.' }
+        ],
+        preview: {
+          select: { title: 'label', delta: 'priceDelta', soldOut: 'soldOut' },
+          prepare({ title, delta, soldOut }) {
+            const bits = [];
+            if (delta) bits.push(`+$${Number(delta).toFixed(2)}`);
+            if (soldOut) bits.push('sold out');
+            return { title, subtitle: bits.join(' · ') };
+          }
+        }
+      }],
+      description: 'One listing can carry many flavours (e.g. all the milk teas). The customer picks one on the product page. Leave empty for products with a single flavour.'
     }),
     defineField({
       name: 'categories', title: 'Categories', type: 'array',

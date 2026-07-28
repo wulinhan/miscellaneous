@@ -26,6 +26,7 @@ function gstAmountOf(total) {
 // One line of "everything chosen" for an item: size · sugar level · toppings.
 function itemOptions(i) {
   const bits = [];
+  if (i.flavour) bits.push(i.flavour);
   if (i.size) bits.push(i.size);
   if (i.sugar) bits.push(`Sugar ${i.sugar}`);
   (i.addons || []).forEach((a) => bits.push(`+ ${a}`));

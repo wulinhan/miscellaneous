@@ -60,8 +60,17 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
     return product.price || 0;
   };
 
+  // A flavour surcharge is only ever taken from the catalog, never from the
+  // request, so a tampered line can't pick its own price.
+  const flavourDelta = (product, label) => {
+    if (!label || !Array.isArray(product.flavours)) return 0;
+    const f = product.flavours.find((x) => x.label === label);
+    return f ? Number(f.priceDelta) || 0 : 0;
+  };
+
   const unitPrice = (line, product) => {
     let p = sizePrice(product, line.size);
+    p += flavourDelta(product, line.flavour);
     for (const id of line.addOns || line.addons || []) if (ADDONS[id]) p += ADDONS[id].price;
     return round2(p);
   };
@@ -83,6 +92,13 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
   for (const l of lines) {
     const product = getProduct(l.productId);
     if (!product) throw new Error(`Unknown product "${l.productId}"`);
+    // A listing that carries flavours can only be ordered as one of them.
+    const flavours = Array.isArray(product.flavours) ? product.flavours : [];
+    if (flavours.length) {
+      const chosen = flavours.find((f) => f.label === l.flavour);
+      if (!chosen) throw new Error(`Choose a flavour for "${product.title}"`);
+      if (chosen.soldOut) throw new Error(`"${chosen.label}" is sold out`);
+    }
     const unit = unitPrice(l, product);
     // Carry every chosen option so receipts/admin can show the full line.
     const addonTitles = (l.addOns || l.addons || [])
@@ -91,6 +107,7 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
     items.push({
       productId: l.productId,
       title: product.title,
+      flavour: l.flavour || '',
       size: l.size,
       sugar: l.sugar || '',
       addons: addonTitles,
