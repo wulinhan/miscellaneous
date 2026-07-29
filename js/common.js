@@ -280,6 +280,11 @@ function cartLineMeta(l) {
   if (l.flavour) bits.push(l.flavour);
   if (l.size) bits.push(l.size);
   if (l.sugar) bits.push('Sugar ' + l.sugar);
+  if (l.bucket && typeof DISPENSER_BUCKETS !== 'undefined' && DISPENSER_BUCKETS[l.bucket]) {
+    bits.push(DISPENSER_BUCKETS[l.bucket].title);
+    const bt = (typeof ADDONS !== 'undefined') && ADDONS[l.bucketTopping];
+    if (bt) bits.push('Bucket: ' + bt.title);
+  }
   (l.addons || []).forEach(id => {
     const a = (typeof ADDONS !== 'undefined') && ADDONS[id];
     if (a) bits.push(a.title);

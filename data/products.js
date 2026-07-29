@@ -396,6 +396,26 @@ function flavourDelta(product, label) {
   return f ? (+f.priceDelta || 0) : 0;
 }
 
+/* Catering dispensers. Any size whose label contains "Dispenser" switches the
+   product page into dispenser mode: flat price for any flavour (no flavour
+   surcharge), per-cup toppings and sugar hidden, and an optional shared
+   topping bucket instead. Mirrored by the server engine. */
+const DISPENSER_BUCKETS = {
+  small: { id: 'small', title: 'Small Topping Bucket (1000ml, ~15 pax)', price: 12 },
+  xl:    { id: 'xl',    title: 'XL Topping Bucket (2000ml, ~30 pax)',    price: 22 }
+};
+const DISPENSER_PROVIDED = [
+  'Styrofoam box with ice (according to pax ordered)',
+  '360ml Sofnade branded cups',
+  'Cup lids',
+  'Ice scoop (1 pc)',
+  'Topping scoop (1 per topping)',
+  'Serviettes'
+];
+function isDispenserSize(label) {
+  return /dispenser/i.test(String(label || ''));
+}
+
 function allTags() {
   const categoryOrder = ['Drinks', 'Sweets', 'Snacks', 'Gift Sets'];
   const crossOrder = ['Best Seller', 'New', 'Vegan', 'Bundle'];
@@ -513,5 +533,5 @@ function applyStore(store) {
    so the storefront is unaffected; the API functions require() this file to
    recompute totals from the exact same catalog, settings and codes. */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { PRODUCTS, ADDONS, SETTINGS, DISCOUNT_CODES, CATEGORIES };
+  module.exports = { PRODUCTS, ADDONS, SETTINGS, DISCOUNT_CODES, CATEGORIES, DISPENSER_BUCKETS };
 }

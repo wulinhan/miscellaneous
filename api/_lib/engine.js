@@ -68,8 +68,25 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
     return f ? Number(f.priceDelta) || 0 : 0;
   };
 
+  // Catering dispensers: flat price for any flavour, no per-cup toppings —
+  // only the optional shared topping bucket is added on top.
+  const BUCKETS = builtin.DISPENSER_BUCKETS || {
+    small: { title: 'Small Topping Bucket (1000ml, ~15 pax)', price: 12 },
+    xl: { title: 'XL Topping Bucket (2000ml, ~30 pax)', price: 22 },
+  };
+  const isDispenser = (label) => /dispenser/i.test(String(label || ''));
+
   const unitPrice = (line, product) => {
     let p = sizePrice(product, line.size);
+    if (isDispenser(line.size)) {
+      if (line.bucket) {
+        const b = BUCKETS[line.bucket];
+        if (!b) throw new Error(`Unknown topping bucket "${line.bucket}"`);
+        p += b.price;
+      }
+      return round2(p);
+    }
+    if (line.bucket) throw new Error('Topping buckets are only available with a dispenser');
     p += flavourDelta(product, line.flavour);
     for (const id of line.addOns || line.addons || []) if (ADDONS[id]) p += ADDONS[id].price;
     return round2(p);
@@ -101,9 +118,24 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
     }
     const unit = unitPrice(l, product);
     // Carry every chosen option so receipts/admin can show the full line.
-    const addonTitles = (l.addOns || l.addons || [])
-      .map((id) => (ADDONS[id] ? ADDONS[id].title : null))
-      .filter(Boolean);
+    // Dispenser lines fold the bucket and its included topping into the same
+    // display list; submitted per-cup toppings are ignored (never charged).
+    let addonTitles;
+    if (isDispenser(l.size)) {
+      addonTitles = [];
+      if (l.bucket) {
+        addonTitles.push(BUCKETS[l.bucket].title);
+        if (l.bucketTopping) {
+          const t = ADDONS[l.bucketTopping];
+          if (!t) throw new Error(`Unknown bucket topping "${l.bucketTopping}"`);
+          addonTitles.push(`Bucket topping: ${t.title}`);
+        }
+      }
+    } else {
+      addonTitles = (l.addOns || l.addons || [])
+        .map((id) => (ADDONS[id] ? ADDONS[id].title : null))
+        .filter(Boolean);
+    }
     items.push({
       productId: l.productId,
       title: product.title,

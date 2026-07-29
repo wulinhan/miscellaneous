@@ -20,11 +20,13 @@ function _writeCart(lines) {
   document.dispatchEvent(new CustomEvent('cart:changed'));
 }
 
-function _lineKey(productId, size, addons, sugar, flavour) {
-  // The flavour is appended only when there is one, so keys for flavourless
-  // products stay byte-identical to the ones already in customers' carts.
-  const base = [productId, size || '', sugar || '', (addons || []).slice().sort().join(',')].join('|');
-  return flavour ? base + '|' + flavour : base;
+function _lineKey(productId, size, addons, sugar, flavour, bucket, bucketTopping) {
+  // Newer options are appended only when present, so keys for lines without
+  // them stay byte-identical to the ones already in customers' carts.
+  let key = [productId, size || '', sugar || '', (addons || []).slice().sort().join(',')].join('|');
+  if (flavour) key += '|' + flavour;
+  if (bucket) key += '|b:' + bucket + (bucketTopping ? ':' + bucketTopping : '');
+  return key;
 }
 
 const Cart = {
@@ -36,10 +38,17 @@ const Cart = {
     return _readCart().reduce((n, l) => n + l.qty, 0);
   },
 
-  /* unit price for a line = size price + flavour surcharge + add-on prices */
+  /* unit price for a line = size price + flavour surcharge + add-on prices.
+     Dispenser sizes are flat for any flavour: no surcharge, no per-cup
+     toppings — just the optional shared topping bucket. */
   unitPrice(line) {
     const product = getProduct(line.productId);
     let price = product ? sizePrice(product, line.size) : 0;
+    if (typeof isDispenserSize === 'function' && isDispenserSize(line.size)) {
+      const b = (typeof DISPENSER_BUCKETS !== 'undefined') && DISPENSER_BUCKETS[line.bucket];
+      if (b) price += b.price;
+      return price;
+    }
     if (product) price += flavourDelta(product, line.flavour);
     (line.addons || []).forEach(id => {
       const a = ADDONS[id];
@@ -52,14 +61,14 @@ const Cart = {
     return _readCart().reduce((sum, l) => sum + this.unitPrice(l) * l.qty, 0);
   },
 
-  add(productId, qty = 1, size = '', addons = [], sugar = '', flavour = '') {
+  add(productId, qty = 1, size = '', addons = [], sugar = '', flavour = '', bucket = '', bucketTopping = '') {
     const lines = _readCart();
-    const key = _lineKey(productId, size, addons, sugar, flavour);
+    const key = _lineKey(productId, size, addons, sugar, flavour, bucket, bucketTopping);
     const existing = lines.find(l => l.key === key);
     if (existing) {
       existing.qty += qty;
     } else {
-      lines.push({ key, productId, qty, size, addons: addons.slice(), sugar, flavour });
+      lines.push({ key, productId, qty, size, addons: addons.slice(), sugar, flavour, bucket, bucketTopping });
     }
     _writeCart(lines);
     document.dispatchEvent(new CustomEvent('cart:added'));

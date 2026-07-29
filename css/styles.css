@@ -778,3 +778,7 @@ img { display: block; max-width: 100%; }
 .cal-cell.disabled{ background:transparent; color:#c9c4ba; cursor:not-allowed; }
 .cal-cell.selected{ background:#204390; color:#fff; font-weight:700; }
 .cal-cell:not(.disabled):not(.selected):hover{ background:#fecd08; }
+
+/* Dispenser "what's provided" list inside the notice box */
+.notice ul { margin: 6px 0 0 18px; padding: 0; }
+.notice li { margin: 2px 0; }

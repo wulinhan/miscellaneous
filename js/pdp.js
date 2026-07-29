@@ -148,11 +148,37 @@
 
       // Sugar level (drinks only) — single-select, first option active by default.
       const sugarField = (isDrink && typeof SUGAR_LEVELS !== 'undefined') ? `
-            <div class="field">
+            <div class="field" id="sugar-field">
               <label>Sugar level</label>
               <div class="opt-pills" id="sugar-pills">
                 ${SUGAR_LEVELS.map((s, i) => `<button type="button" class="opt-pill ${i === 0 ? 'active' : ''}" data-sugar="${s}">${s}</button>`).join('')}
               </div>
+            </div>` : '';
+
+      // Dispenser mode (catering): shown instead of sugar/per-cup toppings when
+      // a Dispenser size is picked. One shared topping bucket, its topping
+      // included, plus a note of everything provided with the dispenser.
+      const hasDispenser = (p.sizes || []).some(s => isDispenserSize(s.label));
+      const bucketTops = (p.upsell || []).map(id => {
+        const a = ADDONS[id];
+        return a ? `<button type="button" class="opt-pill" data-addon="${a.id}">${a.title}</button>` : '';
+      }).join('');
+      const dispenserFields = hasDispenser ? `
+            <div class="field" id="bucket-field" style="display:none">
+              <label>Toppings</label>
+              <div class="opt-pills" id="bucket-pills">
+                <button type="button" class="opt-pill active" data-bucket="">None</button>
+                ${Object.values(DISPENSER_BUCKETS).map(b =>
+                  `<button type="button" class="opt-pill" data-bucket="${b.id}">${b.title} <small>+${money(b.price)}</small></button>`).join('')}
+              </div>
+            </div>
+            <div class="field" id="bucket-topping-field" style="display:none">
+              <label>Bucket topping <span class="field-note">included with the bucket</span></label>
+              <div class="opt-pills" id="bucket-topping-pills">${bucketTops}</div>
+            </div>
+            <div class="notice" id="disp-provided" style="display:none">
+              <b>Provided with every dispenser:</b>
+              <ul>${DISPENSER_PROVIDED.map(x => `<li>${x}</li>`).join('')}</ul>
             </div>` : '';
 
       // Toppings as multi-select pills.
@@ -200,10 +226,12 @@
             ${sugarField}
 
             ${upsells ? `
-            <div class="field">
+            <div class="field" id="topping-field">
               <label>Add toppings <span class="field-note">choose up to ${typeof MAX_TOPPINGS !== 'undefined' ? MAX_TOPPINGS : 2}</span></label>
               <div class="opt-pills" id="topping-pills">${upsells}</div>
             </div>` : ''}
+
+            ${dispenserFields}
 
             <div class="field">
               <label>Quantity</label>
@@ -330,14 +358,32 @@
       return first ? first.label : '';
     }
 
+    function selectedBucket() {
+      const active = document.querySelector('#bucket-pills .opt-pill.active');
+      return active ? active.dataset.bucket : '';
+    }
+
+    function selectedBucketTopping() {
+      const active = document.querySelector('#bucket-topping-pills .opt-pill.active');
+      return active ? active.dataset.addon : '';
+    }
+
     // Size + flavour make up the headline price; toppings are added on top.
+    // Dispensers are flat for any flavour — no surcharge, bucket instead.
     function basePrice(p) {
-      return sizePrice(p, selectedSize(p)) + flavourDelta(p, selectedFlavour(p));
+      const size = selectedSize(p);
+      if (isDispenserSize(size)) return sizePrice(p, size);
+      return sizePrice(p, size) + flavourDelta(p, selectedFlavour(p));
     }
 
     function currentUnitPrice(p) {
       let price = basePrice(p);
-      selectedAddons().forEach(id => { if (ADDONS[id]) price += ADDONS[id].price; });
+      if (isDispenserSize(selectedSize(p))) {
+        const b = DISPENSER_BUCKETS[selectedBucket()];
+        if (b) price += b.price;
+      } else {
+        selectedAddons().forEach(id => { if (ADDONS[id]) price += ADDONS[id].price; });
+      }
       return price;
     }
 
@@ -370,7 +416,29 @@
         if (/^\d+$/.test(last)) return p.unit || '';
         return last === 'packet' ? 'pack' : last;
       };
+      // Dispenser mode swaps the per-cup choices (sugar, toppings) for the
+      // bucket choice and the what's-provided note.
+      const show = (id, on) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = on ? '' : 'none';
+      };
+      const refreshDispenser = () => {
+        const disp = isDispenserSize(selectedSize(p));
+        show('sugar-field', !disp);
+        show('topping-field', !disp);
+        show('bucket-field', disp);
+        show('disp-provided', disp);
+        const bucketOn = disp && !!selectedBucket();
+        show('bucket-topping-field', bucketOn);
+        // A bucket needs a topping in it — default to the first.
+        if (bucketOn && !selectedBucketTopping()) {
+          const first = document.querySelector('#bucket-topping-pills .opt-pill');
+          if (first) first.classList.add('active');
+        }
+      };
+
       const updatePrice = () => {
+        refreshDispenser();
         setText('pdp-price', money(basePrice(p)));
         setText('mini-price', money(basePrice(p)));
         setText('pdp-unit', unitForSize(selectedSize(p)));
@@ -381,7 +449,13 @@
 
       const addToCart = (btn) => {
         const qty = Math.max(1, +qtyInput.value || 1);
-        Cart.add(p.id, qty, selectedSize(p), selectedAddons(), selectedSugar(), selectedFlavour(p));
+        const disp = isDispenserSize(selectedSize(p));
+        Cart.add(p.id, qty, selectedSize(p),
+          disp ? [] : selectedAddons(),
+          disp ? '' : selectedSugar(),
+          selectedFlavour(p),
+          disp ? selectedBucket() : '',
+          (disp && selectedBucket()) ? selectedBucketTopping() : '');
         qtyInput.value = 1;               // reset quantity after adding
         updatePrice();                    // reflect reset before the flash
         flashAdded(btn);
@@ -395,8 +469,9 @@
       });
       qtyInput.addEventListener('input', updatePrice);
 
-      // Size, sugar + flavour pills: single-select within their group
-      ['#size-pills', '#sugar-pills', '#flavour-pills'].forEach(group => {
+      // Size, sugar, flavour, bucket + bucket-topping pills: single-select
+      // within their group
+      ['#size-pills', '#sugar-pills', '#flavour-pills', '#bucket-pills', '#bucket-topping-pills'].forEach(group => {
         document.querySelectorAll(`${group} .opt-pill`).forEach(pill => {
           pill.addEventListener('click', () => {
             if (pill.classList.contains('sold-out')) return;
