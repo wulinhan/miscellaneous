@@ -178,7 +178,8 @@
             </div>
             <div class="notice" id="disp-provided" style="display:none">
               <b>Provided with every dispenser:</b>
-              <ul>${DISPENSER_PROVIDED.map(x => `<li>${x}</li>`).join('')}</ul>
+              <ul>${DISPENSER_PROVIDED.map(x =>
+                `<li${x.withToppingOnly ? ' data-topping-only="1"' : ''}>${x.text}</li>`).join('')}</ul>
             </div>` : '';
 
       // Toppings as multi-select pills.
@@ -430,6 +431,9 @@
         show('disp-provided', disp);
         const bucketOn = disp && !!selectedBucket();
         show('bucket-topping-field', bucketOn);
+        // No topping, no topping scoop.
+        document.querySelectorAll('#disp-provided li[data-topping-only]')
+          .forEach(li => { li.style.display = bucketOn ? '' : 'none'; });
         // A bucket needs a topping in it — default to the first.
         if (bucketOn && !selectedBucketTopping()) {
           const first = document.querySelector('#bucket-topping-pills .opt-pill');

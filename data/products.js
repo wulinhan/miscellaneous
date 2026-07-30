@@ -404,13 +404,15 @@ const DISPENSER_BUCKETS = {
   small: { id: 'small', title: 'Small Topping Bucket (1000ml, ~15 pax)', price: 12 },
   xl:    { id: 'xl',    title: 'XL Topping Bucket (2000ml, ~30 pax)',    price: 22 }
 };
+/* What comes with a dispenser. `withToppingOnly` items are listed only when a
+   topping bucket has been added — there is no scoop without a topping. */
 const DISPENSER_PROVIDED = [
-  'Styrofoam box with ice (according to pax ordered)',
-  '360ml Sofnade branded cups',
-  'Cup lids',
-  'Ice scoop (1 pc)',
-  'Topping scoop (1 per topping)',
-  'Serviettes'
+  { text: 'Styrofoam box with ice (according to pax ordered)' },
+  { text: '360ml Sofnade branded cups' },
+  { text: 'Cup lids' },
+  { text: 'Ice scoop (1 pc)' },
+  { text: 'Topping scoop (1 per topping)', withToppingOnly: true },
+  { text: 'Serviettes' }
 ];
 function isDispenserSize(label) {
   return /dispenser/i.test(String(label || ''));
