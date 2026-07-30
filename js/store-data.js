@@ -36,7 +36,7 @@
       "categories": categories[]->title,
       "primary": primaryCategory->title,
       sizes[]{label, price},
-      flavours[]{label, priceDelta, "soldOut": soldOut == true},
+      flavours[]{label, group, priceDelta, "soldOut": soldOut == true},
       "upsell": toppings[]->slug.current,
       "alsoBought": alsoBought[]->slug.current,
       allergens,
@@ -73,7 +73,7 @@
     const images = photos.map(im => im.url);
     const flavours = (p.flavours || [])
       .filter(f => f && f.label)
-      .map(f => ({ label: f.label, priceDelta: +f.priceDelta || 0, soldOut: f.soldOut === true }));
+      .map(f => ({ label: f.label, group: f.group || '', priceDelta: +f.priceDelta || 0, soldOut: f.soldOut === true }));
     // If no CMS photos yet, reuse a bundled photo when the id matches.
     const builtin = (typeof PRODUCTS !== 'undefined') ? PRODUCTS.find(x => x.id === p.id) : null;
     const mapped = {
@@ -192,7 +192,7 @@
         "categories": categories[]->title,
         "primary": primaryCategory->title,
         sizes[]{label, price},
-        flavours[]{label, priceDelta, "soldOut": soldOut == true},
+        flavours[]{label, group, priceDelta, "soldOut": soldOut == true},
         "upsell": toppings[]->slug.current,
         "alsoBought": alsoBought[]->slug.current,
         allergens,

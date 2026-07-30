@@ -133,7 +133,27 @@
       // Flavour — one listing can carry a whole menu section, so this is the
       // first choice on the page. Sold-out flavours stay visible but unpickable.
       const flavours = productFlavours(p);
-      const firstPickable = flavours.findIndex(f => !f.soldOut);
+      // A long flavour list can be grouped into series (e.g. every milk tea).
+      // The customer then picks the series first and only sees that handful of
+      // flavours, instead of the whole menu at once.
+      const seriesList = [...new Set(flavours.map(f => f.group).filter(Boolean))];
+      const useSeries = seriesList.length > 1;
+      const firstSeries = seriesList.find(s => flavours.some(f => f.group === s && !f.soldOut)) || seriesList[0];
+      // Within the opening series when grouped, else across the whole list.
+      const firstPickable = flavours.findIndex(f =>
+        !f.soldOut && (!useSeries || f.group === firstSeries));
+
+      const seriesField = useSeries ? `
+            <div class="field">
+              <label>Drink series</label>
+              <div class="opt-pills" id="series-pills">
+                ${seriesList.map(s => {
+                  const active = s === firstSeries ? ' active' : '';
+                  return `<button type="button" class="opt-pill${active}" data-series="${s}">${s}</button>`;
+                }).join('')}
+              </div>
+            </div>` : '';
+
       const flavourField = flavours.length ? `
             <div class="field">
               <label>Flavour</label>
@@ -141,7 +161,8 @@
                 ${flavours.map((f, i) => {
                   const extra = f.priceDelta > 0 ? ` <small>+${money(f.priceDelta)}</small>` : '';
                   const cls = f.soldOut ? 'opt-pill sold-out' : `opt-pill ${i === firstPickable ? 'active' : ''}`;
-                  return `<button type="button" class="${cls}" data-flavour="${f.label}"${f.soldOut ? ' disabled aria-disabled="true"' : ''}>${f.label}${f.soldOut ? ' <small>sold out</small>' : extra}</button>`;
+                  const hide = useSeries && f.group !== firstSeries ? ' style="display:none"' : '';
+                  return `<button type="button" class="${cls}" data-flavour="${f.label}" data-series="${f.group || ''}"${f.soldOut ? ' disabled aria-disabled="true"' : ''}${hide}>${f.label}${f.soldOut ? ' <small>sold out</small>' : extra}</button>`;
                 }).join('')}
               </div>
             </div>` : '';
@@ -219,6 +240,8 @@
             <h1>${p.title}</h1>
             <div class="pdp-price"><span id="pdp-price">${money(fromPrice)}</span> <span class="from" style="font-size:14px;color:var(--muted);font-weight:500">/ <span id="pdp-unit">${p.unit}</span></span></div>
             <p class="pdp-desc">${p.longDesc}</p>
+
+            ${seriesField}
 
             ${flavourField}
 
@@ -441,7 +464,26 @@
         }
       };
 
+      // With a grouped flavour list, only the chosen series' flavours are on
+      // screen, and exactly one of them stays selected. The active flavour is
+      // only reassigned when it belongs to a different series, so clicking a
+      // flavour is never undone.
+      const refreshSeries = () => {
+        const active = document.querySelector('#series-pills .opt-pill.active');
+        if (!active) return;
+        const series = active.dataset.series;
+        const pills = Array.from(document.querySelectorAll('#flavour-pills .opt-pill'));
+        pills.forEach(b => { b.style.display = b.dataset.series === series ? '' : 'none'; });
+        const activeFlavour = document.querySelector('#flavour-pills .opt-pill.active');
+        if (!activeFlavour || activeFlavour.dataset.series !== series) {
+          pills.forEach(b => b.classList.remove('active'));
+          const first = pills.find(b => b.dataset.series === series && !b.classList.contains('sold-out'));
+          if (first) first.classList.add('active');
+        }
+      };
+
       const updatePrice = () => {
+        refreshSeries();
         refreshDispenser();
         setText('pdp-price', money(basePrice(p)));
         setText('mini-price', money(basePrice(p)));
@@ -475,7 +517,8 @@
 
       // Size, sugar, flavour, bucket + bucket-topping pills: single-select
       // within their group
-      ['#size-pills', '#sugar-pills', '#flavour-pills', '#bucket-pills', '#bucket-topping-pills'].forEach(group => {
+      ['#size-pills', '#sugar-pills', '#series-pills', '#flavour-pills',
+       '#bucket-pills', '#bucket-topping-pills'].forEach(group => {
         document.querySelectorAll(`${group} .opt-pill`).forEach(pill => {
           pill.addEventListener('click', () => {
             if (pill.classList.contains('sold-out')) return;
@@ -512,8 +555,17 @@
       const flavourIndex = wireGalleryTo('#flavour-pills', 'flavour', p.imageFlavours, true);
       wireGalleryTo('#size-pills', 'size', p.imageSizes, false);
 
-      // Open on the photo for the flavour that starts selected.
+      // Switching series changes which flavour is selected, so the gallery
+      // follows it too. Registered after the single-select handler above, so
+      // the new flavour is already active by the time this runs.
       if (flavourIndex) {
+        document.querySelectorAll('#series-pills .opt-pill').forEach(pill => {
+          pill.addEventListener('click', () => {
+            const i = flavourIndex(selectedFlavour(p));
+            if (i >= 0) showGalleryImage(i);
+          });
+        });
+        // Open on the photo for the flavour that starts selected.
         const start = flavourIndex(selectedFlavour(p));
         if (start > 0) showGalleryImage(start);
       }

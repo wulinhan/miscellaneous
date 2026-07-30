@@ -64,15 +64,18 @@ export default defineType({
         type: 'object',
         fields: [
           { name: 'label', title: 'Flavour', type: 'string', validation: r => r.required() },
+          { name: 'group', title: 'Series', type: 'string',
+            description: 'Optional. Group flavours into series (e.g. Milk Teas, Refreshing Sodas) and the product page asks for the series first, then the flavours within it. Leave blank on products with a short, flat flavour list.' },
           { name: 'priceDelta', title: 'Extra charge ($)', type: 'number', initialValue: 0,
             description: 'Added to the size price when this flavour is chosen. Leave at 0 for the standard flavours.' },
           { name: 'soldOut', title: 'Sold out', type: 'boolean', initialValue: false,
             description: 'Keeps the flavour on the menu but stops it being ordered.' }
         ],
         preview: {
-          select: { title: 'label', delta: 'priceDelta', soldOut: 'soldOut' },
-          prepare({ title, delta, soldOut }) {
+          select: { title: 'label', group: 'group', delta: 'priceDelta', soldOut: 'soldOut' },
+          prepare({ title, group, delta, soldOut }) {
             const bits = [];
+            if (group) bits.push(group);
             if (delta) bits.push(`+$${Number(delta).toFixed(2)}`);
             if (soldOut) bits.push('sold out');
             return { title, subtitle: bits.join(' · ') };
