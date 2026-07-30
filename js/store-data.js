@@ -37,6 +37,7 @@
       "primary": primaryCategory->title,
       sizes[]{label, price},
       flavours[]{label, group, priceDelta, "soldOut": soldOut == true},
+      "flavourSources": flavourSources[]->{ title, flavours[]{label, group, priceDelta, "soldOut": soldOut == true} },
       "upsell": toppings[]->slug.current,
       "alsoBought": alsoBought[]->slug.current,
       allergens,
@@ -71,9 +72,28 @@
       }))
       .filter(im => im.url);
     const images = photos.map(im => im.url);
-    const flavours = (p.flavours || [])
-      .filter(f => f && f.label)
-      .map(f => ({ label: f.label, group: f.group || '', priceDelta: +f.priceDelta || 0, soldOut: f.soldOut === true }));
+    const mapFlavour = (f, group) => ({
+      label: f.label,
+      group: group !== undefined ? group : (f.group || ''),
+      priceDelta: +f.priceDelta || 0,
+      soldOut: f.soldOut === true
+    });
+    // A product either lists its own flavours, or points at other listings and
+    // inherits theirs — grouped under each source's name, in the order the
+    // sources are listed. That keeps a menu-wide product (the dispenser) from
+    // duplicating a list that already lives on the individual listings.
+    let flavours = (p.flavours || []).filter(f => f && f.label).map(f => mapFlavour(f));
+    if (!flavours.length && Array.isArray(p.flavourSources)) {
+      const seen = new Set();
+      flavours = p.flavourSources.filter(Boolean).flatMap(src =>
+        (src.flavours || []).filter(f => f && f.label)
+          .map(f => mapFlavour(f, src.title || ''))
+      ).filter(f => {
+        if (seen.has(f.label)) return false;   // pricing resolves by name
+        seen.add(f.label);
+        return true;
+      });
+    }
     // If no CMS photos yet, reuse a bundled photo when the id matches.
     const builtin = (typeof PRODUCTS !== 'undefined') ? PRODUCTS.find(x => x.id === p.id) : null;
     const mapped = {
@@ -193,6 +213,7 @@
         "primary": primaryCategory->title,
         sizes[]{label, price},
         flavours[]{label, group, priceDelta, "soldOut": soldOut == true},
+        "flavourSources": flavourSources[]->{ title, flavours[]{label, group, priceDelta, "soldOut": soldOut == true} },
         "upsell": toppings[]->slug.current,
         "alsoBought": alsoBought[]->slug.current,
         allergens,

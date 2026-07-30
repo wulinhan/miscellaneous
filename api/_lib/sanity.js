@@ -18,9 +18,22 @@ const QUERY = `{
     "id": slug.current, title, unit, allergens, "hidden": hidden == true,
     "categories": categories[]->title, "primary": primaryCategory->title,
     sizes[]{label, price},
-    flavours[]{label, priceDelta, "soldOut": soldOut == true}
+    flavours[]{label, priceDelta, "soldOut": soldOut == true},
+    "flavourSources": flavourSources[]->{ flavours[]{label, priceDelta, "soldOut": soldOut == true} }
   }
 }`;
+
+// Own flavours win; otherwise inherit from the referenced listings, keeping
+// the first of any duplicate name (pricing resolves flavours by name).
+function deriveFlavours(p) {
+  const own = (p.flavours || []).filter((f) => f && f.label);
+  if (own.length) return own;
+  const seen = new Set();
+  return (p.flavourSources || [])
+    .filter(Boolean)
+    .flatMap((src) => (src.flavours || []).filter((f) => f && f.label))
+    .filter((f) => (seen.has(f.label) ? false : (seen.add(f.label), true)));
+}
 
 function mapStore(data) {
   const addons = {};
@@ -44,7 +57,10 @@ function mapStore(data) {
       unit: p.unit || '',
       tags,
       sizes,
-      flavours: (p.flavours || []).filter((f) => f && f.label),
+      // Mirrors js/store-data.js: a product either lists its own flavours or
+      // inherits them from the listings it points at. The engine validates the
+      // chosen flavour against this, so it has to resolve the same way.
+      flavours: deriveFlavours(p),
       price: sizes[0].price,
       allergens: p.allergens || [],
     };

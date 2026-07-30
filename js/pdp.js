@@ -136,6 +136,10 @@
       // A long flavour list can be grouped into series (e.g. every milk tea).
       // The customer then picks the series first and only sees that handful of
       // flavours, instead of the whole menu at once.
+      // A listing sold only as dispensers is flat-priced whatever the flavour,
+      // so a surcharge inherited from a source listing must not be advertised.
+      const flatPriced = (p.sizes || []).length > 0 &&
+        (p.sizes || []).every(s => isDispenserSize(s.label));
       const seriesList = [...new Set(flavours.map(f => f.group).filter(Boolean))];
       const useSeries = seriesList.length > 1;
       const firstSeries = seriesList.find(s => flavours.some(f => f.group === s && !f.soldOut)) || seriesList[0];
@@ -159,7 +163,7 @@
               <label>Flavour</label>
               <div class="opt-pills" id="flavour-pills">
                 ${flavours.map((f, i) => {
-                  const extra = f.priceDelta > 0 ? ` <small>+${money(f.priceDelta)}</small>` : '';
+                  const extra = (!flatPriced && f.priceDelta > 0) ? ` <small>+${money(f.priceDelta)}</small>` : '';
                   const cls = f.soldOut ? 'opt-pill sold-out' : `opt-pill ${i === firstPickable ? 'active' : ''}`;
                   const hide = useSeries && f.group !== firstSeries ? ' style="display:none"' : '';
                   return `<button type="button" class="${cls}" data-flavour="${f.label}" data-series="${f.group || ''}"${f.soldOut ? ' disabled aria-disabled="true"' : ''}${hide}>${f.label}${f.soldOut ? ' <small>sold out</small>' : extra}</button>`;

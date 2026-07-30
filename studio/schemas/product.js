@@ -82,7 +82,12 @@ export default defineType({
           }
         }
       }],
-      description: 'One listing can carry many flavours (e.g. all the milk teas). The customer picks one on the product page. Leave empty for products with a single flavour.'
+      description: 'One listing can carry many flavours (e.g. all the milk teas). The customer picks one on the product page. Leave empty for products with a single flavour, or for products that take their flavours from other listings (below).'
+    }),
+    defineField({
+      name: 'flavourSources', title: 'Or take flavours from these listings', type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'product' }] }],
+      description: 'Pick the series this product offers (e.g. Milk Teas, Refreshing Sodas) and their flavours are pulled in automatically, grouped under each series name. Add a flavour to one of those listings and it appears here too, so the list is never kept in two places. Only used when Flavours above is empty; drag to set the order the series appear in.'
     }),
     defineField({
       name: 'categories', title: 'Categories', type: 'array',
