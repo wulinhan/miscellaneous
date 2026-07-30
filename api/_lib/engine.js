@@ -79,6 +79,11 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
   const unitPrice = (line, product) => {
     let p = sizePrice(product, line.size);
     if (isDispenser(line.size)) {
+      // sizePrice falls back to the first size for an unknown label, which
+      // would quietly undercharge a dispenser. Dispensers now live on their own
+      // listing, so a stale cart line naming one is refused outright.
+      const offered = (product.sizes || []).some((s) => s.label === line.size);
+      if (!offered) throw new Error(`"${product.title}" is not sold as a dispenser`);
       if (line.bucket) {
         const b = BUCKETS[line.bucket];
         if (!b) throw new Error(`Unknown topping bucket "${line.bucket}"`);
