@@ -272,7 +272,7 @@
 
             <div class="add-row">
               <button class="btn block" id="add-to-cart"><span class="btn-label">Add to cart · <span id="add-price">${money(fromPrice)}</span></span></button>
-              <a class="btn block btn-wa pdp-wa" href="${waUrl('Hi Sofnade! I have a question.')}"
+              <a class="btn block btn-wa pdp-wa" href="${waUrl(`Hi Sofnade! I have a question about ${String(p.title || '').trim()}.`)}"
                  target="_blank" rel="noopener">${WA_ICON}<span>Chat with us on WhatsApp</span></a>
             </div>
 
