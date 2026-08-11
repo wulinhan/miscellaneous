@@ -419,7 +419,10 @@ img { display: block; max-width: 100%; }
 }
 .option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .option-row label { font-weight: 500; margin: 0; cursor: pointer; }
-.add-row { display: flex; gap: 12px; align-items: center; margin: 24px 0; }
+.add-row { display: flex; flex-direction: column; gap: 12px; align-items: stretch; margin: 24px 0; }
+/* WhatsApp CTA sitting under Add to cart on the product page */
+.btn.pdp-wa { display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
+.btn.pdp-wa svg { flex: none; }
 
 /* Custom option pills (size + toppings) — replaces native select/checkboxes */
 .opt-pills { display: flex; flex-wrap: wrap; gap: 8px; }

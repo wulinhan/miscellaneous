@@ -272,6 +272,8 @@
 
             <div class="add-row">
               <button class="btn block" id="add-to-cart"><span class="btn-label">Add to cart · <span id="add-price">${money(fromPrice)}</span></span></button>
+              <a class="btn block btn-wa pdp-wa" href="${waUrl('Hi Sofnade! I have a question.')}"
+                 target="_blank" rel="noopener">${WA_ICON}<span>Chat with us on WhatsApp</span></a>
             </div>
 
             <div class="notice">Free islandwide delivery on orders over ${money(SETTINGS.freeDeliveryThreshold)}, or choose free self pick-up. Earliest delivery is the 3rd business day.</div>
