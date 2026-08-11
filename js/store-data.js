@@ -36,9 +36,9 @@
       "categories": categories[]->title,
       "primary": primaryCategory->title,
       sizes[]{label, price},
-      flavours[]{label, group, priceDelta, "soldOut": soldOut == true},
-      optionGroups[]{label, min, max, options[]{label, priceDelta, "soldOut": soldOut == true}},
-      "flavourSources": flavourSources[]->{ title, flavours[]{label, group, priceDelta, "soldOut": soldOut == true} },
+      flavours[]{label, group, priceDelta, "soldOut": soldOut == true, "image": image.asset._ref},
+      optionGroups[]{label, min, max, options[]{label, priceDelta, "soldOut": soldOut == true, "image": image.asset._ref}},
+      "flavourSources": flavourSources[]->{ title, flavours[]{label, group, priceDelta, "soldOut": soldOut == true, "image": image.asset._ref} },
       "upsell": toppings[]->slug.current,
       "alsoBought": alsoBought[]->slug.current,
       allergens,
@@ -73,12 +73,17 @@
       }))
       .filter(im => im.url);
     const images = photos.map(im => im.url);
-    const mapFlavour = (f, group) => ({
-      label: f.label,
-      group: group !== undefined ? group : (f.group || ''),
-      priceDelta: +f.priceDelta || 0,
-      soldOut: f.soldOut === true
-    });
+    const mapFlavour = (f, group) => {
+      const out = {
+        label: f.label,
+        group: group !== undefined ? group : (f.group || ''),
+        priceDelta: +f.priceDelta || 0,
+        soldOut: f.soldOut === true
+      };
+      const u = imageUrl(f.image);
+      if (u) out.image = u;
+      return out;
+    };
     // A product either lists its own flavours, or points at other listings and
     // inherits theirs — grouped under each source's name, in the order the
     // sources are listed. That keeps a menu-wide product (the dispenser) from
@@ -123,8 +128,12 @@
         label: g.label,
         min: +g.min || 0,
         max: +g.max || 0,
-        options: g.options.filter(o => o && o.label)
-          .map(o => ({ label: o.label, priceDelta: +o.priceDelta || 0, soldOut: o.soldOut === true }))
+        options: g.options.filter(o => o && o.label).map(o => {
+          const out = { label: o.label, priceDelta: +o.priceDelta || 0, soldOut: o.soldOut === true };
+          const u = imageUrl(o.image);
+          if (u) out.image = u;
+          return out;
+        })
       }));
     if (groups.length) mapped.optionGroups = groups;
     // Photo tags ride alongside the photos so the gallery can follow whichever
@@ -224,9 +233,9 @@
         "categories": categories[]->title,
         "primary": primaryCategory->title,
         sizes[]{label, price},
-        flavours[]{label, group, priceDelta, "soldOut": soldOut == true},
-        optionGroups[]{label, min, max, options[]{label, priceDelta, "soldOut": soldOut == true}},
-        "flavourSources": flavourSources[]->{ title, flavours[]{label, group, priceDelta, "soldOut": soldOut == true} },
+        flavours[]{label, group, priceDelta, "soldOut": soldOut == true, "image": image.asset._ref},
+        optionGroups[]{label, min, max, options[]{label, priceDelta, "soldOut": soldOut == true, "image": image.asset._ref}},
+        "flavourSources": flavourSources[]->{ title, flavours[]{label, group, priceDelta, "soldOut": soldOut == true, "image": image.asset._ref} },
         "upsell": toppings[]->slug.current,
         "alsoBought": alsoBought[]->slug.current,
         allergens,

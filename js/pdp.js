@@ -4,6 +4,14 @@
    #also-bought (whatever container holds those ids). Relies on globals from
    data/products.js, store-data.js, images.js, cart.js, common.js.
    ========================================================================= */
+    /* A choice (flavour or option) can carry its own photo; shown as a small
+       thumbnail inside its pill. Sized for a 2x display at 40px. */
+    function pillThumb(url) {
+      if (!url) return '';
+      const src = (typeof sanitySized === 'function') ? sanitySized(url, 96) : url;
+      return `<img class="pill-thumb" src="${src}" alt="" loading="lazy">`;
+    }
+
     function chip(t, cat) {
       return `<span class="tag-chip ${cat ? 'cat' : ''}">${t}</span>`;
     }
@@ -166,7 +174,7 @@
                   const extra = (!flatPriced && f.priceDelta > 0) ? ` <small>+${money(f.priceDelta)}</small>` : '';
                   const cls = f.soldOut ? 'opt-pill sold-out' : `opt-pill ${i === firstPickable ? 'active' : ''}`;
                   const hide = useSeries && f.group !== firstSeries ? ' style="display:none"' : '';
-                  return `<button type="button" class="${cls}" data-flavour="${f.label}" data-series="${f.group || ''}"${f.soldOut ? ' disabled aria-disabled="true"' : ''}${hide}>${f.label}${f.soldOut ? ' <small>sold out</small>' : extra}</button>`;
+                  return `<button type="button" class="${cls}${f.image ? ' has-thumb' : ''}" data-flavour="${f.label}" data-series="${f.group || ''}"${f.soldOut ? ' disabled aria-disabled="true"' : ''}${hide}>${pillThumb(f.image)}<span>${f.label}${f.soldOut ? ' <small>sold out</small>' : extra}</span></button>`;
                 }).join('')}
               </div>
             </div>` : '';
@@ -198,7 +206,7 @@
                 ${g.options.map(o => {
                   const extra = o.priceDelta > 0 ? ` <small>+${money(o.priceDelta)}</small>` : '';
                   const cls = o.soldOut ? 'opt-pill sold-out' : 'opt-pill';
-                  return `<button type="button" class="${cls}" data-choice="${o.label}"${o.soldOut ? ' disabled aria-disabled="true"' : ''}>${o.label}${o.soldOut ? ' <small>sold out</small>' : extra}</button>`;
+                  return `<button type="button" class="${cls}${o.image ? ' has-thumb' : ''}" data-choice="${o.label}"${o.soldOut ? ' disabled aria-disabled="true"' : ''}>${pillThumb(o.image)}<span>${o.label}${o.soldOut ? ' <small>sold out</small>' : extra}</span></button>`;
                 }).join('')}
               </div>
             </div>`).join('');

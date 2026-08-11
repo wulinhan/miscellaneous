@@ -781,3 +781,14 @@ img { display: block; max-width: 100%; }
 /* Dispenser "what's provided" list inside the notice box */
 .notice ul { margin: 6px 0 0 18px; padding: 0; }
 .notice li { margin: 2px 0; }
+
+/* Choices that carry a photo: thumbnail sits inside the pill, left of the label */
+.opt-pill.has-thumb { display: inline-flex; align-items: center; gap: 9px; padding-left: 6px; }
+.opt-pill .pill-thumb {
+  width: 40px; height: 40px; border-radius: 8px; object-fit: cover;
+  flex: none; background: var(--bg-soft);
+}
+.opt-pill.sold-out .pill-thumb { filter: grayscale(1); opacity: .7; }
+@media (max-width: 560px) {
+  .opt-pill .pill-thumb { width: 34px; height: 34px; }
+}

@@ -64,6 +64,8 @@ export default defineType({
         type: 'object',
         fields: [
           { name: 'label', title: 'Flavour', type: 'string', validation: r => r.required() },
+          { name: 'image', title: 'Photo', type: 'image', options: { hotspot: true },
+            description: 'Optional thumbnail shown on the flavour.' },
           { name: 'group', title: 'Series', type: 'string',
             description: 'Optional. Group flavours into series (e.g. Milk Teas, Refreshing Sodas) and the product page asks for the series first, then the flavours within it. Leave blank on products with a short, flat flavour list.' },
           { name: 'priceDelta', title: 'Extra charge ($)', type: 'number', initialValue: 0,
@@ -72,13 +74,13 @@ export default defineType({
             description: 'Keeps the flavour on the menu but stops it being ordered.' }
         ],
         preview: {
-          select: { title: 'label', group: 'group', delta: 'priceDelta', soldOut: 'soldOut' },
-          prepare({ title, group, delta, soldOut }) {
+          select: { title: 'label', media: 'image', group: 'group', delta: 'priceDelta', soldOut: 'soldOut' },
+          prepare({ title, media, group, delta, soldOut }) {
             const bits = [];
             if (group) bits.push(group);
             if (delta) bits.push(`+$${Number(delta).toFixed(2)}`);
             if (soldOut) bits.push('sold out');
-            return { title, subtitle: bits.join(' · ') };
+            return { title, media, subtitle: bits.join(' · ') };
           }
         }
       }],
@@ -106,16 +108,18 @@ export default defineType({
               type: 'object',
               fields: [
                 { name: 'label', title: 'Choice', type: 'string', validation: r => r.required() },
+                { name: 'image', title: 'Photo', type: 'image', options: { hotspot: true },
+                  description: 'Optional thumbnail shown on the choice.' },
                 { name: 'priceDelta', title: 'Extra charge ($)', type: 'number', initialValue: 0 },
                 { name: 'soldOut', title: 'Sold out', type: 'boolean', initialValue: false }
               ],
               preview: {
-                select: { title: 'label', delta: 'priceDelta', soldOut: 'soldOut' },
-                prepare({ title, delta, soldOut }) {
+                select: { title: 'label', media: 'image', delta: 'priceDelta', soldOut: 'soldOut' },
+                prepare({ title, media, delta, soldOut }) {
                   const bits = [];
                   if (delta) bits.push(`+$${Number(delta).toFixed(2)}`);
                   if (soldOut) bits.push('sold out');
-                  return { title, subtitle: bits.join(' · ') };
+                  return { title, media, subtitle: bits.join(' · ') };
                 }
               }
             }]
