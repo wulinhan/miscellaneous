@@ -20,12 +20,13 @@ function _writeCart(lines) {
   document.dispatchEvent(new CustomEvent('cart:changed'));
 }
 
-function _lineKey(productId, size, addons, sugar, flavour, bucket, bucketTopping) {
+function _lineKey(productId, size, addons, sugar, flavour, bucket, bucketTopping, choices) {
   // Newer options are appended only when present, so keys for lines without
   // them stay byte-identical to the ones already in customers' carts.
   let key = [productId, size || '', sugar || '', (addons || []).slice().sort().join(',')].join('|');
   if (flavour) key += '|' + flavour;
   if (bucket) key += '|b:' + bucket + (bucketTopping ? ':' + bucketTopping : '');
+  if (choices && choices.length) key += '|c:' + choices.slice().sort().join(',');
   return key;
 }
 
@@ -49,7 +50,7 @@ const Cart = {
       if (b) price += b.price;
       return price;
     }
-    if (product) price += flavourDelta(product, line.flavour);
+    if (product) price += flavourDelta(product, line.flavour) + optionDelta(product, line.choices);
     (line.addons || []).forEach(id => {
       const a = ADDONS[id];
       if (a) price += a.price;
@@ -61,14 +62,14 @@ const Cart = {
     return _readCart().reduce((sum, l) => sum + this.unitPrice(l) * l.qty, 0);
   },
 
-  add(productId, qty = 1, size = '', addons = [], sugar = '', flavour = '', bucket = '', bucketTopping = '') {
+  add(productId, qty = 1, size = '', addons = [], sugar = '', flavour = '', bucket = '', bucketTopping = '', choices = []) {
     const lines = _readCart();
-    const key = _lineKey(productId, size, addons, sugar, flavour, bucket, bucketTopping);
+    const key = _lineKey(productId, size, addons, sugar, flavour, bucket, bucketTopping, choices);
     const existing = lines.find(l => l.key === key);
     if (existing) {
       existing.qty += qty;
     } else {
-      lines.push({ key, productId, qty, size, addons: addons.slice(), sugar, flavour, bucket, bucketTopping });
+      lines.push({ key, productId, qty, size, addons: addons.slice(), sugar, flavour, bucket, bucketTopping, choices: (choices || []).slice() });
     }
     _writeCart(lines);
     document.dispatchEvent(new CustomEvent('cart:added'));

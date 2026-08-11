@@ -76,6 +76,36 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
   };
   const isDispenser = (label) => /dispenser/i.test(String(label || ''));
 
+  // Option groups: every chosen label must exist on the product, each group's
+  // min/max is enforced, and prices come only from the catalog.
+  const optionCharge = (product, line) => {
+    const groups = Array.isArray(product.optionGroups) ? product.optionGroups : [];
+    const chosen = Array.isArray(line.choices) ? line.choices : [];
+    if (!groups.length) {
+      if (chosen.length) throw new Error(`"${product.title}" has no options to choose`);
+      return 0;
+    }
+    const known = new Map();
+    groups.forEach((g) => (g.options || []).forEach((o) => known.set(o.label, { o, g })));
+    let sum = 0;
+    const perGroup = new Map();
+    for (const label of chosen) {
+      const hit = known.get(label);
+      if (!hit) throw new Error(`"${label}" is not an option on "${product.title}"`);
+      if (hit.o.soldOut) throw new Error(`"${label}" is sold out`);
+      sum += Number(hit.o.priceDelta) || 0;
+      perGroup.set(hit.g.label, (perGroup.get(hit.g.label) || 0) + 1);
+    }
+    for (const g of groups) {
+      const n = perGroup.get(g.label) || 0;
+      const min = Number(g.min) || 0;
+      const max = Number(g.max) || 0;
+      if (min && n < min) throw new Error(`Choose ${min === max ? '' : 'at least '}${min} under "${g.label}"`);
+      if (max && n > max) throw new Error(`Choose at most ${max} under "${g.label}"`);
+    }
+    return round2(sum);
+  };
+
   const unitPrice = (line, product) => {
     let p = sizePrice(product, line.size);
     if (isDispenser(line.size)) {
@@ -93,6 +123,7 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
     }
     if (line.bucket) throw new Error('Topping buckets are only available with a dispenser');
     p += flavourDelta(product, line.flavour);
+    p += optionCharge(product, line);
     for (const id of line.addOns || line.addons || []) if (ADDONS[id]) p += ADDONS[id].price;
     return round2(p);
   };
@@ -140,6 +171,7 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
       addonTitles = (l.addOns || l.addons || [])
         .map((id) => (ADDONS[id] ? ADDONS[id].title : null))
         .filter(Boolean);
+      addonTitles = (Array.isArray(l.choices) ? l.choices : []).concat(addonTitles);
     }
     items.push({
       productId: l.productId,

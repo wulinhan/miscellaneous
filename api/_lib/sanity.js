@@ -19,7 +19,8 @@ const QUERY = `{
     "categories": categories[]->title, "primary": primaryCategory->title,
     sizes[]{label, price},
     flavours[]{label, priceDelta, "soldOut": soldOut == true},
-    "flavourSources": flavourSources[]->{ flavours[]{label, priceDelta, "soldOut": soldOut == true} }
+    "flavourSources": flavourSources[]->{ flavours[]{label, priceDelta, "soldOut": soldOut == true} },
+    optionGroups[]{label, min, max, options[]{label, priceDelta, "soldOut": soldOut == true}}
   }
 }`;
 
@@ -61,6 +62,7 @@ function mapStore(data) {
       // inherits them from the listings it points at. The engine validates the
       // chosen flavour against this, so it has to resolve the same way.
       flavours: deriveFlavours(p),
+      optionGroups: (p.optionGroups || []).filter((g) => g && g.label && (g.options || []).length),
       price: sizes[0].price,
       allergens: p.allergens || [],
     };

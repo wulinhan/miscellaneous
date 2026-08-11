@@ -90,6 +90,50 @@ export default defineType({
       description: 'Pick the series this product offers (e.g. Milk Teas, Refreshing Sodas) and their flavours are pulled in automatically, grouped under each series name. Add a flavour to one of those listings and it appears here too, so the list is never kept in two places. Only used when Flavours above is empty; drag to set the order the series appear in.'
     }),
     defineField({
+      name: 'optionGroups', title: 'Option groups', type: 'array',
+      of: [{
+        type: 'object',
+        fields: [
+          { name: 'label', title: 'Question', type: 'string', validation: r => r.required(),
+            description: 'Shown above the choices, e.g. "Choose your 2 items" or "Add an extra touch".' },
+          { name: 'min', title: 'Must choose at least', type: 'number', initialValue: 0,
+            description: '0 = optional. Set both min and max to 2 for "pick exactly 2".' },
+          { name: 'max', title: 'Can choose at most', type: 'number', initialValue: 0,
+            description: '0 = no limit.' },
+          {
+            name: 'options', title: 'Choices', type: 'array',
+            of: [{
+              type: 'object',
+              fields: [
+                { name: 'label', title: 'Choice', type: 'string', validation: r => r.required() },
+                { name: 'priceDelta', title: 'Extra charge ($)', type: 'number', initialValue: 0 },
+                { name: 'soldOut', title: 'Sold out', type: 'boolean', initialValue: false }
+              ],
+              preview: {
+                select: { title: 'label', delta: 'priceDelta', soldOut: 'soldOut' },
+                prepare({ title, delta, soldOut }) {
+                  const bits = [];
+                  if (delta) bits.push(`+$${Number(delta).toFixed(2)}`);
+                  if (soldOut) bits.push('sold out');
+                  return { title, subtitle: bits.join(' · ') };
+                }
+              }
+            }]
+          }
+        ],
+        preview: {
+          select: { title: 'label', min: 'min', max: 'max', options: 'options' },
+          prepare({ title, min, max, options }) {
+            const n = (options || []).length;
+            const rule = min && min === max ? `pick exactly ${min}`
+              : min ? `pick ${min}+` : (max ? `up to ${max}` : 'optional');
+            return { title, subtitle: `${n} choices · ${rule}` };
+          }
+        }
+      }],
+      description: 'Extra questions on the product page, each with its own list of choices. Use for gift-bag contents, add-ons and upgrades. Charges are added to the size price.'
+    }),
+    defineField({
       name: 'categories', title: 'Categories', type: 'array',
       of: [{ type: 'reference', to: [{ type: 'category' }] }],
       description: 'A product can appear in more than one category.'

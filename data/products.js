@@ -414,6 +414,21 @@ const DISPENSER_PROVIDED = [
   { text: 'Topping scoop (1 per topping)', withToppingOnly: true },
   { text: 'Serviettes' }
 ];
+/* Option groups: extra pick-lists on a product (gift-bag contents, extras).
+   A choice is only ever priced from the catalog, never from the cart line. */
+function productOptionGroups(product) {
+  return (product && Array.isArray(product.optionGroups)) ? product.optionGroups : [];
+}
+
+function optionDelta(product, chosenLabels) {
+  const picked = new Set(chosenLabels || []);
+  let sum = 0;
+  productOptionGroups(product).forEach(g => {
+    (g.options || []).forEach(o => { if (picked.has(o.label)) sum += +o.priceDelta || 0; });
+  });
+  return sum;
+}
+
 function isDispenserSize(label) {
   return /dispenser/i.test(String(label || ''));
 }

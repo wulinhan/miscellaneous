@@ -37,6 +37,7 @@
       "primary": primaryCategory->title,
       sizes[]{label, price},
       flavours[]{label, group, priceDelta, "soldOut": soldOut == true},
+      optionGroups[]{label, min, max, options[]{label, priceDelta, "soldOut": soldOut == true}},
       "flavourSources": flavourSources[]->{ title, flavours[]{label, group, priceDelta, "soldOut": soldOut == true} },
       "upsell": toppings[]->slug.current,
       "alsoBought": alsoBought[]->slug.current,
@@ -115,6 +116,17 @@
       allergens: p.allergens || []
     };
     if (flavours.length) mapped.flavours = flavours;
+    // Extra question groups (gift-bag contents, add-ons, upgrades).
+    const groups = (p.optionGroups || [])
+      .filter(g => g && g.label && (g.options || []).length)
+      .map(g => ({
+        label: g.label,
+        min: +g.min || 0,
+        max: +g.max || 0,
+        options: g.options.filter(o => o && o.label)
+          .map(o => ({ label: o.label, priceDelta: +o.priceDelta || 0, soldOut: o.soldOut === true }))
+      }));
+    if (groups.length) mapped.optionGroups = groups;
     // Photo tags ride alongside the photos so the gallery can follow whichever
     // option the customer picks. Kept separate from `flavours` because a
     // product can tag photos by size without having flavours at all.
@@ -213,6 +225,7 @@
         "primary": primaryCategory->title,
         sizes[]{label, price},
         flavours[]{label, group, priceDelta, "soldOut": soldOut == true},
+        optionGroups[]{label, min, max, options[]{label, priceDelta, "soldOut": soldOut == true}},
         "flavourSources": flavourSources[]->{ title, flavours[]{label, group, priceDelta, "soldOut": soldOut == true} },
         "upsell": toppings[]->slug.current,
         "alsoBought": alsoBought[]->slug.current,

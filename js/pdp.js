@@ -180,6 +180,29 @@
               </div>
             </div>` : '';
 
+      // CMS-defined pick-lists: gift-bag contents, extras, upgrades. Each group
+      // carries its own question and its own min/max, so "pick exactly 2" and
+      // "add as many as you like" can sit on the same product.
+      const optionGroups = productOptionGroups(p);
+      const groupRule = (g) => {
+        if (g.min && g.min === g.max) return `choose ${g.min}`;
+        if (g.min && g.max) return `choose ${g.min} to ${g.max}`;
+        if (g.min) return `choose at least ${g.min}`;
+        if (g.max) return `choose up to ${g.max}`;
+        return 'optional';
+      };
+      const optionGroupFields = optionGroups.map((g, gi) => `
+            <div class="field">
+              <label>${g.label} <span class="field-note">${groupRule(g)}</span></label>
+              <div class="opt-pills opt-group" id="optgroup-${gi}" data-min="${g.min}" data-max="${g.max}">
+                ${g.options.map(o => {
+                  const extra = o.priceDelta > 0 ? ` <small>+${money(o.priceDelta)}</small>` : '';
+                  const cls = o.soldOut ? 'opt-pill sold-out' : 'opt-pill';
+                  return `<button type="button" class="${cls}" data-choice="${o.label}"${o.soldOut ? ' disabled aria-disabled="true"' : ''}>${o.label}${o.soldOut ? ' <small>sold out</small>' : extra}</button>`;
+                }).join('')}
+              </div>
+            </div>`).join('');
+
       // Dispenser mode (catering): shown instead of sugar/per-cup toppings when
       // a Dispenser size is picked. One shared topping bucket, its topping
       // included, plus a note of everything provided with the dispenser.
@@ -258,6 +281,8 @@
               <label>Add toppings <span class="field-note">choose up to ${typeof MAX_TOPPINGS !== 'undefined' ? MAX_TOPPINGS : 2}</span></label>
               <div class="opt-pills" id="topping-pills">${upsells}</div>
             </div>` : ''}
+
+            ${optionGroupFields}
 
             ${dispenserFields}
 
@@ -388,6 +413,24 @@
       return first ? first.label : '';
     }
 
+    function selectedChoices() {
+      return Array.from(document.querySelectorAll('.opt-group .opt-pill.active'))
+        .map(b => b.dataset.choice);
+    }
+
+    // Every group has to satisfy its own minimum before the item can be added.
+    function unmetGroup(p) {
+      const groups = document.querySelectorAll('.opt-group');
+      for (let i = 0; i < groups.length; i++) {
+        const min = +groups[i].dataset.min || 0;
+        if (!min) continue;
+        if (groups[i].querySelectorAll('.opt-pill.active').length < min) {
+          return productOptionGroups(p)[i];
+        }
+      }
+      return null;
+    }
+
     function selectedBucket() {
       const active = document.querySelector('#bucket-pills .opt-pill.active');
       return active ? active.dataset.bucket : '';
@@ -412,6 +455,7 @@
         const b = DISPENSER_BUCKETS[selectedBucket()];
         if (b) price += b.price;
       } else {
+        price += optionDelta(p, selectedChoices());
         selectedAddons().forEach(id => { if (ADDONS[id]) price += ADDONS[id].price; });
       }
       return price;
@@ -500,6 +544,19 @@
       };
 
       const addToCart = (btn) => {
+        const missing = unmetGroup(p);
+        if (missing) {
+          const label = btn.querySelector('.btn-label');
+          if (label) {
+            const original = label.innerHTML;
+            label.textContent = `Choose ${missing.min} under \u201c${missing.label}\u201d`;
+            clearTimeout(btn._need);
+            btn._need = setTimeout(() => { label.innerHTML = original; }, 2200);
+          }
+          const el = document.querySelector('.opt-group');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
         const qty = Math.max(1, +qtyInput.value || 1);
         const disp = isDispenserSize(selectedSize(p));
         Cart.add(p.id, qty, selectedSize(p),
@@ -507,7 +564,8 @@
           disp ? '' : selectedSugar(),
           selectedFlavour(p),
           disp ? selectedBucket() : '',
-          (disp && selectedBucket()) ? selectedBucketTopping() : '');
+          (disp && selectedBucket()) ? selectedBucketTopping() : '',
+          disp ? [] : selectedChoices());
         qtyInput.value = 1;               // reset quantity after adding
         updatePrice();                    // reflect reset before the flash
         flashAdded(btn);
@@ -575,6 +633,31 @@
         const start = flavourIndex(selectedFlavour(p));
         if (start > 0) showGalleryImage(start);
       }
+      // Option-group pills: multi-select toggle, capped by that group's max.
+      document.querySelectorAll('.opt-group').forEach(group => {
+        const max = +group.dataset.max || 0;
+        const pills = Array.from(group.querySelectorAll('.opt-pill'));
+        const refresh = () => {
+          if (!max) return;
+          const atMax = group.querySelectorAll('.opt-pill.active').length >= max;
+          pills.forEach(b => {
+            if (b.classList.contains('sold-out')) return;
+            b.classList.toggle('disabled', atMax && !b.classList.contains('active'));
+          });
+        };
+        pills.forEach(pill => {
+          pill.addEventListener('click', () => {
+            if (pill.classList.contains('sold-out')) return;
+            if (!pill.classList.contains('active') && max &&
+                group.querySelectorAll('.opt-pill.active').length >= max) return;
+            pill.classList.toggle('active');
+            refresh();
+            updatePrice();
+          });
+        });
+        refresh();
+      });
+
       // Topping pills: multi-select toggle, capped at MAX_TOPPINGS
       const maxTop = (typeof MAX_TOPPINGS !== 'undefined') ? MAX_TOPPINGS : 2;
       const toppingPills = Array.from(document.querySelectorAll('#topping-pills .opt-pill'));
