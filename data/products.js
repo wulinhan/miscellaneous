@@ -478,6 +478,10 @@ let SETTINGS = {
   /* ---- Transport surcharge (restricted areas) ----
      Applies in addition to any standard fee (even free delivery) when the
      delivery postal code's first two digits are listed. */
+  // Catering volume tier: order 100+ drinks and every drink drops in price.
+  // Mirrors the beverage deck, where each size falls by $0.20 ex-GST above
+  // 100 pax. Stored GST-inclusive to match the rest of the storefront.
+  volumeTier: { minUnits: 100, perUnit: 0.22, categories: ['Drinks'], label: '100+ drinks' },
   surchargeFee: 15.00,
   surchargePrefixes: ['01','03','04','05','06','07','08','09','10','17','18','19','22','23','49','63'],
 

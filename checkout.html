@@ -9,7 +9,7 @@
   <title>Checkout — Sofnade</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=64">
+  <link rel="stylesheet" href="css/styles.css?v=65">
 </head>
 <body>
   <div id="header"></div>
@@ -116,6 +116,11 @@
           </div>
 
           <div class="summary-row"><span>Subtotal</span><span id="sum-subtotal">$0.00</span></div>
+          <div class="summary-row" id="volume-row" style="display:none">
+            <span class="muted"><span id="volume-label"></span></span>
+            <span id="sum-volume" style="color:var(--accent)">−$0.00</span>
+          </div>
+          <div class="volume-note" id="volume-note" style="display:none"></div>
           <div class="summary-row" id="discount-row" style="display:none">
             <span class="muted">Discount (<span id="code-label"></span>)</span>
             <span id="sum-discount" style="color:var(--accent)">−$0.00</span>
@@ -147,12 +152,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=64"></script>
-  <script src="js/config.js?v=64"></script>
-  <script src="js/store-data.js?v=64"></script>
-  <script src="js/images.js?v=64"></script>
-  <script src="js/cart.js?v=64"></script>
-  <script src="js/common.js?v=64"></script>
+  <script src="data/products.js?v=65"></script>
+  <script src="js/config.js?v=65"></script>
+  <script src="js/store-data.js?v=65"></script>
+  <script src="js/images.js?v=65"></script>
+  <script src="js/cart.js?v=65"></script>
+  <script src="js/common.js?v=65"></script>
   <script>
     renderChrome();
 
@@ -394,16 +399,53 @@
       return 0; // shipping handled separately
     }
 
+    /* Volume tier — mirrors api/_lib/engine.js. Counts qualifying units (drinks)
+       across the cart; past the threshold every one of them drops by a fixed
+       amount. Returns { units, amount }. */
+    function computeVolume() {
+      const t = SETTINGS.volumeTier;
+      if (!t || !t.minUnits || !t.perUnit) return { units: 0, amount: 0 };
+      const cats = t.categories || [];
+      const units = Cart.all().reduce((n, l) => {
+        const p = getProduct(l.productId);
+        if (!p) return n;
+        const inTier = !cats.length || (p.tags || []).some(x => cats.includes(x));
+        return inTier ? n + l.qty : n;
+      }, 0);
+      return { units, amount: units >= t.minUnits ? units * t.perUnit : 0 };
+    }
+
     function renderSummary() {
       const subtotal = Cart.subtotal();
-      const discount = computeDiscount(subtotal);
-      const discountedTotal = Math.max(0, subtotal - discount);
+      const volume = computeVolume();
+      const tiered = Math.max(0, subtotal - volume.amount);
+      const discount = computeDiscount(tiered);
+      const discountedTotal = Math.max(0, tiered - discount);
       const standardShip = computeStandardShip(subtotal);
       const surcharge = computeSurcharge();
       const specific = computeSpecificTime();
       const total = discountedTotal + standardShip + surcharge + specific;
 
       document.getElementById('sum-subtotal').textContent = money(subtotal);
+
+      // Volume row, plus a nudge when the order is within reach of the tier.
+      const t = SETTINGS.volumeTier || {};
+      const volRow = document.getElementById('volume-row');
+      const volNote = document.getElementById('volume-note');
+      if (volRow) {
+        volRow.style.display = volume.amount > 0 ? 'flex' : 'none';
+        document.getElementById('volume-label').textContent = t.label || 'Volume discount';
+        document.getElementById('sum-volume').textContent = '−' + money(volume.amount);
+      }
+      if (volNote) {
+        const short = (t.minUnits || 0) - volume.units;
+        const show = volume.amount === 0 && volume.units > 0 && short > 0 && short <= 30;
+        volNote.style.display = show ? 'block' : 'none';
+        if (show) {
+          volNote.textContent = `Add ${short} more drink${short === 1 ? '' : 's'} to reach ` +
+            `${t.minUnits} and save ${money(t.perUnit)} on every one (${money(t.minUnits * t.perUnit)} off).`;
+        }
+      }
       document.getElementById('sum-shipping').textContent = standardShip === 0 ? 'FREE' : money(standardShip);
       document.getElementById('shipping-label').textContent =
         deliveryMethod === 'pickup' ? 'Self pick-up' : 'Islandwide delivery';

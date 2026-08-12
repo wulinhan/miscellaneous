@@ -187,14 +187,31 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
   }
   const subtotal = round2(items.reduce((s, i) => s + i.lineTotal, 0));
 
+  // Volume tier: once the order carries enough qualifying units (drinks, by
+  // default), every one of them drops by a fixed amount per unit. Counted in
+  // units rather than order value, matching how the catering deck quotes "pax".
+  const tier = SETTINGS.volumeTier || null;
+  let volumeDiscount = 0;
+  let volumeUnits = 0;
+  if (tier && tier.minUnits > 0 && tier.perUnit > 0) {
+    const cats = tier.categories || [];
+    volumeUnits = lines.reduce((n, l) => {
+      const p = getProduct(l.productId);
+      const inTier = !cats.length || (p.tags || []).some((t) => cats.includes(t));
+      return inTier ? n + l.qty : n;
+    }, 0);
+    if (volumeUnits >= tier.minUnits) volumeDiscount = round2(volumeUnits * tier.perUnit);
+  }
+  const tieredSubtotal = round2(Math.max(0, subtotal - volumeDiscount));
+
   const appliedCode = code ? String(code).trim().toUpperCase() : null;
   const c = appliedCode ? DISCOUNT_CODES[appliedCode] : null;
   let discount = 0;
   if (c) {
-    if (c.type === 'percent') discount = round2((subtotal * c.value) / 100);
-    else if (c.type === 'fixed') discount = round2(Math.min(subtotal, c.value));
+    if (c.type === 'percent') discount = round2((tieredSubtotal * c.value) / 100);
+    else if (c.type === 'fixed') discount = round2(Math.min(tieredSubtotal, c.value));
   }
-  const discountedSubtotal = round2(Math.max(0, subtotal - discount));
+  const discountedSubtotal = round2(Math.max(0, tieredSubtotal - discount));
 
   const fresh = lines.some((l) => isFresh(getProduct(l.productId)));
   let deliveryFee = 0;
@@ -217,6 +234,9 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
   return {
     items,
     subtotal,
+    volumeUnits,
+    volumeDiscount,
+    volumeLabel: volumeDiscount ? (tier.label || 'Volume discount') : null,
     discountCode: c ? appliedCode : null,
     discount,
     discountedSubtotal,
