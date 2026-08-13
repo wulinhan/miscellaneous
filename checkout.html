@@ -9,7 +9,7 @@
   <title>Checkout — Sofnade</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=65">
+  <link rel="stylesheet" href="css/styles.css?v=66">
 </head>
 <body>
   <div id="header"></div>
@@ -115,7 +115,8 @@
             <div class="discount-msg" id="discount-msg"></div>
           </div>
 
-          <div class="summary-row"><span>Subtotal</span><span id="sum-subtotal">$0.00</span></div>
+          <div class="summary-row"><span>Subtotal <span class="muted" id="subtotal-note"></span></span><span id="sum-subtotal">$0.00</span></div>
+          <div class="volume-note" id="gst-note" style="display:none">Store prices include GST. It is listed separately below.</div>
           <div class="summary-row" id="volume-row" style="display:none">
             <span class="muted"><span id="volume-label"></span></span>
             <span id="sum-volume" style="color:var(--accent)">−$0.00</span>
@@ -131,6 +132,9 @@
           </div>
           <div class="summary-row" id="specifictime-row" style="display:none">
             <span>Specific time delivery</span><span id="sum-specifictime">$0.00</span>
+          </div>
+          <div class="summary-row" id="gst-row" style="display:none">
+            <span id="gst-label">GST</span><span id="sum-gst">$0.00</span>
           </div>
           <div class="summary-row total"><span>Total</span><span id="sum-total">$0.00</span></div>
           <div class="min-order-static" id="min-order-static" style="display:none"></div>
@@ -152,12 +156,12 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=65"></script>
-  <script src="js/config.js?v=65"></script>
-  <script src="js/store-data.js?v=65"></script>
-  <script src="js/images.js?v=65"></script>
-  <script src="js/cart.js?v=65"></script>
-  <script src="js/common.js?v=65"></script>
+  <script src="data/products.js?v=66"></script>
+  <script src="js/config.js?v=66"></script>
+  <script src="js/store-data.js?v=66"></script>
+  <script src="js/images.js?v=66"></script>
+  <script src="js/cart.js?v=66"></script>
+  <script src="js/common.js?v=66"></script>
   <script>
     renderChrome();
 
@@ -426,7 +430,22 @@
       const specific = computeSpecificTime();
       const total = discountedTotal + standardShip + surcharge + specific;
 
-      document.getElementById('sum-subtotal').textContent = money(subtotal);
+      /* GST — mirrors api/_lib/engine.js. Store prices already include the
+         tax, so the rows below show what each amount is WITHOUT GST and the
+         GST row carries the difference. The total never moves. */
+      const lineTotals = Cart.all().map(l => Math.round((Cart.unitPrice(l) * l.qty + Number.EPSILON) * 100) / 100);
+      const tax = gstSplit([...lineTotals, -volume.amount, -discount, standardShip, surcharge, specific], total);
+      const exLines = tax.lines.slice(lineTotals.length);
+      const exSubtotal = Math.round((tax.lines.slice(0, lineTotals.length).reduce((s, x) => s + x, 0) + Number.EPSILON) * 100) / 100;
+      const [exVolume, exDiscount, exShip, exSurcharge, exSpecific] = exLines;
+      const gstRow = document.getElementById('gst-row');
+      gstRow.style.display = tax.rate ? 'flex' : 'none';
+      document.getElementById('gst-label').textContent = `GST (${tax.rate}%)`;
+      document.getElementById('sum-gst').textContent = money(tax.gst);
+      document.getElementById('subtotal-note').textContent = tax.rate ? '(excl. GST)' : '';
+      document.getElementById('gst-note').style.display = tax.rate ? 'block' : 'none';
+
+      document.getElementById('sum-subtotal').textContent = money(exSubtotal);
 
       // Volume row, plus a nudge when the order is within reach of the tier.
       const t = SETTINGS.volumeTier || {};
@@ -435,7 +454,7 @@
       if (volRow) {
         volRow.style.display = volume.amount > 0 ? 'flex' : 'none';
         document.getElementById('volume-label').textContent = t.label || 'Volume discount';
-        document.getElementById('sum-volume').textContent = '−' + money(volume.amount);
+        document.getElementById('sum-volume').textContent = '−' + money(-exVolume);
       }
       if (volNote) {
         const short = (t.minUnits || 0) - volume.units;
@@ -446,17 +465,17 @@
             `${t.minUnits} and save ${money(t.perUnit)} on every one (${money(t.minUnits * t.perUnit)} off).`;
         }
       }
-      document.getElementById('sum-shipping').textContent = standardShip === 0 ? 'FREE' : money(standardShip);
+      document.getElementById('sum-shipping').textContent = standardShip === 0 ? 'FREE' : money(exShip);
       document.getElementById('shipping-label').textContent =
         deliveryMethod === 'pickup' ? 'Self pick-up' : 'Islandwide delivery';
 
       const surRow = document.getElementById('surcharge-row');
       surRow.style.display = surcharge > 0 ? 'flex' : 'none';
-      document.getElementById('sum-surcharge').textContent = money(surcharge);
+      document.getElementById('sum-surcharge').textContent = money(exSurcharge);
 
       const stRow = document.getElementById('specifictime-row');
       stRow.style.display = specific > 0 ? 'flex' : 'none';
-      document.getElementById('sum-specifictime').textContent = money(specific);
+      document.getElementById('sum-specifictime').textContent = money(exSpecific);
 
       document.getElementById('sum-total').textContent = money(total);
 
@@ -465,7 +484,7 @@
         discRow.style.display = 'flex';
         document.getElementById('code-label').textContent = appliedCode;
         document.getElementById('sum-discount').textContent =
-          appliedCode === 'FREESHIP' ? '−' + money(SHIPPING_FEE) + ' ship' : '−' + money(discount);
+          appliedCode === 'FREESHIP' ? '−' + money(exGst(SHIPPING_FEE)) + ' ship' : '−' + money(-exDiscount);
       } else {
         discRow.style.display = 'none';
       }

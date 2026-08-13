@@ -16,12 +16,10 @@ function money(n, ccy) {
   return `${ccy || 'SGD'} ${Number(n || 0).toFixed(2)}`;
 }
 
-// Inclusive-GST amount contained in a total.
-function gstAmountOf(total) {
-  return GSTCFG.registered && GSTCFG.inclusive
-    ? Math.round((Number(total || 0) * GSTCFG.rate) / (100 + GSTCFG.rate) * 100) / 100
-    : 0;
-}
+// Tax-exclusive decomposition of a quote — the same one the invoice prints,
+// so the email and the PDF can never show different figures. Store prices
+// include GST, so the tax is stripped out of the total, never added to it.
+const taxBreakdown = invoice.taxBreakdown;
 
 // One line of "everything chosen" for an item: size · sugar level · toppings.
 function itemOptions(i) {
@@ -39,13 +37,20 @@ function summaryLines(order) {
     const opts = itemOptions(i);
     return `- ${i.qty} x ${i.title}${opts ? ` (${opts})` : ''} = ${money(i.lineTotal, q.currency)}`;
   });
+  const t = taxBreakdown(q, order.amount_total);
+  const ccy = q.currency;
   lines.push('');
-  lines.push(`Subtotal: ${money(q.subtotal, q.currency)}`);
-  if (q.discount) lines.push(`Discount${q.discountCode ? ` (${q.discountCode})` : ''}: -${money(q.discount, q.currency)}`);
-  if (q.deliveryFee) lines.push(`Delivery: ${money(q.deliveryFee, q.currency)}`);
-  if (q.surcharge) lines.push(`Transport surcharge: ${money(q.surcharge, q.currency)}`);
-  if (q.specificTimeFee) lines.push(`Specific-time add-on: ${money(q.specificTimeFee, q.currency)}`);
-  lines.push(`Total: ${money(q.total, q.currency)}`);
+  // Item lines above are at store prices, which include GST; the summary
+  // below strips the tax back out and shows it on its own line.
+  if (t.rate) lines.push(`(Item prices include GST; the breakdown below is net of it.)`);
+  lines.push(`Subtotal${t.rate ? ' (excl. GST)' : ''}: ${money(t.itemsEx, ccy)}`);
+  if (t.volumeEx) lines.push(`${q.volumeLabel || 'Volume discount'}: -${money(t.volumeEx, ccy)}`);
+  if (t.discountEx) lines.push(`Discount${q.discountCode ? ` (${q.discountCode})` : ''}: -${money(t.discountEx, ccy)}`);
+  if (t.deliveryEx) lines.push(`Delivery: ${money(t.deliveryEx, ccy)}`);
+  if (t.surchargeEx) lines.push(`Transport surcharge: ${money(t.surchargeEx, ccy)}`);
+  if (t.specificEx) lines.push(`Specific-time add-on: ${money(t.specificEx, ccy)}`);
+  if (t.rate) lines.push(`GST (${t.rate}%): ${money(t.gst, ccy)}`);
+  lines.push(`Total: ${money(t.total, ccy)}`);
   return lines;
 }
 
@@ -172,14 +177,19 @@ function orderEmailHtml(order, opts) {
       <td width="40%" align="right" style="width:40%;padding:4px 0;font:${bold ? 'bold ' : ''}14px/1.4 Arial,sans-serif;color:${bold ? '#1b2330' : '#6b7280'};text-align:right;white-space:nowrap;">${val}</td>
     </tr>`;
 
+  // Same decomposition as the invoice: rows net of GST, tax on its own line,
+  // and the charged total unchanged at the bottom.
+  const t = taxBreakdown(q, order.amount_total);
   const totals = [
-    totalRow('Subtotal', money(q.subtotal, ccy)),
-    q.discount ? totalRow(`Discount${q.discountCode ? ` (${q.discountCode})` : ''}`, `-${money(q.discount, ccy)}`) : '',
-    q.deliveryFee ? totalRow('Delivery', money(q.deliveryFee, ccy)) : (order.fulfilment === 'delivery' ? totalRow('Delivery', 'Free') : ''),
-    q.surcharge ? totalRow('Transport surcharge', money(q.surcharge, ccy)) : '',
-    q.specificTimeFee ? totalRow('Specific-time add-on', money(q.specificTimeFee, ccy)) : '',
-    totalRow('Total', money(q.total, ccy), true),
-    GSTCFG.registered ? totalRow(`Inclusive of ${GSTCFG.rate}% GST`, money(gstAmountOf(q.total), ccy)) : '',
+    t.rate ? `<tr><td colspan="2" style="padding:2px 0 6px;font:12px/1.4 Arial,sans-serif;color:#9099a8;">Item prices include GST; the breakdown below is net of it.</td></tr>` : '',
+    totalRow(`Subtotal${t.rate ? ' (excl. GST)' : ''}`, money(t.itemsEx, ccy)),
+    t.volumeEx ? totalRow(q.volumeLabel || 'Volume discount', `-${money(t.volumeEx, ccy)}`) : '',
+    t.discountEx ? totalRow(`Discount${q.discountCode ? ` (${q.discountCode})` : ''}`, `-${money(t.discountEx, ccy)}`) : '',
+    t.deliveryEx ? totalRow('Delivery', money(t.deliveryEx, ccy)) : (order.fulfilment === 'delivery' ? totalRow('Delivery', 'Free') : ''),
+    t.surchargeEx ? totalRow('Transport surcharge', money(t.surchargeEx, ccy)) : '',
+    t.specificEx ? totalRow('Specific-time add-on', money(t.specificEx, ccy)) : '',
+    t.rate ? totalRow(`GST (${t.rate}%)`, money(t.gst, ccy)) : '',
+    totalRow('Total', money(t.total, ccy), true),
   ].join('');
 
   const where =

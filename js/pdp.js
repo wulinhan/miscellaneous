@@ -273,7 +273,7 @@
           <div class="pdp-info">
             <div class="pdp-labels">${labels}</div>
             <h1>${p.title}</h1>
-            <div class="pdp-price"><span id="pdp-price">${money(fromPrice)}</span> <span class="from" style="font-size:14px;color:var(--muted);font-weight:500">/ <span id="pdp-unit">${p.unit}</span></span></div>
+            <div class="pdp-price"><span id="pdp-price">${money(fromPrice)}</span> <span class="from" style="font-size:14px;color:var(--muted);font-weight:500">/ <span id="pdp-unit">${p.unit}</span></span>${gstRate() ? ' <span class="gst-tag">incl. GST</span>' : ''}</div>
             <p class="pdp-desc">${p.longDesc}</p>
 
             ${seriesField}

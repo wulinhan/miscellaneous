@@ -231,6 +231,24 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
 
   const total = round2(discountedSubtotal + deliveryFee + surcharge + specificTime);
 
+  // GST breakdown. Every price above is already GST-inclusive, so the tax is
+  // stripped back OUT of the same total rather than added on top — `total`
+  // (and therefore amountMinor) is untouched. Each item and fee carries its
+  // own exclusive figure so the invoice and receipts can show the identical
+  // decomposition without re-deriving it.
+  const gstLines = [
+    ...items.map((i) => i.lineTotal),
+    -volumeDiscount,
+    -discount,
+    deliveryFee,
+    surcharge,
+    specificTime,
+  ];
+  const tax = builtin.gstSplit(gstLines, total, SETTINGS);
+  items.forEach((i, n) => { i.lineTotalEx = tax.lines[n]; i.unitPriceEx = builtin.exGst(i.unitPrice, SETTINGS); });
+  const [volumeDiscountEx, discountEx, deliveryFeeEx, surchargeEx, specificTimeEx] =
+    tax.lines.slice(items.length);
+
   return {
     items,
     subtotal,
@@ -244,6 +262,15 @@ function priceOrder(store, { lines, fulfilment = 'delivery', postal, code, speci
     surcharge,
     specificTimeFee: specificTime,
     total,
+    // Tax-exclusive mirror of the rows above + the GST they contain.
+    gstRate: tax.rate,
+    gst: tax.gst,
+    netTotal: tax.net,
+    volumeDiscountEx: -volumeDiscountEx,
+    discountEx: -discountEx,
+    deliveryFeeEx,
+    surchargeEx,
+    specificTimeFeeEx: specificTimeEx,
     currency: 'SGD',
     amountMinor: Math.round(total * 100),
     orderType: fresh ? 'fresh' : 'shelf',

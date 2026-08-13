@@ -398,6 +398,9 @@ img { display: block; max-width: 100%; }
 .pdp-info h1 { font-size: 30px; margin: 4px 0 10px; letter-spacing: -0.02em; }
 .pdp-labels { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .pdp-price { font-size: 26px; font-weight: 800; margin: 6px 0 18px; }
+/* Store prices already include GST; the tag says so, and the checkout
+   summary breaks the tax back out as its own line. */
+.gst-tag { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
 .pdp-desc { color: #4b5563; margin-bottom: 22px; }
 .field { margin-bottom: 20px; }
 .field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 8px; }

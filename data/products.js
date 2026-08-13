@@ -531,6 +531,43 @@ function isFreshProduct(product) {
 }
 
 /* =========================================================================
+   GST. Every price on the storefront — listings, product pages, the cart —
+   is GST-INCLUSIVE, and the engine never adds tax on top. Documents that
+   have to show the tax separately (checkout summary, invoice, receipts)
+   strip it back out with the helpers below. Nothing here changes what the
+   customer is charged; it only re-expresses the same total.
+   ========================================================================= */
+const _r2 = (n) => Math.round((Number(n || 0) + Number.EPSILON) * 100) / 100;
+
+/* Effective inclusive rate as a percentage — 0 when not GST-registered, in
+   which case every helper below degrades to a plain pass-through. `conf`
+   lets the server pass its own CMS-merged settings; the storefront omits it
+   and reads the live module-level SETTINGS. */
+function gstRate(conf) {
+  const s = conf || (typeof SETTINGS !== 'undefined' ? SETTINGS : null);
+  const g = (s && s.gst) || null;
+  return g && g.registered && g.inclusive ? Number(g.rate || 0) : 0;
+}
+
+/* The GST-exclusive part of a GST-inclusive amount. */
+function exGst(amount, conf) {
+  const r = gstRate(conf);
+  return r ? _r2((Number(amount || 0) * 100) / (100 + r)) : _r2(amount);
+}
+
+/* Split a list of GST-inclusive amounts (negative for discounts) that add up
+   to `total` into their tax-exclusive equivalents. The GST figure is derived
+   as total − Σ(exclusive lines) rather than computed independently, so the
+   tax row absorbs any rounding and the column always adds back to the exact
+   amount charged. Returns { rate, lines, net, gst }. */
+function gstSplit(amounts, total, conf) {
+  const rate = gstRate(conf);
+  const lines = (amounts || []).map((a) => exGst(a, conf));
+  const net = _r2(lines.reduce((s, x) => s + x, 0));
+  return { rate, lines, net, gst: rate ? _r2(Number(total || 0) - net) : 0 };
+}
+
+/* =========================================================================
    applyStore(): overwrite the built-in catalog/settings with CMS data.
    Called by js/store-data.js once content is fetched from Sanity. Anything
    the CMS does not provide keeps its built-in default, so the site always
@@ -554,5 +591,8 @@ function applyStore(store) {
    so the storefront is unaffected; the API functions require() this file to
    recompute totals from the exact same catalog, settings and codes. */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { PRODUCTS, ADDONS, SETTINGS, DISCOUNT_CODES, CATEGORIES, DISPENSER_BUCKETS };
+  module.exports = {
+    PRODUCTS, ADDONS, SETTINGS, DISCOUNT_CODES, CATEGORIES, DISPENSER_BUCKETS,
+    gstRate, exGst, gstSplit,
+  };
 }

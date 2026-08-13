@@ -53,8 +53,15 @@ function esc(s) {
 }
 const round2 = (n) => Math.round((Number(n || 0) + Number.EPSILON) * 100) / 100;
 const fmt = (n) => '$' + round2(n).toFixed(2);
+// Store prices include GST. `inclGst` is the tax contained in an amount and
+// `exGst` is what is left once it is taken out — the invoice shows the two
+// separately, as a Singapore tax invoice must. Stored quotes carry the same
+// figures (see api/_lib/engine.js); these are the fallback for orders placed
+// before the breakdown existed.
 const inclGst = (amount) =>
   GSTCFG.registered && GSTCFG.inclusive ? round2((Number(amount || 0) * GSTCFG.rate) / (100 + GSTCFG.rate)) : 0;
+const exGst = (amount) => round2(Number(amount || 0) - inclGst(amount));
+const pick = (stored, amount) => (stored != null ? round2(stored) : exGst(amount));
 
 function fmtDate(iso) {
   if (!iso) return '';
@@ -72,25 +79,50 @@ function itemRow(i) {
   if (i.sugar) descLines.push('Sweetness: ' + esc(i.sugar));
   (i.addons || []).forEach((a) => descLines.push('Topping: ' + esc(a)));
   const qty = Number(i.qty || 0);
+  const lineEx = pick(i.lineTotalEx, i.lineTotal);
   return `<tr>
     <td class="desc"><b>${esc(i.title)}</b>${descLines.length ? '<br>' + descLines.join('<br>') : ''}</td>
     <td class="num">${qty.toFixed(2)}</td>
-    <td class="num">${fmt(i.unitPrice)}</td>
+    <td class="num">${fmt(pick(i.unitPriceEx, i.unitPrice))}</td>
     <td class="num"></td>
-    <td class="num">${GSTCFG.registered ? fmt(inclGst(i.lineTotal)) : ''}</td>
-    <td class="num">${fmt(i.lineTotal)}</td>
+    <td class="num">${GSTCFG.registered ? fmt(round2(i.lineTotal - lineEx)) : ''}</td>
+    <td class="num">${fmt(lineEx)}</td>
   </tr>`;
 }
 
-function feeRow(label, amount) {
+function feeRow(label, amount, storedEx) {
+  const ex = pick(storedEx, amount);
   return `<tr>
     <td class="desc"><b>${esc(label)}</b></td>
     <td class="num">1.00</td>
-    <td class="num">${fmt(amount)}</td>
+    <td class="num">${fmt(ex)}</td>
     <td class="num"></td>
-    <td class="num">${GSTCFG.registered ? fmt(inclGst(amount)) : ''}</td>
-    <td class="num">${fmt(amount)}</td>
+    <td class="num">${GSTCFG.registered ? fmt(round2(amount - ex)) : ''}</td>
+    <td class="num">${fmt(ex)}</td>
   </tr>`;
+}
+
+/* Tax-exclusive decomposition of a stored quote. Every amount the customer
+   saw was GST-inclusive, so the tax is stripped back out rather than added:
+   `total` never moves, the GST figure is derived as total − net so it absorbs
+   any rounding, and the rows always reconcile. Shared by the invoice and the
+   notification emails so the two can never disagree. */
+function taxBreakdown(quote, fallbackTotal) {
+  const q = quote || {};
+  const total = Number(q.total != null ? q.total : fallbackTotal || 0);
+  const itemsEx = round2((q.items || []).reduce((s, i) => s + pick(i.lineTotalEx, i.lineTotal), 0));
+  const volumeEx = q.volumeDiscount ? pick(q.volumeDiscountEx, q.volumeDiscount) : 0;
+  const discountEx = q.discount ? pick(q.discountEx, q.discount) : 0;
+  const deliveryEx = q.deliveryFee ? pick(q.deliveryFeeEx, q.deliveryFee) : 0;
+  const surchargeEx = q.surcharge ? pick(q.surchargeEx, q.surcharge) : 0;
+  const specificEx = q.specificTimeFee ? pick(q.specificTimeFeeEx, q.specificTimeFee) : 0;
+  const grossEx = round2(itemsEx + deliveryEx + surchargeEx + specificEx);
+  const netTotal = q.netTotal != null ? round2(q.netTotal) : round2(grossEx - volumeEx - discountEx);
+  return {
+    total, itemsEx, volumeEx, discountEx, deliveryEx, surchargeEx, specificEx, grossEx, netTotal,
+    rate: GSTCFG.registered ? GSTCFG.rate : 0,
+    gst: GSTCFG.registered ? round2(total - netTotal) : 0,
+  };
 }
 
 function invoiceHtml(order) {
@@ -98,15 +130,15 @@ function invoiceHtml(order) {
   const c = order.customer || {};
   const paid = order.status && order.status !== 'created' && order.status !== 'cancelled';
   const title = paid ? 'TAX INVOICE' : 'PROFORMA INVOICE';
-  const total = Number(q.total != null ? q.total : order.amount_total || 0);
-  const gst = inclGst(total);
+  const { total, itemsEx, volumeEx, discountEx, deliveryEx, surchargeEx, specificEx, grossEx, netTotal, gst } =
+    taxBreakdown(q, order.amount_total);
   const paidAmt = paid ? total : 0;
 
   const rows = (q.items || []).map(itemRow).join('');
   const feeRows = [
-    q.deliveryFee ? feeRow('Delivery Charge', q.deliveryFee) : '',
-    q.surcharge ? feeRow('Transport Surcharge', q.surcharge) : '',
-    q.specificTimeFee ? feeRow('Specific-Time Delivery', q.specificTimeFee) : '',
+    q.deliveryFee ? feeRow('Delivery Charge', q.deliveryFee, q.deliveryFeeEx) : '',
+    q.surcharge ? feeRow('Transport Surcharge', q.surcharge, q.surchargeEx) : '',
+    q.specificTimeFee ? feeRow('Specific-Time Delivery', q.specificTimeFee, q.specificTimeFeeEx) : '',
   ].join('');
 
   const addr = [c.address1, c.address2, order.postal ? 'Singapore ' + order.postal : ''].filter(Boolean);
@@ -234,9 +266,12 @@ function invoiceHtml(order) {
   </div>
 
   <div class="totals">
-    ${q.discount ? `<div class="row"><span>Total Discount${q.discountCode ? ` (${esc(q.discountCode)})` : ''}</span><span>-${fmt(q.discount)}</span></div>` : ''}
-    <div class="row"><span>Subtotal (after discount)</span><span>${fmt(total)}</span></div>
-    ${GSTCFG.registered ? `<div class="row"><span>Includes ${GSTCFG.rate}% GST — local supply of goods and services</span><span>${fmt(gst)}</span></div>` : ''}
+    <div class="row"><span>Subtotal${GSTCFG.registered ? ' (excl. GST)' : ''}</span><span>${fmt(grossEx)}</span></div>
+    ${volumeEx ? `<div class="row"><span>${esc(q.volumeLabel || 'Volume discount')}</span><span>-${fmt(volumeEx)}</span></div>` : ''}
+    ${discountEx ? `<div class="row"><span>Total Discount${q.discountCode ? ` (${esc(q.discountCode)})` : ''}</span><span>-${fmt(discountEx)}</span></div>` : ''}
+    ${GSTCFG.registered ? `
+    <div class="row"><span>Total (excl. GST)</span><span>${fmt(netTotal)}</span></div>
+    <div class="row"><span>GST ${GSTCFG.rate}% — local supply of goods and services</span><span>${fmt(gst)}</span></div>` : ''}
     <div class="row strong"><span>Invoice Total SGD</span><span>${fmt(total)}</span></div>
     <div class="row"><span>Less Total Paid SGD</span><span>${fmt(paidAmt)}</span></div>
     <div class="row strong"><span>Amount Due SGD</span><span>${fmt(total - paidAmt)}</span></div>
@@ -264,4 +299,4 @@ function invoiceHtml(order) {
 </body></html>`;
 }
 
-module.exports = { invoiceToken, verifyToken, invoiceUrl, invoiceHtml, baseUrl };
+module.exports = { invoiceToken, verifyToken, invoiceUrl, invoiceHtml, baseUrl, taxBreakdown };
