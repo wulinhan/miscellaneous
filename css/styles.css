@@ -259,7 +259,10 @@ img { display: block; max-width: 100%; }
   animation: cardIn 0.26s ease;
 }
 .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
-.card-media { position: relative; aspect-ratio: 1 / 1; background: var(--bg-soft); }
+/* overflow:hidden also zeroes the flex-item automatic minimum size — without
+   it a portrait photo's content min-height beats aspect-ratio and the box
+   grows past the square (the tall Rangoli card bug). */
+.card-media { position: relative; aspect-ratio: 1 / 1; background: var(--bg-soft); overflow: hidden; }
 .card-media img { width: 100%; height: 100%; object-fit: cover; }
 .card-tags { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
 .tag-chip {
