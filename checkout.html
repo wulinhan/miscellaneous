@@ -9,7 +9,7 @@
   <title>Checkout — Sofnade</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a8a'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' text-anchor='middle' fill='%23ffc629'%3ES%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=67">
+  <link rel="stylesheet" href="css/styles.css?v=68">
 </head>
 <body>
   <div id="header"></div>
@@ -156,12 +156,13 @@
 
   <div id="footer"></div>
 
-  <script src="data/products.js?v=67"></script>
-  <script src="js/config.js?v=67"></script>
-  <script src="js/store-data.js?v=67"></script>
-  <script src="js/images.js?v=67"></script>
-  <script src="js/cart.js?v=67"></script>
-  <script src="js/common.js?v=67"></script>
+  <script src="data/products.js?v=68"></script>
+  <script src="js/config.js?v=68"></script>
+  <script src="js/meta-pixel.js?v=68"></script>
+  <script src="js/store-data.js?v=68"></script>
+  <script src="js/images.js?v=68"></script>
+  <script src="js/cart.js?v=68"></script>
+  <script src="js/common.js?v=68"></script>
   <script>
     renderChrome();
 
@@ -170,6 +171,7 @@
     let FREE_SHIP_THRESHOLD = 150.00;
 
     let appliedCode = null;            // key into DISCOUNT_CODES
+    let lastTotal = 0;                 // latest priced total, for Meta events
     let deliveryMethod = 'delivery';   // 'delivery' (islandwide) | 'pickup'
     let selectedSlot = null;           // fresh food: a 30-min slot value
     let specificTimeOn = false;        // shelf-stable only: "Specific Time Delivery" add-on
@@ -478,6 +480,7 @@
       document.getElementById('sum-specifictime').textContent = money(exSpecific);
 
       document.getElementById('sum-total').textContent = money(total);
+      lastTotal = total;
 
       const discRow = document.getElementById('discount-row');
       if (appliedCode && (discount > 0 || appliedCode === 'FREESHIP')) {
@@ -663,6 +666,14 @@
             ? `You can collect your order on <strong>${date}</strong> ${when}.`
             : `We will deliver to <strong>${detail('addr1')}${detail('postal') ? ', Singapore ' + detail('postal') : ''}</strong> on <strong>${date}</strong> ${when}.`;
         }
+        // Meta Purchase, before the cart is cleared so the contents are still
+        // readable. The order id is the event id; api/_lib/meta.js sends the
+        // server copy under the same id, so the two collapse into one
+        // conversion. Vendors@SG is a request, not a sale, so it is excluded.
+        if (window.Meta && !opts.vendors) {
+          window.Meta.purchase(orderId, lastTotal,
+            Cart.all().map(l => ({ productId: l.productId, qty: l.qty, unitPrice: Cart.unitPrice(l) })));
+        }
         Cart.clear();
         toast(opts.vendors ? 'Request sent! 🙌' : 'Order placed! 🎉');
         const waText = orderId
@@ -695,7 +706,14 @@
           code: appliedCode,
           specificTimeOn: specificTimeOn,
           date: dateSelect.value,
-          slotOrWindow: orderIsFresh() ? selectedSlot : (SETTINGS.shelfWindowLabel || '9:00 AM – 5:00 PM')
+          slotOrWindow: orderIsFresh() ? selectedSlot : (SETTINGS.shelfWindowLabel || '9:00 AM – 5:00 PM'),
+          // Meta InitiateCheckout: the browser fires the event and hands the
+          // server the same id, so the CAPI copy deduplicates against it.
+          fbEventId: window.Meta
+            ? window.Meta.initiateCheckout(
+                Cart.all().map(l => ({ productId: l.productId, qty: l.qty, unitPrice: Cart.unitPrice(l) })),
+                lastTotal)
+            : undefined
         };
       }
 

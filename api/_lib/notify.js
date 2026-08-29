@@ -6,6 +6,7 @@
 // Seller / GST / corporate details for the invoice (built-in defaults).
 const invoice = require('./invoice');
 const xero = require('./xero');
+const meta = require('./meta');
 const STORE = require('../../data/products.js');
 const CONF = (STORE && STORE.SETTINGS) || {};
 const SELLER = CONF.seller || { name: 'SOFNADE CATERING PTE. LTD.', uen: '202314539M', address: '', email: 'sales@sofnade.com', phone: '8930 9756' };
@@ -373,9 +374,12 @@ async function settleChannels(tasks, names) {
   });
 }
 async function onPaid(order) {
+  // Meta sits alongside the other channels so the Purchase fires exactly once
+  // per order, whichever of verify-payment / webhook records the payment first.
   return settleChannels(
-    [mirrorToNotion(order), sendReceipt(order), sendOpsEmail(order, 'paid'), xero.onPaid(order)],
-    ['notion', 'resend', 'ops', 'xero'],
+    [mirrorToNotion(order), sendReceipt(order), sendOpsEmail(order, 'paid'),
+     xero.onPaid(order), meta.onPurchase(order)],
+    ['notion', 'resend', 'ops', 'xero', 'meta'],
   );
 }
 // Unpaid "Corporate Booking" flow: confirm the request was received (no payment

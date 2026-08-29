@@ -117,6 +117,9 @@
     }
 
     function renderPDP(p) {
+      // Meta ViewContent. Fires for the full product page and the desktop
+      // quick-view alike, since both land here.
+      if (window.Meta) window.Meta.viewContent(p, p.sizes[0].price);
       const cat = primaryCategory(p);
       const gallery = productGallery(p);
       const fromPrice = p.sizes[0].price;
@@ -574,6 +577,9 @@
           disp ? selectedBucket() : '',
           (disp && selectedBucket()) ? selectedBucketTopping() : '',
           disp ? [] : selectedChoices());
+        // Meta AddToCart, at the price actually configured (size, flavour,
+        // toppings and options included) rather than the "from" price.
+        if (window.Meta) window.Meta.addToCart(p, qty, currentUnitPrice(p));
         qtyInput.value = 1;               // reset quantity after adding
         updatePrice();                    // reflect reset before the flash
         flashAdded(btn);

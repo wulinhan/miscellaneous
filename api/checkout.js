@@ -6,6 +6,7 @@ const { getStore, priceOrder } = require('./_lib/engine');
 const rp = require('./_lib/razorpay');
 const orders = require('./_lib/orders');
 const notify = require('./_lib/notify');
+const meta = require('./_lib/meta');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -63,6 +64,12 @@ module.exports = async (req, res) => {
     // Persist a pending order (status: created) so a later payment can be matched
     // and fulfilled. Best-effort: a logging hiccup must not block the sale — the
     // webhook is still the authoritative "paid" signal. No-ops if Supabase is unset.
+    // Meta identifiers travel with the order: _fbp/_fbc come from the
+    // browser's cookies on THIS request, and the webhook that confirms payment
+    // later has no browser context to read them from.
+    const fbCtx = meta.contextFromRequest(req);
+    quote._fb = { fbp: fbCtx.fbp, fbc: fbCtx.fbc, ip: fbCtx.ip, ua: fbCtx.ua };
+
     try {
       await orders.insertPending({
         id: orderId,
@@ -92,6 +99,17 @@ module.exports = async (req, res) => {
       } catch (e) {
         console.error('[checkout] request notify failed:', e.message);
       }
+    }
+
+    // Meta InitiateCheckout (server copy). Deduplicates against the browser
+    // event via the id it generated. Best-effort: never blocks the sale.
+    try {
+      await meta.onInitiateCheckout(
+        { id: orderId, customer, postal, quote },
+        { eventId: body.fbEventId, fb: fbCtx, sourceUrl: req.headers.referer || undefined },
+      );
+    } catch (e) {
+      console.error('[checkout] meta InitiateCheckout failed:', e.message);
     }
 
     return res.status(200).json({ orderId, quote, schedule: { date, slotOrWindow }, payment });
