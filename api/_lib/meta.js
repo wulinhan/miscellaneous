@@ -62,7 +62,11 @@ function userData(order, ctx) {
     ct: hashed(c.city || 'singapore'),
     country: hashed('sg'),
   };
-  const fb = (ctx && ctx.fb) || (order && order.quote && order.quote._fb) || {};
+  // The browser context arrives either nested (ctx.fb, from /api/checkout) or
+  // flat (ctx itself, from the /api/meta-event relay). Fall back to the copy
+  // stored on the order, which is all the Razorpay webhook has to work with.
+  const flat = ctx && (ctx.fbp || ctx.fbc || ctx.ip || ctx.ua) ? ctx : null;
+  const fb = (ctx && ctx.fb) || flat || (order && order.quote && order.quote._fb) || {};
   if (fb.fbp) out.fbp = fb.fbp;
   if (fb.fbc) out.fbc = fb.fbc;
   if (fb.ip) out.client_ip_address = fb.ip;
@@ -150,6 +154,22 @@ async function onInitiateCheckout(order, ctx) {
   })]);
 }
 
+/* A browser-originated event relayed through /api/meta-event. Used for cart
+   actions, which never otherwise reach the server, so the only way to give
+   them a server-side twin is to relay them. `eventId` is the id the browser
+   already passed to fbq(), which is what makes the pair deduplicate. */
+async function onClientEvent(name, { eventId, quote, value, sourceUrl, customer, ctx } = {}) {
+  if (!isConfigured()) return { sent: false, reason: 'not configured' };
+  return send([buildEvent(name, {
+    eventId,
+    order: customer ? { customer } : null,
+    quote,
+    value,
+    sourceUrl,
+    ctx,
+  })]);
+}
+
 /* Pull the browser's Meta cookies and client hints off an incoming request.
    _fbp identifies the browser; _fbc carries the ad click id from fbclid. Both
    lift match quality materially, so they are stored with the order for the
@@ -170,7 +190,7 @@ function contextFromRequest(req) {
 }
 
 module.exports = {
-  isConfigured, onPurchase, onInitiateCheckout, contextFromRequest,
+  isConfigured, onPurchase, onInitiateCheckout, onClientEvent, contextFromRequest,
   // exported for tests
   hashed, hashedPhone, userData, contentsOf, buildEvent,
 };

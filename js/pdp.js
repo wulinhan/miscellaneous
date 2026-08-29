@@ -578,8 +578,18 @@
           (disp && selectedBucket()) ? selectedBucketTopping() : '',
           disp ? [] : selectedChoices());
         // Meta AddToCart, at the price actually configured (size, flavour,
-        // toppings and options included) rather than the "from" price.
-        if (window.Meta) window.Meta.addToCart(p, qty, currentUnitPrice(p));
+        // toppings and options included) rather than the "from" price. The
+        // line goes along in /api/checkout's shape so the server copy can
+        // re-price it from the catalog.
+        if (window.Meta) window.Meta.addToCart(p, qty, currentUnitPrice(p), {
+          productId: p.id, size: selectedSize(p), qty,
+          addOns: disp ? [] : selectedAddons(),
+          sugar: disp ? '' : selectedSugar(),
+          flavour: selectedFlavour(p),
+          bucket: disp ? selectedBucket() : '',
+          bucketTopping: (disp && selectedBucket()) ? selectedBucketTopping() : '',
+          choices: disp ? [] : selectedChoices(),
+        });
         qtyInput.value = 1;               // reset quantity after adding
         updatePrice();                    // reflect reset before the flash
         flashAdded(btn);

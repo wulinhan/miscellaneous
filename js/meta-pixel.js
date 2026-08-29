@@ -55,6 +55,22 @@
      feed if one is ever connected. */
   const idsOf = (lines) => lines.map((l) => l.productId || l.id).filter(Boolean);
 
+  /* Relay an event to the Conversions API so it survives ad blockers. Fired
+     and forgotten: the shopper never waits on it, and a static host with no
+     /api simply 404s, which we swallow. keepalive lets the request finish even
+     if the click navigates away. */
+  function relay(name, eventId, lines) {
+    if (!on()) return;
+    try {
+      fetch('/api/meta-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ event: name, eventId, lines, sourceUrl: location.href }),
+      }).catch(() => {});
+    } catch (e) { /* never let analytics break the cart */ }
+  }
+
   const Meta = {
     enabled: on,
     newEventId,
@@ -71,8 +87,13 @@
       });
     },
 
-    addToCart(product, qty, price) {
+    /* Fired on both sides. The cart never touches the server, so the server
+       copy has to be relayed through /api/meta-event under the same event id.
+       `line` is the cart line in /api/checkout's shape, which lets the server
+       re-price it from the catalog instead of trusting the browser. */
+    addToCart(product, qty, price, line) {
       if (!product) return;
+      const eventId = newEventId('atc');
       track('AddToCart', {
         content_ids: [product.id],
         content_name: product.title,
@@ -80,7 +101,8 @@
         contents: [{ id: product.id, quantity: Number(qty || 1), item_price: Number(price || 0) }],
         value: Number(price || 0) * Number(qty || 1),
         currency: 'SGD',
-      });
+      }, eventId);
+      relay('AddToCart', eventId, line ? [line] : [{ productId: product.id, qty: Number(qty || 1) }]);
     },
 
     /* Returns the event id so the caller can hand it to /api/checkout, which

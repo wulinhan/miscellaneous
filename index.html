@@ -194,7 +194,9 @@
       const p = getProduct(id);
       if (!p) return;
       Cart.add(p.id, 1, (p.sizes && p.sizes[0]) ? p.sizes[0].label : '', [], '');
-      if (window.Meta) window.Meta.addToCart(p, 1, (p.sizes && p.sizes[0]) ? p.sizes[0].price : p.price);
+      const size = (p.sizes && p.sizes[0]) ? p.sizes[0].label : '';
+      if (window.Meta) window.Meta.addToCart(p, 1, (p.sizes && p.sizes[0]) ? p.sizes[0].price : p.price,
+        { productId: p.id, size, qty: 1, addOns: [], sugar: '', flavour: '', choices: [] });
     }
     function cardOptions(id) {
       if (window.matchMedia('(min-width: 861px)').matches) openProductModal(id, true);
